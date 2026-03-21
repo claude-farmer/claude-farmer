@@ -2,6 +2,20 @@ import type { PublicProfile } from '@claude-farmer/shared';
 
 const BASE = '';
 
+export async function fetchSession(): Promise<{ github_id: string; nickname: string; avatar_url: string } | null> {
+  try {
+    const res = await fetch(`${BASE}/api/auth/session`);
+    const data = await res.json();
+    return data.user || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function logout(): Promise<void> {
+  await fetch(`${BASE}/api/auth/logout`, { method: 'POST' });
+}
+
 export async function fetchFarm(id: string): Promise<PublicProfile | null> {
   try {
     const res = await fetch(`${BASE}/api/farm/${id}`);
