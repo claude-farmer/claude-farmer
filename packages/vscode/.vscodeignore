@@ -1,5 +1,8 @@
-.vscode/**
-src/**
-node_modules/**
-tsconfig.json
-**/*.ts
+**
+!dist/extension.js
+!media/farm-icon.svg
+!icon.png
+!icon.svg
+!package.json
+!LICENSE
+!README.md
