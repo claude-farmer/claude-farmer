@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #1a1d27;
+  --card: #232736;
+  --border: #2a2d3a;
+  --text: #e5e7eb;
+  --accent: #fbbf24;
+  --success: #4ade80;
+  --common: #9ca3af;
+  --rare: #60a5fa;
+  --epic: #a78bfa;
+  --legendary: #fbbf24;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
