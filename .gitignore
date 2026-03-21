@@ -7,3 +7,4 @@ dist/
 .DS_Store
 .private/
 claude-farmer-spec.md
+.vercel
