@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import chalk from 'chalk';
-import open from 'open';
+import { openUrl } from '../lib/open-url.js';
 import { stateExists, ensureDataDir, saveState, createDefaultState } from '../core/state.js';
 
 const BASE_URL = 'https://claudefarmer.com';
@@ -87,7 +87,7 @@ export async function initCommand(): Promise<void> {
       const oauthPromise = waitForOAuthCallback(port);
 
       try {
-        await open(loginUrl);
+        await openUrl(loginUrl);
       } catch {
         console.log(chalk.yellow(`브라우저가 열리지 않으면 직접 열어주세요:\n${loginUrl}\n`));
       }

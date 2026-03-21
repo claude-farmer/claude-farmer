@@ -1,6 +1,6 @@
 {
   "name": "claude-farmer",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "🌱 Your code grows a farm. An idle pixel-art farming game powered by Claude Code usage.",
   "keywords": ["claude", "claude-code", "farming", "idle-game", "pixel-art", "cli"],
   "license": "MIT",
@@ -11,26 +11,26 @@
   },
   "type": "module",
   "bin": {
-    "claude-farmer": "./dist/index.js"
+    "claude-farmer": "./dist/index.cjs"
   },
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "files": ["dist", "README.md"],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "esbuild src/index.ts --bundle --outfile=dist/index.cjs --format=cjs --platform=node --target=node18 --banner:js='#!/usr/bin/env node' ",
+    "dev": "npm run build -- --watch",
     "clean": "rm -rf dist"
   },
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "@claude-farmer/shared": "*",
+    "@types/node": "^22.0.0",
     "chalk": "^5.3.0",
     "commander": "^12.1.0",
-    "open": "^10.1.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "open": "^10.1.0",
     "typescript": "^5.7.0"
   }
 }

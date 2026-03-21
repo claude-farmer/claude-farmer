@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { Command } from 'commander';
 import { showFarm } from './commands/farm.js';
 import { initCommand } from './commands/init.js';
