@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { redis, keys } from '@/lib/redis';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 export async function POST(request: NextRequest) {
   const { email } = await request.json();
@@ -18,7 +20,7 @@ export async function POST(request: NextRequest) {
 
   // 환영 이메일 발송
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: `Claude Farmer <${process.env.RESEND_EMAIL}>`,
       to: normalizedEmail,
       subject: '🌱 Claude Farmer에 오신 걸 환영해요!',
