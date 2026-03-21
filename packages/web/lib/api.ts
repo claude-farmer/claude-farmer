@@ -1,0 +1,62 @@
+import type { PublicProfile } from '@claude-farmer/shared';
+
+const BASE = '';
+
+export async function fetchFarm(id: string): Promise<PublicProfile | null> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/${id}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function syncFarm(data: Record<string, unknown>): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function waterUser(from: string, to: string): Promise<{ ok: boolean; remaining?: number; error?: string }> {
+  try {
+    const res = await fetch(`${BASE}/api/water`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to }),
+    });
+    return await res.json();
+  } catch {
+    return { ok: false, error: 'Network error' };
+  }
+}
+
+export async function fetchExplore(exclude: string, count = 10): Promise<(PublicProfile & { github_id: string })[]> {
+  try {
+    const res = await fetch(`${BASE}/api/explore?exclude=${exclude}&count=${count}`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function subscribe(email: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/api/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

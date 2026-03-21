@@ -7,6 +7,9 @@ import { statusCommand } from './commands/status.js';
 import { bagCommand } from './commands/bag.js';
 import { openCommand } from './commands/open.js';
 import { waterCommand } from './commands/water.js';
+import { stateExists, loadState } from './core/state.js';
+import { startWatcher } from './detect/watcher.js';
+import { syncToServer } from './sync/remote.js';
 
 const program = new Command();
 
@@ -16,6 +19,7 @@ program
   .version('0.0.1')
   .action(async () => {
     await showFarm();
+    backgroundSync();
   });
 
 program
@@ -53,4 +57,24 @@ program
     await waterCommand(user);
   });
 
+program
+  .command('watch')
+  .description('Claude Code 감지 모드 (백그라운드)')
+  .action(() => {
+    if (!stateExists()) {
+      console.log('🌱 먼저 `claude-farmer init`으로 시작해주세요.');
+      return;
+    }
+    console.log('🌱 Claude Code 활동을 감지하고 있어요... (Ctrl+C로 종료)');
+    startWatcher();
+  });
+
 program.parse();
+
+// 커맨드 실행 후 백그라운드 동기화
+function backgroundSync() {
+  if (!stateExists()) return;
+  loadState()
+    .then(state => syncToServer(state))
+    .catch(() => {});
+}
