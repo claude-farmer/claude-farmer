@@ -94,6 +94,41 @@ Fix water count not resetting at midnight
 Update Korean translations for social features
 ```
 
+## Publishing (Maintainers Only)
+
+### Web (Vercel)
+
+Automatic — pushes to `main` trigger Vercel deployment to claudefarmer.com.
+
+### CLI (npm)
+
+```bash
+# 1. Bump version in packages/cli/package.json
+# 2. Build
+npx turbo run build --force
+# 3. Publish (requires npm login + 2FA OTP)
+cd packages/cli
+npm publish --otp=<code>
+```
+
+### VSCode Extension (Marketplace)
+
+```bash
+# 1. Bump version in packages/vscode/package.json
+# 2. Build
+npx turbo run build --force
+# 3. Publish (requires vsce login via PAT)
+cd packages/vscode
+npx vsce publish --no-dependencies
+```
+
+> **Note**: `--no-dependencies` is required because npm workspaces symlinks cause vsce to traverse the entire monorepo. The extension is pre-bundled by esbuild so no runtime dependencies are needed.
+
+### After Publishing
+
+- Update version numbers in `CLAUDE.md` (Deployment section)
+- Commit and push the version bumps
+
 ## Areas Where Help is Wanted
 
 - New gacha items (sprites + translations)
