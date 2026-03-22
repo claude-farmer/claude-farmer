@@ -1,3 +1,4 @@
+import { GRID_SIZE } from '@claude-farmer/shared';
 import type { LocalState, PublicProfile } from '@claude-farmer/shared';
 
 // 개발용 목 데이터 (나중에 실제 API로 교체)
@@ -50,7 +51,7 @@ export const MOCK_NEIGHBORS: PublicProfile[] = [
     level: 5,
     total_harvests: 42,
     status_message: { text: 'React 최고!', updated_at: '2025-01-07T00:00:00Z' },
-    farm_snapshot: { level: 5, grid: new Array(16).fill(null), total_harvests: 42 },
+    farm_snapshot: { level: 5, grid: new Array(GRID_SIZE).fill(null), total_harvests: 42 },
     last_active: '2025-01-07T10:00:00Z',
   },
   {
@@ -59,7 +60,7 @@ export const MOCK_NEIGHBORS: PublicProfile[] = [
     level: 2,
     total_harvests: 8,
     status_message: { text: '블로그 새 글 올림!', link: 'https://blog.dev', updated_at: '2025-01-07T00:00:00Z' },
-    farm_snapshot: { level: 2, grid: new Array(16).fill(null), total_harvests: 8 },
+    farm_snapshot: { level: 2, grid: new Array(GRID_SIZE).fill(null), total_harvests: 8 },
     last_active: '2025-01-07T03:00:00Z',
   },
 ];

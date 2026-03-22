@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
+import { GRID_SIZE } from '@claude-farmer/shared';
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
       level: 1,
       total_harvests: 0,
       status_message: null,
-      farm_snapshot: { level: 1, grid: new Array(16).fill(null), total_harvests: 0 },
+      farm_snapshot: { level: 1, grid: new Array(GRID_SIZE).fill(null), total_harvests: 0 },
       last_active: new Date().toISOString(),
     });
   }

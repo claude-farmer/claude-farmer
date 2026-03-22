@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
+import { GRID_SIZE } from '@claude-farmer/shared';
 import type { PublicProfile, Farm } from '@claude-farmer/shared';
 
 // 요청에서 인증된 사용자 ID 추출 (session cookie 또는 body)
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       level: level || 1,
       total_harvests: total_harvests || 0,
       status_message: status_message || null,
-      farm_snapshot: farm || { level: 1, grid: new Array(16).fill(null), total_harvests: 0 },
+      farm_snapshot: farm || { level: 1, grid: new Array(GRID_SIZE).fill(null), total_harvests: 0 },
       last_active: new Date().toISOString(),
     };
 

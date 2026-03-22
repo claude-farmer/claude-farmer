@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { LocalState } from '@claude-farmer/shared';
-import { DATA_DIR, STATE_FILE } from '@claude-farmer/shared';
+import { DATA_DIR, STATE_FILE, GRID_SIZE } from '@claude-farmer/shared';
 
 const dataPath = join(homedir(), DATA_DIR);
 const statePath = join(dataPath, STATE_FILE);
@@ -54,7 +54,7 @@ export function createDefaultState(githubId: string, nickname: string, avatarUrl
     },
     farm: {
       level: 1,
-      grid: new Array(16).fill(null),
+      grid: new Array(GRID_SIZE).fill(null),
       total_harvests: 0,
     },
     inventory: [],

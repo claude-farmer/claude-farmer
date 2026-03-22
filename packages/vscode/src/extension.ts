@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { LocalState, CropType, GrowthStage, InventoryItem } from '@claude-farmer/shared';
-import { CROPS, MAX_GROWTH_STAGE, CROP_EMOJI, calculateLevel } from '@claude-farmer/shared';
+import { CROPS, MAX_GROWTH_STAGE, CROP_EMOJI, GRID_SIZE, calculateLevel } from '@claude-farmer/shared';
 import { rollGacha, TOTAL_ITEMS } from '@claude-farmer/shared';
 import { type Locale, detectLocale, getDict } from '@claude-farmer/shared';
 
@@ -46,7 +46,7 @@ function createDefaultState(githubId: string, nickname: string, avatarUrl: strin
     },
     farm: {
       level: 1,
-      grid: new Array(16).fill(null),
+      grid: new Array(GRID_SIZE).fill(null),
       total_harvests: 0,
     },
     inventory: [],

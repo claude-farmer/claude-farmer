@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import FarmCanvas, { type FarmCanvasHandle } from './FarmCanvas';
 import { fetchFarmWithFootprints, waterUser, visitFarm } from '@/lib/api';
 import { useLocale } from '@/lib/locale-context';
-import { DAILY_WATER_LIMIT } from '@claude-farmer/shared';
+import { DAILY_WATER_LIMIT, GRID_SIZE } from '@claude-farmer/shared';
 import type { PublicProfile, Footprint } from '@claude-farmer/shared';
 
 interface FarmVisitViewProps {
@@ -66,7 +66,7 @@ export default function FarmVisitView({
         .filter(i => i >= 0) ?? [];
       const slot = occupiedSlots.length > 0
         ? occupiedSlots[Math.floor(Math.random() * occupiedSlots.length)]
-        : Math.floor(Math.random() * 16);
+        : Math.floor(Math.random() * GRID_SIZE);
       canvasRef.current?.triggerWaterAnim(slot);
       setWaterFeedback('+1');
       if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
