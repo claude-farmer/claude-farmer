@@ -5,6 +5,7 @@ import {
 import type { CropSlot } from '@claude-farmer/shared';
 import { stateExists, loadState } from '../core/state.js';
 import { getLocale } from '../core/config.js';
+import { showNotifications } from './notifications.js';
 
 function cropCell(slot: CropSlot | null): string {
   if (!slot) return '    ';
@@ -56,4 +57,7 @@ export async function showFarm(): Promise<void> {
   console.log(`📦 ${t(locale, 'collection')} ${uniqueItems}/${TOTAL_ITEMS} (${Math.round(uniqueItems / TOTAL_ITEMS * 100)}%)  🪙 ${farm.total_harvests}${t(locale, 'harvests')}`);
   console.log(`💧 ${t(locale, 'waterReceived')} ${activity.today_water_received}  🔥 ${t(locale, 'streak')} ${activity.streak_days}${t(locale, 'days')}`);
   console.log('');
+
+  // 서버에서 소셜 알림 조회 (실패해도 무시)
+  await showNotifications(user.github_id, locale).catch(() => {});
 }

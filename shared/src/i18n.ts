@@ -86,6 +86,19 @@ const dict = {
     configLang: "Language:",
     configHelp: "Change language: `claude-farmer config --lang en` or `--lang ko`",
 
+    // ── Social ──
+    notifGreetMorning: "Good morning! Here's your farm news:",
+    notifGreetAfternoon: "Good afternoon! Here's your farm news:",
+    notifGreetEvening: "Good evening! Here's your farm news:",
+    notifGreetNight: "Late night farming! Here's your farm news:",
+    notifWatered: "{nickname} watered your farm ({timeAgo})",
+    notifWateredSlot: "{nickname} watered slot #{slot} ({timeAgo})",
+    notifVisitors: "{count} visitor(s) stopped by your farm",
+    notifNoNews: "No news yet. Keep coding!",
+    timeMinutesAgo: "{n}m ago",
+    timeHoursAgo: "{n}h ago",
+    timeYesterday: "yesterday",
+
     // ── VSCode Extension ──
     vscodeWelcome: "Welcome! Your farm has been created",
     vscodeHarvest: "Harvest",
@@ -180,6 +193,18 @@ const dict = {
     configCurrent: "현재 설정:",
     configLang: "언어:",
     configHelp: "언어 변경: `claude-farmer config --lang en` 또는 `--lang ko`",
+
+    notifGreetMorning: "좋은 아침이에요! 농장 소식이 있어요:",
+    notifGreetAfternoon: "좋은 오후에요! 농장 소식이 있어요:",
+    notifGreetEvening: "수고한 하루에요! 농장 소식이 있어요:",
+    notifGreetNight: "밤 늦게까지 수고해요! 농장 소식이 있어요:",
+    notifWatered: "{nickname}님이 물을 줬어요 ({timeAgo})",
+    notifWateredSlot: "{nickname}님이 #{slot}번 칸에 물을 줬어요 ({timeAgo})",
+    notifVisitors: "{count}명이 농장에 다녀갔어요",
+    notifNoNews: "아직 소식이 없어요. 코딩을 계속해보세요!",
+    timeMinutesAgo: "{n}분 전",
+    timeHoursAgo: "{n}시간 전",
+    timeYesterday: "어제",
 
     vscodeWelcome: "환영해요! 농장이 생성되었어요",
     vscodeHarvest: "수확",

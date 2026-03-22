@@ -8,7 +8,8 @@ import ExploreView from '@/components/ExploreView';
 import { fetchSession, fetchFarm, logout } from '@/lib/api';
 import { MOCK_STATE, MOCK_NEIGHBORS } from '@/lib/mock-data';
 import { useLocale } from '@/lib/locale-context';
-import type { LocalState, PublicProfile } from '@claude-farmer/shared';
+import usePolling from '@/hooks/usePolling';
+import type { LocalState, PublicProfile, FarmNotifications, Footprint } from '@claude-farmer/shared';
 
 export default function FarmApp() {
   const { t } = useLocale();
@@ -17,6 +18,26 @@ export default function FarmApp() {
   const [state, setState] = useState<LocalState>(MOCK_STATE);
   const [loading, setLoading] = useState(true);
   const [bookmarks, setBookmarks] = useState<PublicProfile[]>(MOCK_NEIGHBORS);
+  const [footprints, setFootprints] = useState<Footprint[]>([]);
+
+  // 30초 polling으로 알림 조회 (로그인 시)
+  const { data: notifications } = usePolling<FarmNotifications>(
+    user ? `/api/farm/${user.github_id}/notifications` : null,
+    { interval: 30_000, enabled: !!user }
+  );
+
+  // 30초 polling으로 발자국 포함한 농장 데이터 조회 (로그인 시)
+  const { data: farmPolled } = usePolling<PublicProfile & { footprints: Footprint[] }>(
+    user ? `/api/farm/${user.github_id}` : null,
+    { interval: 30_000, enabled: !!user }
+  );
+
+  // polling 결과로 footprints 업데이트
+  useEffect(() => {
+    if (farmPolled?.footprints) {
+      setFootprints(farmPolled.footprints);
+    }
+  }, [farmPolled]);
 
   useEffect(() => {
     async function init() {
@@ -100,7 +121,7 @@ export default function FarmApp() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {tab === 'farm' && <FarmView state={state} />}
+        {tab === 'farm' && <FarmView state={state} footprints={footprints} notifications={notifications} />}
         {tab === 'bag' && <BagView inventory={state.inventory} />}
         {tab === 'explore' && (
           <ExploreView

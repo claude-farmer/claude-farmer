@@ -48,15 +48,17 @@ claude-farmer/
 │   │   │   ├── og/            → Dynamic OG image generation
 │   │   │   └── api/
 │   │   │       ├── auth/      → login, callback (GitHub OAuth), session, logout
-│   │   │       ├── farm/      → sync, [id] (profile save/fetch)
-│   │   │       ├── water/     → Watering (3/day limit)
+│   │   │       ├── farm/      → sync, [id] (profile+footprints), [id]/notifications, [id]/visit
+│   │   │       ├── water/     → Watering (3/day limit, optional crop_slot)
 │   │   │       ├── explore/   → Random user discovery
 │   │   │       └── subscribe/ → Email subscription (Resend)
 │   │   ├── components/        → FarmView, BagView, ExploreView, TabBar, FarmCanvas
+│   │   ├── hooks/
+│   │   │   └── usePolling.ts  → 30s polling hook (visibility-aware)
 │   │   ├── canvas/            → Pixel art rendering engine
 │   │   │   ├── palette.ts     → Color palette
 │   │   │   ├── sprites.ts     → 16×16 sprite data (defined in code)
-│   │   │   └── renderer.ts    → FarmRenderer class (Canvas 2D)
+│   │   │   └── renderer.ts    → FarmRenderer class (Canvas 2D, footprints, water anims)
 │   │   └── lib/
 │   │       ├── redis.ts       → Upstash Redis client (lazy init)
 │   │       ├── api.ts         → Client API functions (session, farm, water, etc.)
@@ -136,16 +138,28 @@ cd packages/vscode && npm run dev
 | `/api/auth/session` | GET | Get current session user |
 | `/api/auth/logout` | POST | Delete session cookie |
 | `/api/farm/sync` | POST | CLI → server profile sync |
-| `/api/farm/[id]` | GET | Public profile lookup |
-| `/api/water` | POST | Water a user's farm (3/day limit) |
+| `/api/farm/[id]` | GET | Public profile lookup (includes footprints) |
+| `/api/farm/[id]/notifications` | GET | Farm notifications (visitors, water received) |
+| `/api/farm/[id]/visit` | POST | Record farm visit (session auth) |
+| `/api/water` | POST | Water a user's farm (3/day limit, optional crop_slot) |
 | `/api/explore` | GET | Random user discovery |
 | `/api/subscribe` | POST | Email subscription + welcome email |
+
+## Social System ("Ghost Visits")
+
+- **Polling-based**: 30-second interval, pauses when tab is hidden
+- **Footprints**: Visitors leave fading marks on your farm (24h TTL, Canvas-rendered between ground and crops)
+- **Footprint position**: Deterministic via `hash(visitor_id + farm_id)` — no server storage needed
+- **Water bonus**: Water log recorded server-side, actual growth applied on CLI's next turn (no sync conflict)
+- **Notifications**: CLI shows social notifications on `claude-farmer farm`; Web polls `/notifications`
+- **Hover tooltip**: Mouse over footprints shows visitor nickname + time
+- **Redis keys**: `farm:{id}:visitors` (sorted set), `farm:{id}:footprints` (hash), `farm:{id}:water_detail:{date}` (sorted set)
 
 ## Design Principles
 
 - Zero user effort required. Install and forget — your farm grows on its own.
 - Cute, cozy pixel art. Warm color palette.
-- Minimal social = status bubble + watering + bookmarks. Just 3 things.
+- Minimal social = status bubble + watering + bookmarks + ghost visits. Warm but low-pressure.
 
 ## Deployment
 

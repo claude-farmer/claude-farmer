@@ -1,4 +1,4 @@
-import type { PublicProfile } from '@claude-farmer/shared';
+import type { PublicProfile, FarmNotifications, Footprint } from '@claude-farmer/shared';
 
 const BASE = '';
 
@@ -59,6 +59,35 @@ export async function fetchExplore(exclude: string, count = 10): Promise<(Public
     return await res.json();
   } catch {
     return [];
+  }
+}
+
+export async function visitFarm(farmOwnerId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/${farmOwnerId}/visit`, { method: 'POST' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchNotifications(userId: string): Promise<FarmNotifications | null> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/${userId}/notifications`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchFarmWithFootprints(id: string): Promise<(PublicProfile & { footprints: Footprint[] }) | null> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/${id}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
   }
 }
 

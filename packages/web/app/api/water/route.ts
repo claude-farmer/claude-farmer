@@ -5,7 +5,7 @@ import type { PublicProfile } from '@claude-farmer/shared';
 
 // 물 주기
 export async function POST(request: NextRequest) {
-  const { from, to } = await request.json();
+  const { from, to, crop_slot } = await request.json();
 
   if (!from || !to) {
     return NextResponse.json({ error: 'Missing from/to' }, { status: 400 });
@@ -29,14 +29,40 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
+  // 물 준 사람 프로필 조회 (닉네임용)
+  const fromProfile = await redis.get<PublicProfile>(keys.user(from));
+  const fromNickname = fromProfile?.nickname ?? from;
+
   // 물 주기 기록
   await redis.incr(givenKey);
   await redis.expire(givenKey, 86400); // 24시간 후 만료
 
-  // 상대방 물 받은 기록
+  // 상대방 물 받은 기록 (카운트)
   const receivedKey = keys.waterLog(to);
   await redis.incr(receivedKey);
   await redis.expire(receivedKey, 86400);
+
+  // 상대방 물 받은 상세 기록 (알림용)
+  const now = Date.now();
+  const waterEntry = JSON.stringify({
+    from_id: from,
+    from_nickname: fromNickname,
+    crop_slot: crop_slot ?? null,
+    at: new Date(now).toISOString(),
+  });
+  await redis.zadd(keys.waterDetail(to), { score: now, member: waterEntry });
+  await redis.expire(keys.waterDetail(to), 86400);
+
+  // 발자국 업데이트 (물 줬으면 watered: true)
+  const footprintData = JSON.stringify({
+    github_id: from,
+    nickname: fromNickname,
+    visited_at: new Date(now).toISOString(),
+    watered: true,
+    crop_slot: crop_slot ?? undefined,
+  });
+  await redis.hset(keys.footprints(to), { [from]: footprintData });
+  await redis.expire(keys.footprints(to), 86400);
 
   const remaining = DAILY_WATER_LIMIT - givenCount - 1;
   return NextResponse.json({ ok: true, remaining });

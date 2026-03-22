@@ -26,6 +26,10 @@ export const keys = {
   waterLog: (id: string) => `user:${id}:water_log:${todayKey()}`,
   recentActive: 'global:recent_active',
   subscribers: 'global:email_subscribers',
+  // 소셜: 방문 & 발자국
+  visitors: (id: string) => `farm:${id}:visitors`,
+  footprints: (id: string) => `farm:${id}:footprints`,
+  waterDetail: (id: string) => `farm:${id}:water_detail:${todayKey()}`,
 };
 
 function todayKey(): string {

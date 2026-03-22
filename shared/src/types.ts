@@ -79,3 +79,20 @@ export interface PublicProfile {
   farm_snapshot: Farm;
   last_active: string;
 }
+
+// ── 소셜: 발자국 ──
+export interface Footprint {
+  github_id: string;
+  nickname: string;
+  visited_at: string;
+  watered: boolean;
+  crop_slot?: number;
+}
+
+// ── 소셜: 알림 ──
+export interface FarmNotifications {
+  visitors: Footprint[];
+  visitor_count: number;
+  water_received: { from_nickname: string; from_id: string; crop_slot?: number; at: string }[];
+  water_received_count: number;
+}

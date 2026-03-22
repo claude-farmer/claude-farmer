@@ -1,6 +1,6 @@
 import { PALETTE } from './palette';
 import { CHARACTER_SPRITE, CROP_SPRITES, drawSprite } from './sprites';
-import type { CropSlot } from '@claude-farmer/shared';
+import type { CropSlot, Footprint } from '@claude-farmer/shared';
 import { getTimeOfDay, type TimeOfDay } from '@claude-farmer/shared';
 
 // 캔버스 설정: 256×192px 기본, 4× 스케일
@@ -15,6 +15,14 @@ const CELL_SIZE = 2 * TILE; // 각 칸 32px (16px 작물 + 여백)
 export interface FarmRenderState {
   grid: (CropSlot | null)[];
   characterWorking: boolean;
+  footprints?: Footprint[];
+  farmOwnerId?: string;
+}
+
+interface WaterAnim {
+  slotIndex: number;
+  startFrame: number;
+  duration: number; // frames
 }
 
 export class FarmRenderer {
@@ -22,6 +30,9 @@ export class FarmRenderer {
   private frame = 0;
   private animTimer = 0;
   private stars: { x: number; y: number; blink: boolean }[] = [];
+  private waterAnims: WaterAnim[] = [];
+  // 발자국 위치 캐시 (hover 감지용)
+  private footprintPositions: { x: number; y: number; fp: Footprint }[] = [];
 
   constructor(private canvas: HTMLCanvasElement) {
     canvas.width = BASE_W;
@@ -47,9 +58,13 @@ export class FarmRenderer {
 
     this.drawSky(tod);
     this.drawGround();
+    if (state.footprints?.length) {
+      this.drawFootprints(state.footprints, state.farmOwnerId ?? '');
+    }
     this.drawGrid(state.grid);
     this.drawCharacter(state.characterWorking);
     this.drawWeatherEffects(tod);
+    this.drawWaterAnims();
 
     this.frame++;
   }
@@ -263,6 +278,72 @@ export class FarmRenderer {
     }
   }
 
+  // ── 발자국 ──
+  private drawFootprints(footprints: Footprint[], farmOwnerId: string) {
+    const ctx = this.ctx;
+    const groundY = SKY_TILES * TILE;
+    // 발자국 배치 가능 영역: 풀밭 좌우 여백 (작물 영역 밖)
+    const farmLeft = GRID_OFFSET_X - 2;
+    const farmRight = GRID_OFFSET_X + 4 * CELL_SIZE + 2;
+
+    this.footprintPositions = [];
+    for (const fp of footprints) {
+      const hoursAgo = (Date.now() - new Date(fp.visited_at).getTime()) / (1000 * 60 * 60);
+      if (hoursAgo > 24) continue;
+
+      const opacity = Math.max(0, 1 - hoursAgo / 24) * 0.4;
+      const pos = this.hashPosition(fp.github_id, farmOwnerId, groundY, farmLeft, farmRight);
+      this.footprintPositions.push({ x: pos.x, y: pos.y, fp });
+
+      ctx.globalAlpha = opacity;
+
+      // 발자국 스프라이트 (2×2px 쌍)
+      ctx.fillStyle = '#A0724A';
+      ctx.fillRect(pos.x, pos.y, 2, 2);
+      ctx.fillRect(pos.x + 3, pos.y + 1, 2, 2);
+
+      // 물 줬으면 물방울 잔상
+      if (fp.watered) {
+        ctx.fillStyle = '#64B5F6';
+        ctx.globalAlpha = Math.min(opacity * 1.5, 0.6);
+        ctx.fillRect(pos.x + 1, pos.y - 2, 1, 1);
+      }
+
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // 결정론적 위치 생성: hash(visitor_id + farm_id) → 풀밭 영역 좌표
+  private hashPosition(
+    visitorId: string,
+    farmOwnerId: string,
+    groundY: number,
+    farmLeft: number,
+    farmRight: number
+  ): { x: number; y: number } {
+    const str = visitorId + farmOwnerId;
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+    }
+    const absHash = Math.abs(hash);
+
+    // 좌측 또는 우측 풀밭에 배치
+    const side = absHash % 2;
+    let x: number;
+    if (side === 0) {
+      // 왼쪽 (0 ~ farmLeft-4)
+      x = (absHash >> 1) % Math.max(1, farmLeft - 4);
+    } else {
+      // 오른쪽 (farmRight+2 ~ BASE_W-4)
+      const rightW = BASE_W - farmRight - 6;
+      x = farmRight + 2 + ((absHash >> 1) % Math.max(1, rightW));
+    }
+    const y = groundY + 4 + ((absHash >> 8) % (BASE_H - groundY - 8));
+
+    return { x, y };
+  }
+
   // ── 수확 이펙트 ──
   drawHarvestEffect(slotIndex: number, color: string) {
     const ctx = this.ctx;
@@ -295,6 +376,69 @@ export class FarmRenderer {
       const dx = (i - 1.5) * 3;
       ctx.fillRect(Math.round(cx + dx), cy + 2 + i * 2, 1, 2);
     }
+  }
+
+  // ── 물 주기 드롭 애니메이션 (큐 기반) ──
+  triggerWaterAnim(slotIndex: number) {
+    this.waterAnims.push({ slotIndex, startFrame: this.frame, duration: 30 });
+  }
+
+  private drawWaterAnims() {
+    const ctx = this.ctx;
+    this.waterAnims = this.waterAnims.filter(anim => {
+      const elapsed = this.frame - anim.startFrame;
+      if (elapsed >= anim.duration) return false;
+
+      const row = Math.floor(anim.slotIndex / 4);
+      const col = anim.slotIndex % 4;
+      const cx = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2;
+      const startY = GRID_OFFSET_Y + row * CELL_SIZE - 4;
+      const progress = elapsed / anim.duration;
+
+      // 3개 물방울이 위에서 아래로 떨어짐
+      ctx.fillStyle = '#64B5F6';
+      for (let i = 0; i < 3; i++) {
+        const dropProgress = Math.min(1, progress + i * 0.1);
+        const alpha = 1 - dropProgress;
+        ctx.globalAlpha = alpha;
+        const dx = (i - 1) * 4;
+        const dy = dropProgress * 12;
+        ctx.fillRect(Math.round(cx + dx), Math.round(startY + dy), 1, 2);
+      }
+      ctx.globalAlpha = 1;
+
+      // 착지 시 스플래시
+      if (progress > 0.7) {
+        const splashAlpha = 1 - (progress - 0.7) / 0.3;
+        ctx.globalAlpha = splashAlpha * 0.6;
+        ctx.fillStyle = '#90CAF9';
+        const splashY = startY + 12;
+        for (let i = 0; i < 4; i++) {
+          const angle = (i / 4) * Math.PI * 2 + progress * 2;
+          const dist = (progress - 0.7) / 0.3 * 5;
+          ctx.fillRect(
+            Math.round(cx + Math.cos(angle) * dist),
+            Math.round(splashY + Math.sin(angle) * dist * 0.5),
+            1, 1
+          );
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      return true;
+    });
+  }
+
+  // ── 발자국 hover 툴팁 ──
+  getFootprintAt(canvasX: number, canvasY: number): Footprint | null {
+    // canvasX, canvasY는 base 해상도(256×192) 기준
+    const hitRadius = 4;
+    for (const { x, y, fp } of this.footprintPositions) {
+      if (Math.abs(canvasX - x) <= hitRadius && Math.abs(canvasY - y) <= hitRadius) {
+        return fp;
+      }
+    }
+    return null;
   }
 
   getSize() {

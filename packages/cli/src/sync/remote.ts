@@ -1,4 +1,4 @@
-import type { LocalState } from '@claude-farmer/shared';
+import type { LocalState, FarmNotifications } from '@claude-farmer/shared';
 
 const BASE_URL = 'https://claudefarmer.com';
 
@@ -39,6 +39,16 @@ export async function sendWater(from: string, to: string): Promise<{ ok: boolean
 export async function fetchProfile(githubId: string) {
   try {
     const res = await fetch(`${BASE_URL}/api/farm/${githubId}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchNotifications(githubId: string): Promise<FarmNotifications | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/farm/${githubId}/notifications`);
     if (!res.ok) return null;
     return await res.json();
   } catch {

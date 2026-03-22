@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { PublicProfile } from '@claude-farmer/shared';
-import { fetchExplore } from '@/lib/api';
+import { fetchExplore, visitFarm } from '@/lib/api';
 import { useLocale } from '@/lib/locale-context';
 
 interface ExploreViewProps {
@@ -23,6 +23,14 @@ export default function ExploreView({ bookmarks, currentUser, onVisit }: Explore
     setLoading(false);
   };
 
+  const handleVisit = (profile: PublicProfile & { github_id?: string }) => {
+    const id = (profile as PublicProfile & { github_id: string }).github_id;
+    if (id) {
+      visitFarm(id);
+    }
+    onVisit?.(profile);
+  };
+
   return (
     <div className="flex flex-col gap-4 p-4">
       <h2 className="text-lg font-bold">🌍 {t.exploreTitle}</h2>
@@ -39,7 +47,7 @@ export default function ExploreView({ bookmarks, currentUser, onVisit }: Explore
             {bookmarks.map((profile, i) => (
               <button
                 key={i}
-                onClick={() => onVisit?.(profile)}
+                onClick={() => handleVisit(profile)}
                 className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 text-left hover:border-[var(--accent)] transition-colors"
               >
                 <div className="flex items-center justify-between">
@@ -78,7 +86,7 @@ export default function ExploreView({ bookmarks, currentUser, onVisit }: Explore
             {randomProfiles.map((profile) => (
               <button
                 key={profile.github_id}
-                onClick={() => onVisit?.(profile)}
+                onClick={() => handleVisit(profile)}
                 className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 text-left hover:border-[var(--accent)] transition-colors"
               >
                 <div className="flex items-center justify-between">
