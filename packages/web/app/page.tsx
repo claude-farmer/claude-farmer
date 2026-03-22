@@ -260,7 +260,8 @@ export default function Landing() {
             className={`hover:opacity-60 ${locale === 'ko' ? 'underline opacity-100' : ''}`}
           >KO</button>
         </div>
-        <p>{t.footerLicense}</p>
+        <p>{t.footerContrib}</p>
+        <p className="mt-1">{t.footerLicense}</p>
       </footer>
     </div>
   );

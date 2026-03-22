@@ -39,7 +39,8 @@ const dict = {
     emailPlaceholder: 'Email address',
 
     // Footer
-    footerLicense: 'MIT License · by doribear.com ― South Korea',
+    footerLicense: 'MIT License · Built by doribear.com 🇰🇷',
+    footerContrib: 'Open source — contributions welcome! Let\'s code something fun together.',
 
     // Farm page
     demoMode: 'Demo Mode',
@@ -103,7 +104,8 @@ const dict = {
     subscribeDone: '구독 완료! 소식을 보내드릴게요.',
     emailPlaceholder: '이메일 주소',
 
-    footerLicense: 'MIT License · by doribear.com ― South Korea',
+    footerLicense: 'MIT License · Built by doribear.com 🇰🇷',
+    footerContrib: '오픈소스 — 함께 즐겁게 코딩해요! 참여 환영합니다.',
 
     demoMode: '데모 모드',
     loginBtn: 'GitHub 로그인',

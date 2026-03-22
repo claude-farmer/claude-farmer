@@ -117,13 +117,17 @@ claude-farmer/
 └── CLAUDE.md         # AI context file
 ```
 
+## Contributing
+
+Pull requests, ideas, and bug reports are all welcome! Whether it's a new gacha item, a better sprite, or a wild feature idea — let's build something fun together. 🌱
+
 ## Links
 
-- 🌐 [claudefarmer.com](https://claudefarmer.com)
+- 🌐 [claudefarmer.com](https://claudefarmer.com) — play & explore farms
 - 📦 [npm: claude-farmer](https://www.npmjs.com/package/claude-farmer)
 - 🧩 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode)
 - 🐙 [GitHub](https://github.com/claude-farmer/claude-farmer)
 
 ## License
 
-MIT — made with 🌱 by [doribear](https://doribear.com)
+MIT — built with 🌱 by [doribear.com](https://doribear.com) 🇰🇷
