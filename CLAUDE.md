@@ -1,136 +1,155 @@
 # CLAUDE.md — Claude Farmer
 
-> 이 파일은 Claude Code (또는 다른 LLM)가 프로젝트를 빠르게 이해하기 위한 컨텍스트 파일입니다.
+> Context file for Claude Code (or other LLMs) to quickly understand the project.
 
-## 프로젝트 한 줄 요약
+## One-Line Summary
 
-Claude Code를 쓰면 농장이 자동으로 자라고, UI를 열면 다른 사람 농장에 놀러가서 물 주고 북마크할 수 있는 **방치형 픽셀아트 농장 게임**.
+An **idle pixel-art farming game** where your farm grows automatically as you use Claude Code. Visit other developers' farms, water their crops, and bookmark favorites.
 
-## 기술 스택
+## Tech Stack
 
-- **모노레포**: npm workspaces + Turborepo
-- **언어**: TypeScript (전체)
-- **CLI**: Node.js, Commander, Chalk, esbuild (단일 CJS 번들)
+- **Monorepo**: npm workspaces + Turborepo
+- **Language**: TypeScript (all packages)
+- **CLI**: Node.js, Commander, Chalk, esbuild (single CJS bundle)
 - **Web**: Next.js 15 (App Router), React 19, Tailwind CSS v4, Canvas 2D
-- **VSCode**: Extension API, esbuild, Webview 기반 사이드바
-- **배포**: Vercel (claudefarmer.com), npm (claude-farmer), VSCode Marketplace
-- **인증**: GitHub OAuth (Web 세션 쿠키 + CLI 로컬 콜백 서버)
-- **데이터**: 로컬 `~/.claude-farmer/state.json` + Upstash Redis (프로필, 소셜)
-- **이메일**: Resend (구독 환영 이메일)
+- **VSCode**: Extension API, esbuild, Webview-based sidebar
+- **Deployment**: Vercel (claudefarmer.com), npm (claude-farmer), VSCode Marketplace
+- **Auth**: GitHub OAuth (Web session cookie + CLI local callback server + VSCode URI handler)
+- **Data**: Local `~/.claude-farmer/state.json` + Upstash Redis (profiles, social)
+- **Email**: Resend (subscription welcome email)
+- **i18n**: Shared translation module (en/ko), auto-detect with manual override
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 
-## 패키지 구조
+## Package Structure
 
-```
+```text
 claude-farmer/
-├── shared/              → @claude-farmer/shared (공유 타입, 상수, 가챠 로직)
+├── shared/              → @claude-farmer/shared (types, constants, gacha, i18n)
 │   └── src/
-│       ├── types.ts     → 모든 타입 정의 (CropSlot, GachaItem, LocalState 등)
-│       ├── constants.ts → 설정값 (GRID_SIZE, RARITY_WEIGHTS, 레벨 계산)
-│       └── gacha.ts     → 가챠 아이템 24종 + rollGacha() 함수
+│       ├── types.ts     → All type definitions (CropSlot, GachaItem, LocalState, etc.)
+│       ├── constants.ts → Config values (GRID_SIZE, RARITY_WEIGHTS, level calc)
+│       ├── gacha.ts     → 24 gacha items + rollGacha() function
+│       └── i18n.ts      → Translation dict (en/ko), detectLocale(), t() helper
 ├── packages/
-│   ├── cli/             → claude-farmer (npm 패키지, 글로벌 설치)
+│   ├── cli/             → claude-farmer (npm package, global install)
 │   │   └── src/
-│   │       ├── index.ts       → CLI 엔트리 (commander 라우팅)
-│   │       ├── commands/      → init, status, bag, open, water, farm
-│   │       ├── core/state.ts  → 로컬 상태 CRUD (~/.claude-farmer/)
-│   │       ├── core/farm.ts   → 심기/성장/수확/가챠 핵심 루프
-│   │       ├── lib/open-url.ts→ 크로스플랫폼 URL 열기 (child_process)
-│   │       ├── detect/        → Claude Code 활동 감지 (fs.watch)
-│   │       └── sync/          → 서버 동기화 (claudefarmer.com API)
+│   │       ├── index.ts       → CLI entry (Commander routing)
+│   │       ├── commands/      → init, status, bag, open, water, farm, config
+│   │       ├── core/state.ts  → Local state CRUD (~/.claude-farmer/)
+│   │       ├── core/config.ts → Language config (~/.claude-farmer/config.json)
+│   │       ├── core/farm.ts   → Plant/grow/harvest/gacha core loop
+│   │       ├── lib/open-url.ts→ Cross-platform URL opener (child_process)
+│   │       ├── detect/        → Claude Code activity detection (fs.watch)
+│   │       └── sync/          → Server sync (claudefarmer.com API)
 │   ├── web/             → @claude-farmer/web (Next.js, claudefarmer.com)
-│   │   ├── app/               → Next.js App Router 페이지
-│   │   │   ├── page.tsx       → 랜딩 페이지 (구독 폼 포함)
-│   │   │   ├── farm/          → /farm 앱 (인증 시 실제 데이터, 비인증 시 데모)
-│   │   │   ├── og/            → 동적 OG 이미지 생성
+│   │   ├── app/               → Next.js App Router pages
+│   │   │   ├── page.tsx       → Landing page (subscribe form, EN/KO toggle)
+│   │   │   ├── farm/          → /farm app (real data when logged in, demo otherwise)
+│   │   │   ├── og/            → Dynamic OG image generation
 │   │   │   └── api/
 │   │   │       ├── auth/      → login, callback (GitHub OAuth), session, logout
-│   │   │       ├── farm/      → sync, [id] (프로필 저장/조회)
-│   │   │       ├── water/     → 물 주기 (일 3회 제한)
-│   │   │       ├── explore/   → 랜덤 유저 탐색
-│   │   │       └── subscribe/ → 이메일 구독 (Resend)
+│   │   │       ├── farm/      → sync, [id] (profile save/fetch)
+│   │   │       ├── water/     → Watering (3/day limit)
+│   │   │       ├── explore/   → Random user discovery
+│   │   │       └── subscribe/ → Email subscription (Resend)
 │   │   ├── components/        → FarmView, BagView, ExploreView, TabBar, FarmCanvas
-│   │   ├── canvas/            → 픽셀아트 렌더링 엔진
-│   │   │   ├── palette.ts     → 색상 팔레트
-│   │   │   ├── sprites.ts     → 16×16 스프라이트 데이터 (코드로 정의)
-│   │   │   └── renderer.ts    → FarmRenderer 클래스 (Canvas 2D)
+│   │   ├── canvas/            → Pixel art rendering engine
+│   │   │   ├── palette.ts     → Color palette
+│   │   │   ├── sprites.ts     → 16×16 sprite data (defined in code)
+│   │   │   └── renderer.ts    → FarmRenderer class (Canvas 2D)
 │   │   └── lib/
-│   │       ├── redis.ts       → Upstash Redis 클라이언트 (lazy init)
-│   │       ├── api.ts         → 클라이언트 API 함수 (session, farm, water 등)
-│   │       └── mock-data.ts   → 개발용/데모 목 데이터
+│   │       ├── redis.ts       → Upstash Redis client (lazy init)
+│   │       ├── api.ts         → Client API functions (session, farm, water, etc.)
+│   │       ├── i18n.ts        → Web-specific translation dict + detectLocale()
+│   │       ├── locale-context.tsx → React context provider + useLocale() hook
+│   │       └── mock-data.ts   → Dev/demo mock data
 │   └── vscode/          → claude-farmer-vscode (VSCode Marketplace)
-│       ├── src/extension.ts   → FarmViewProvider (Webview), 에디터 활동 감지
-│       ├── icon.png           → 마켓플레이스 아이콘 (128×128)
-│       └── media/             → Activity bar 아이콘
+│       ├── src/extension.ts   → FarmViewProvider (Webview), editor activity detection, OAuth URI handler
+│       ├── icon.png           → Marketplace icon (128×128)
+│       └── media/             → Activity bar icon
 ```
 
-## 빌드 & 실행
+## Build & Run
 
 ```bash
-npm install              # 전체 의존성 설치
-npx turbo run build      # 전체 빌드 (shared → cli, web, vscode)
+npm install              # Install all dependencies
+npx turbo run build      # Build all (shared → cli, web, vscode)
 
-# CLI 개발
+# CLI dev
 cd packages/cli && npm run dev
 
-# Web 개발
+# Web dev
 cd packages/web && npm run dev
 
-# VSCode 익스텐션 개발
+# VSCode extension dev
 cd packages/vscode && npm run dev
 ```
 
-## 핵심 게임 루프
+## Core Game Loop
 
-1. Claude Code 사용 감지 (`~/.claude` 디렉토리 watch)
-2. 프롬프트 입력 → 빈 칸에 랜덤 작물 심기 (4×4 = 16칸)
-3. 대화 1턴 = 전체 작물 성장 1단계 (씨앗→새싹→성장→수확가능)
-4. 수확가능 작물 자동 수확 → 가챠 드롭 (Common 60%, Rare 28%, Epic 10%, Legendary 2%)
-5. 아이템 도감에 자동 등록 (24종)
+1. Detect Claude Code usage (`~/.claude` directory watch)
+2. Prompt input → plant random crop in empty slot (4×4 = 16 slots)
+3. 1 conversation turn = all crops grow 1 stage (seed → sprout → growing → harvestable)
+4. Auto-harvest ready crops → gacha drop (Common 60%, Rare 28%, Epic 10%, Legendary 2%)
+5. Items auto-registered in codex (24 items total)
 
-## 인증 플로우
+## Auth Flows
 
-### Web (세션 쿠키)
+### Web (Session Cookie)
 
-1. `/api/auth/login` → GitHub OAuth 동의 화면
-2. `/api/auth/callback` → 토큰 교환 → Redis에 프로필 저장 → `cf_session` httpOnly 쿠키 설정
-3. `/farm` 페이지 → `/api/auth/session`에서 유저 정보 조회 → 실제 데이터 렌더링
+1. `/api/auth/login` → GitHub OAuth consent screen
+2. `/api/auth/callback` → token exchange → save profile in Redis → set `cf_session` httpOnly cookie
+3. `/farm` page → fetch user from `/api/auth/session` → render real data
 
-### CLI (로컬 콜백 서버)
+### CLI (Local Callback Server)
 
-1. `claude-farmer init` → 브라우저에서 GitHub OAuth 열기
-2. OAuth 완료 → `localhost:19274/callback`으로 리다이렉트
-3. 유저 정보 수신 → `~/.claude-farmer/state.json` 생성
+1. `claude-farmer init` → open GitHub OAuth in browser
+2. OAuth complete → redirect to `localhost:19274/callback`
+3. Receive user info → create `~/.claude-farmer/state.json`
 
-## Web UI 화면 (3개)
+### VSCode (URI Handler)
 
-1. **농장** — Canvas 2D 픽셀아트 (256×192, 4× 스케일), 시간대별 배경 자동 전환
-2. **도감** — 등급별 프로그레스 바 + 아이템 그리드 (획득/미획득)
-3. **탐험** — 이웃 목록 + 랜덤 방문 + 물 주기(일 3회) + 북마크
+1. `claudeFarmer.login` command → open `claudefarmer.com/api/auth/login?from=vscode`
+2. OAuth complete → redirect to `vscode://doribear.claude-farmer-vscode/callback?...`
+3. Extension receives URI → create local state → show farm view
 
-## API 라우트 요약
+## i18n
 
-| 엔드포인트 | 메서드 | 설명 |
-| ----------- | ------ | ---- |
-| `/api/auth/login` | GET | GitHub OAuth 시작 |
-| `/api/auth/callback` | GET | OAuth 콜백 (쿠키 설정 또는 CLI 리다이렉트) |
-| `/api/auth/session` | GET | 현재 세션 유저 조회 |
-| `/api/auth/logout` | POST | 세션 쿠키 삭제 |
-| `/api/farm/sync` | POST | CLI → 서버 프로필 동기화 |
-| `/api/farm/[id]` | GET | 공개 프로필 조회 |
-| `/api/water` | POST | 물 주기 (일 3회 제한) |
-| `/api/explore` | GET | 랜덤 유저 탐색 |
-| `/api/subscribe` | POST | 이메일 구독 + 환영 메일 |
+- Default: English. Korean when locale is `ko`.
+- **Web**: Auto-detect via `navigator.language` + EN/KO toggle in footer
+- **VSCode**: Auto-detect via `vscode.env.language` + `claudeFarmer.language` setting (auto/en/ko)
+- **CLI**: Auto-detect via `$LANG` env var + `claude-farmer config --lang ko|en`
+- Shared translation module: `shared/src/i18n.ts`
 
-## 디자인 원칙
+## Web UI Screens (3)
 
-- 유저 행동 = 0. 설치 후 잊어버려도 농장은 자란다.
-- 귀엽고 아기자기한 픽셀아트. 따뜻한 색감.
-- 미니멀 소셜 = 말풍선 + 물 주기 + 북마크 딱 3개.
+1. **Farm** — Canvas 2D pixel art (256×192, 4× scale), time-based background
+2. **Codex** — Rarity-grouped progress bars + item grid (obtained/locked)
+3. **Explore** — Neighbor list + random visit + watering (3/day) + bookmarks
 
-## 배포 현황
+## API Routes
+
+| Endpoint | Method | Description |
+| -------- | ------ | ----------- |
+| `/api/auth/login` | GET | Start GitHub OAuth |
+| `/api/auth/callback` | GET | OAuth callback (cookie, CLI redirect, or VSCode URI) |
+| `/api/auth/session` | GET | Get current session user |
+| `/api/auth/logout` | POST | Delete session cookie |
+| `/api/farm/sync` | POST | CLI → server profile sync |
+| `/api/farm/[id]` | GET | Public profile lookup |
+| `/api/water` | POST | Water a user's farm (3/day limit) |
+| `/api/explore` | GET | Random user discovery |
+| `/api/subscribe` | POST | Email subscription + welcome email |
+
+## Design Principles
+
+- Zero user effort required. Install and forget — your farm grows on its own.
+- Cute, cozy pixel art. Warm color palette.
+- Minimal social = status bubble + watering + bookmarks. Just 3 things.
+
+## Deployment
 
 - **Web**: Vercel → claudefarmer.com
-- **CLI**: npm → `npm install -g claude-farmer`
-- **VSCode**: Marketplace → `doribear.claude-farmer-vscode`
+- **CLI**: npm → `npm install -g claude-farmer` (v0.2.0)
+- **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.2.0)
 - **CI/CD**: GitHub Actions (push to main → build + lint)

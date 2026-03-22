@@ -2,46 +2,59 @@
 
 **Your code grows a farm.**
 
-Claude Code를 쓰면 농장이 자동으로 자라는 방치형 픽셀아트 농장 게임입니다.
+An idle pixel-art farming game powered by Claude Code. You write code, crops pop up. You keep coding, they grow. Forget about it — your farm takes care of itself.
 
 [![npm](https://img.shields.io/npm/v/claude-farmer)](https://www.npmjs.com/package/claude-farmer)
 [![VSCode Marketplace](https://img.shields.io/visual-studio-marketplace/v/doribear.claude-farmer-vscode)](https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## 어떻게 작동하나요?
+## Wait, What?
 
-1. `npm install -g claude-farmer` 설치
-2. `claude-farmer init` 초기화 (GitHub 로그인)
-3. **Claude Code를 사용하면 자동으로 농장이 자랍니다** 🌱
-4. 수확하면 가챠로 아이템 획득 → 도감 수집!
-5. [claudefarmer.com](https://claudefarmer.com)에서 다른 사람 농장 구경 & 물 주기
+You install it. You code. A farm appears. That's it.
 
-## 게임 루프
+1. `npm install -g claude-farmer`
+2. `claude-farmer init` (GitHub login, takes 10 seconds)
+3. Go back to coding with Claude Code
+4. Come back later — your farm has grown, crops are harvested, and you've got shiny gacha items
 
+No clicking. No watering. No grinding. Just... code.
+
+## The Loop
+
+```text
+Code with Claude → Seeds planted → Crops grow → Auto-harvest → Gacha drop!
 ```
-Claude Code 사용 → 씨앗 심기 → 대화할수록 성장 → 자동 수확 → 가챠!
-```
 
-- 🌰 씨앗 → 🌱 새싹 → 🌿 성장 → 🥕 수확 가능
-- 수확하면 랜덤 가챠: Common(60%) / Rare(28%) / Epic(10%) / Legendary(2%)
-- 24종 아이템 도감 수집
+- 🌰 **Seed** → 🌱 **Sprout** → 🌿 **Growing** → 🥕 **Harvestable!**
+- Every harvest triggers a gacha roll: Common (60%) / Rare (28%) / Epic (10%) / Legendary (2%)
+- 24 collectible items — can you catch 'em all?
 
-## CLI 명령어
+## CLI Commands
 
 ```bash
-claude-farmer              # 내 농장 보기
-claude-farmer init         # 초기화 (GitHub OAuth 로그인)
-claude-farmer status "msg" # 말풍선 설정
-claude-farmer bag          # 도감
-claude-farmer open         # 웹 UI 열기
-claude-farmer water @user  # 물 주기
-claude-farmer watch        # 백그라운드 감지 모드
+claude-farmer              # Check on your farm
+claude-farmer init         # Set up (GitHub OAuth)
+claude-farmer status "msg" # Set a status bubble ("looking for collab!")
+claude-farmer bag          # See your collection
+claude-farmer open         # Open the web UI
+claude-farmer water @user  # Water a friend's farm (3x/day)
+claude-farmer watch        # Background mode — detects Claude Code activity
+claude-farmer config       # Settings (language, etc.)
 ```
 
-## 농장 미리보기
+## Language
 
+Auto-detects your system locale. Defaults to English, switches to Korean for `ko`.
+
+```bash
+claude-farmer config --lang ko   # 한국어로 전환
+claude-farmer config --lang en   # Back to English
 ```
-🌱 @myname의 농장 (Lv.3)          ☀️ 좋은 오후에요!
+
+## Your Farm Looks Like This
+
+```text
+🌱 @yourname's farm (Lv.3)          ☀️ Good afternoon!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ┌────┬────┬────┬────┐
 │ 🌱 │ 🌿 │ 🌾 │ 🥕 │
@@ -52,61 +65,59 @@ claude-farmer watch        # 백그라운드 감지 모드
 ├────┼────┼────┼────┤
 │    │    │    │    │
 └────┴────┴────┴────┘
-💬 "사이드 프로젝트 같이할 사람?"
+💬 "Looking for side project buddies?"
 
-📦 도감: 8/24 (33%)  🪙 수확: 12회
-💧 오늘 받은 물: 2회
+📦 Collection: 8/24 (33%)  🪙 12 harvests
+💧 Water received today: 2
 ```
 
-## 소셜 기능 (3개만)
+## Social (Just 3 Things)
 
-- **💬 말풍선** — 한 줄 상태 메세지 + 링크
-- **💧 물 주기** — 하루 3회, 상대 작물 성장 부스트
-- **🔖 북마크** — 마음에 드는 농장 즐겨찾기
+We kept it simple:
+
+- **💬 Status Bubble** — one-line message for the world to see
+- **💧 Watering** — 3x per day, boosts their crops (be a good neighbor!)
+- **🔖 Bookmarks** — save farms you vibe with
+
+Visit other developers' farms at [claudefarmer.com](https://claudefarmer.com)
 
 ## VSCode Extension
 
-VSCode 마켓플레이스에서 **Claude Farmer**를 검색하거나:
+Why leave your editor? Search **Claude Farmer** in the marketplace, or:
 
-```
+```bash
 ext install doribear.claude-farmer-vscode
 ```
 
-사이드바에서 픽셀아트 농장을 직접 볼 수 있습니다. 에디터에서 코딩하면 자동으로 농장이 자라요!
+Your farm lives right in the sidebar. Code → watch it grow. It's dangerously satisfying.
 
-## 개발
+- Language: Settings → `claudeFarmer.language` (auto / en / ko)
+
+## Development
 
 ```bash
-# 의존성 설치
-npm install
+npm install              # Install dependencies
+npx turbo run build      # Build all (shared → cli, web, vscode)
 
-# 전체 빌드
-npx turbo run build
-
-# Web 개발 서버
-cd packages/web && npm run dev
-
-# CLI 개발
-cd packages/cli && npm run dev
-
-# VSCode 익스텐션 개발
-cd packages/vscode && npm run dev
+cd packages/web && npm run dev      # Web dev server
+cd packages/cli && npm run dev      # CLI dev
+cd packages/vscode && npm run dev   # VSCode extension dev
 ```
 
-## 프로젝트 구조
+## Project Structure
 
-```
+```text
 claude-farmer/
-├── shared/           # 공유 타입, 상수, 가챠 로직
+├── shared/           # Types, constants, gacha logic, i18n
 ├── packages/
-│   ├── cli/          # npm: claude-farmer (CLI)
+│   ├── cli/          # npm: claude-farmer
 │   ├── web/          # claudefarmer.com (Next.js)
-│   └── vscode/       # VSCode Marketplace Extension
+│   └── vscode/       # VSCode Marketplace extension
 ├── .github/workflows # CI/CD
-└── CLAUDE.md         # AI 컨텍스트 파일
+└── CLAUDE.md         # AI context file
 ```
 
-## 링크
+## Links
 
 - 🌐 [claudefarmer.com](https://claudefarmer.com)
 - 📦 [npm: claude-farmer](https://www.npmjs.com/package/claude-farmer)
@@ -115,4 +126,4 @@ claude-farmer/
 
 ## License
 
-MIT
+MIT — made with 🌱 by [doribear](https://doribear.com)
