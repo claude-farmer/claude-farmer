@@ -9,3 +9,4 @@ dist/
 claude-farmer-spec.md
 .vercel
 .claude/
+*.vsix
