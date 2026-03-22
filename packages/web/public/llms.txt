@@ -1,0 +1,40 @@
+# Claude Farmer
+
+> Your code grows a farm.
+
+An idle pixel-art farming game powered by Claude Code usage.
+
+## What is Claude Farmer?
+
+Claude Farmer is a gamified developer tool that turns your Claude Code usage into a virtual farming experience. Every time you code with Claude Code, your farm automatically plants seeds, grows crops, and harvests them. Harvested crops trigger a gacha system with 24 collectible items across 4 rarity tiers.
+
+## How it works
+
+1. Install: `npm install -g claude-farmer`
+2. Initialize: `claude-farmer init` (GitHub OAuth login)
+3. Code with Claude Code — your farm grows automatically
+4. Crops go through 4 stages: seed → sprout → growing → harvestable
+5. Harvesting triggers gacha drops: Common (60%), Rare (28%), Epic (10%), Legendary (2%)
+6. Visit other developers' farms, water their crops, and bookmark favorites
+
+## Available on
+
+- CLI: `npm install -g claude-farmer`
+- Web: https://claudefarmer.com
+- VSCode Extension: `claude-farmer.claude-farmer-vscode`
+
+## Tech stack
+
+- TypeScript monorepo (npm workspaces + Turborepo)
+- CLI: Node.js, Commander, esbuild
+- Web: Next.js 15, React 19, Tailwind CSS v4, Canvas 2D
+- VSCode: Extension API, Webview
+- Backend: Upstash Redis, GitHub OAuth
+- Deploy: Vercel, npm, VSCode Marketplace
+
+## Links
+
+- Website: https://claudefarmer.com
+- GitHub: https://github.com/claude-farmer/claude-farmer
+- npm: https://www.npmjs.com/package/claude-farmer
+- VSCode Marketplace: https://marketplace.visualstudio.com/items?itemName=claude-farmer.claude-farmer-vscode
