@@ -7,9 +7,11 @@ import BagView from '@/components/BagView';
 import ExploreView from '@/components/ExploreView';
 import { fetchSession, fetchFarm, logout } from '@/lib/api';
 import { MOCK_STATE, MOCK_NEIGHBORS } from '@/lib/mock-data';
+import { useLocale } from '@/lib/locale-context';
 import type { LocalState, PublicProfile } from '@claude-farmer/shared';
 
 export default function FarmApp() {
+  const { t } = useLocale();
   const [tab, setTab] = useState<'farm' | 'bag' | 'explore'>('farm');
   const [user, setUser] = useState<{ github_id: string; nickname: string; avatar_url: string } | null>(null);
   const [state, setState] = useState<LocalState>(MOCK_STATE);
@@ -21,7 +23,6 @@ export default function FarmApp() {
       const session = await fetchSession();
       if (session) {
         setUser(session);
-        // 실제 프로필 데이터 로드
         const profile = await fetchFarm(session.github_id);
         if (profile) {
           setState({
@@ -66,7 +67,7 @@ export default function FarmApp() {
       <div className="max-w-md mx-auto min-h-screen flex items-center justify-center bg-[var(--bg)]">
         <div className="text-center">
           <div className="text-4xl mb-4 animate-bounce">🌱</div>
-          <p className="opacity-60">농장 불러오는 중...</p>
+          <p className="opacity-60">{t.loading}</p>
         </div>
       </div>
     );
@@ -74,7 +75,6 @@ export default function FarmApp() {
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col bg-[var(--bg)]">
-      {/* 인증 상태 헤더 */}
       <div className="flex items-center justify-between px-4 pt-3 pb-1">
         {user ? (
           <>
@@ -83,17 +83,17 @@ export default function FarmApp() {
               <span className="font-bold">{user.nickname}</span>
             </div>
             <button onClick={handleLogout} className="text-xs opacity-40 hover:opacity-70">
-              로그아웃
+              {t.logoutBtn}
             </button>
           </>
         ) : (
           <>
-            <span className="text-xs opacity-40">데모 모드</span>
+            <span className="text-xs opacity-40">{t.demoMode}</span>
             <a
               href="/api/auth/login"
               className="text-xs bg-[var(--accent)] text-black px-3 py-1 rounded-full font-bold hover:opacity-90"
             >
-              GitHub 로그인
+              {t.loginBtn}
             </a>
           </>
         )}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { PublicProfile } from '@claude-farmer/shared';
 import { fetchExplore } from '@/lib/api';
+import { useLocale } from '@/lib/locale-context';
 
 interface ExploreViewProps {
   bookmarks: PublicProfile[];
@@ -11,6 +12,7 @@ interface ExploreViewProps {
 }
 
 export default function ExploreView({ bookmarks, currentUser, onVisit }: ExploreViewProps) {
+  const { t } = useLocale();
   const [randomProfiles, setRandomProfiles] = useState<(PublicProfile & { github_id: string })[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -23,15 +25,14 @@ export default function ExploreView({ bookmarks, currentUser, onVisit }: Explore
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <h2 className="text-lg font-bold">🌍 탐험</h2>
+      <h2 className="text-lg font-bold">🌍 {t.exploreTitle}</h2>
 
-      {/* 내 이웃 */}
       <div>
-        <h3 className="text-sm font-bold opacity-60 mb-2">⭐ 내 이웃 (북마크)</h3>
+        <h3 className="text-sm font-bold opacity-60 mb-2">⭐ {t.myNeighbors}</h3>
 
         {bookmarks.length === 0 ? (
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-6 text-center opacity-50 text-sm">
-            아직 이웃이 없어요.<br />랜덤 방문으로 농장을 구경해보세요!
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-6 text-center opacity-50 text-sm whitespace-pre-line">
+            {t.noNeighbors}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -48,7 +49,7 @@ export default function ExploreView({ bookmarks, currentUser, onVisit }: Explore
                     <span className="text-xs opacity-50">Lv.{profile.level}</span>
                   </div>
                   <span className="text-xs opacity-40">
-                    수확 {profile.total_harvests}회
+                    {t.harvests} {profile.total_harvests}{t.times}
                   </span>
                 </div>
                 {profile.status_message?.text && (
@@ -62,19 +63,17 @@ export default function ExploreView({ bookmarks, currentUser, onVisit }: Explore
         )}
       </div>
 
-      {/* 랜덤 방문 */}
       <button
         onClick={handleRandomVisit}
         disabled={loading}
         className="w-full bg-[var(--accent)] text-black font-bold rounded-lg py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
       >
-        {loading ? '🔄 찾는 중...' : '🎲 랜덤 농장 방문'}
+        {loading ? `🔄 ${t.searching}` : `🎲 ${t.randomVisit}`}
       </button>
 
-      {/* 랜덤 결과 */}
       {randomProfiles.length > 0 && (
         <div>
-          <h3 className="text-sm font-bold opacity-60 mb-2">🎲 발견한 농장</h3>
+          <h3 className="text-sm font-bold opacity-60 mb-2">🎲 {t.discoveredFarms}</h3>
           <div className="flex flex-col gap-2">
             {randomProfiles.map((profile) => (
               <button
@@ -88,7 +87,7 @@ export default function ExploreView({ bookmarks, currentUser, onVisit }: Explore
                     <span className="font-bold">{profile.nickname}</span>
                     <span className="text-xs opacity-50">Lv.{profile.level}</span>
                   </div>
-                  <span className="text-xs opacity-40">수확 {profile.total_harvests}회</span>
+                  <span className="text-xs opacity-40">{t.harvests} {profile.total_harvests}{t.times}</span>
                 </div>
                 {profile.status_message?.text && (
                   <div className="text-sm opacity-60 mt-1">

@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import type { Rarity, InventoryItem } from '@claude-farmer/shared';
 import { GACHA_ITEMS, RARITY_LABEL, RARITY_COLOR, TOTAL_ITEMS } from '@claude-farmer/shared';
+import { useLocale } from '@/lib/locale-context';
 
 interface BagViewProps {
   inventory: InventoryItem[];
 }
 
 export default function BagView({ inventory }: BagViewProps) {
+  const { t, locale } = useLocale();
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const ownedIds = new Set(inventory.map(i => i.id));
   const uniqueCount = ownedIds.size;
@@ -21,8 +23,8 @@ export default function BagView({ inventory }: BagViewProps) {
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">📖 도감</h2>
-        <span className="text-sm opacity-60">{uniqueCount}/{TOTAL_ITEMS} 수집</span>
+        <h2 className="text-lg font-bold">📖 {t.bagTitle}</h2>
+        <span className="text-sm opacity-60">{uniqueCount}/{TOTAL_ITEMS}</span>
       </div>
 
       {rarities.map(rarity => {
@@ -96,14 +98,14 @@ export default function BagView({ inventory }: BagViewProps) {
               <p className="text-xs opacity-50 mt-2">{selected.description}</p>
               {selectedInv && (
                 <p className="text-xs opacity-40 mt-2">
-                  최초 획득: {new Date(selectedInv.obtained_at).toLocaleDateString('ko-KR')}
+                  {new Date(selectedInv.obtained_at).toLocaleDateString(locale === 'ko' ? 'ko-KR' : 'en-US')}
                 </p>
               )}
               <button
                 onClick={() => setSelectedItem(null)}
                 className="mt-4 px-4 py-2 bg-[var(--border)] rounded-lg text-sm hover:bg-[var(--accent)] hover:text-black transition-colors"
               >
-                닫기
+                {locale === 'ko' ? '닫기' : 'Close'}
               </button>
             </div>
           </div>
