@@ -77,6 +77,7 @@ export interface PublicProfile {
   total_harvests: number;
   unique_items?: number;
   streak_days?: number;
+  today_input_chars?: number;
   today_harvests?: number;
   today_water_given?: number;
   inventory?: InventoryItem[];

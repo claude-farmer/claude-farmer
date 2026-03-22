@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import FarmCanvas, { type FarmCanvasHandle } from './FarmCanvas';
-import { TOTAL_ITEMS, getTimeOfDay } from '@claude-farmer/shared';
+import { TOTAL_ITEMS, getTimeOfDay, getFarmerTitle } from '@claude-farmer/shared';
 import type { LocalState, Footprint, FarmNotifications } from '@claude-farmer/shared';
 import { useLocale } from '@/lib/locale-context';
 
@@ -16,7 +16,7 @@ interface FarmViewProps {
 }
 
 export default function FarmView({ state, footprints, notifications, serverUniqueItems, isLoggedIn, onStatusUpdate }: FarmViewProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const canvasRef = useRef<FarmCanvasHandle>(null);
   const prevWaterCountRef = useRef<number | null>(null);
   const [editingStatus, setEditingStatus] = useState(false);
@@ -45,6 +45,7 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
   const localUniqueItems = new Set(inventory.map(i => i.id)).size;
   const uniqueItems = localUniqueItems > 0 ? localUniqueItems : (serverUniqueItems ?? 0);
   const waterReceivedCount = notifications?.water_received_count ?? activity.today_water_received;
+  const farmerTitle = getFarmerTitle(activity.today_input_chars);
 
   const greetingMap = {
     morning: t.greeting_morning,
@@ -63,7 +64,7 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
           <span className="text-sm text-[var(--text)] opacity-50">Lv.{farm.level}</span>
         </div>
         <div className="text-sm opacity-75">
-          {emojiMap[tod]} {greetingMap[tod]}
+          {farmerTitle.emoji} {locale === 'ko' ? farmerTitle.ko : farmerTitle.en}
         </div>
       </div>
 

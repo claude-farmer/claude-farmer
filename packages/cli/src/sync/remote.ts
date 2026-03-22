@@ -15,6 +15,7 @@ export async function syncToServer(state: LocalState): Promise<boolean> {
         total_harvests: state.farm.total_harvests,
         unique_items: new Set(state.inventory.map(i => i.id)).size,
         streak_days: state.activity.streak_days,
+        today_input_chars: state.activity.today_input_chars,
         today_harvests: state.activity.today_harvests,
         today_water_given: state.activity.today_water_given,
         inventory: state.inventory,

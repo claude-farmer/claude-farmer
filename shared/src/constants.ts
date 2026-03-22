@@ -98,6 +98,28 @@ export const TIME_EMOJI: Record<TimeOfDay, string> = {
   night: '🌙',
 };
 
+// ── 농부 칭호 (활동량 기반) ──
+export type FarmerTitle = {
+  emoji: string;
+  en: string;
+  ko: string;
+};
+
+const FARMER_TITLES: { min: number; title: FarmerTitle }[] = [
+  { min: 10000, title: { emoji: '⚡', en: 'Legendary Farmer', ko: '전설의 농부' } },
+  { min: 5000,  title: { emoji: '🔥', en: 'Blazing Farmer', ko: '열혈 농부' } },
+  { min: 2000,  title: { emoji: '🧑‍🌾', en: 'Diligent Farmer', ko: '부지런한 농부' } },
+  { min: 500,   title: { emoji: '🌱', en: 'Strolling Farmer', ko: '산책하는 농부' } },
+  { min: 0,     title: { emoji: '😴', en: 'Resting Farmer', ko: '휴식 중인 농부' } },
+];
+
+export function getFarmerTitle(inputChars: number): FarmerTitle {
+  for (const { min, title } of FARMER_TITLES) {
+    if (inputChars >= min) return title;
+  }
+  return FARMER_TITLES[FARMER_TITLES.length - 1].title;
+}
+
 // ── 레벨 ──
 export function calculateLevel(totalHarvests: number): number {
   if (totalHarvests < 5) return 1;

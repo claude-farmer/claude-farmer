@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import FarmCanvas, { type FarmCanvasHandle } from './FarmCanvas';
 import { fetchFarmWithFootprints, waterUser, visitFarm } from '@/lib/api';
 import { useLocale } from '@/lib/locale-context';
-import { DAILY_WATER_LIMIT, GRID_SIZE } from '@claude-farmer/shared';
+import { DAILY_WATER_LIMIT, GRID_SIZE, getFarmerTitle } from '@claude-farmer/shared';
 import type { PublicProfile, Footprint } from '@claude-farmer/shared';
 
 interface FarmVisitViewProps {
@@ -22,7 +22,7 @@ export default function FarmVisitView({
   isBookmarked,
   onToggleBookmark,
 }: FarmVisitViewProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const canvasRef = useRef<FarmCanvasHandle>(null);
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [footprints, setFootprints] = useState<Footprint[]>([]);
@@ -133,7 +133,15 @@ export default function FarmVisitView({
           <span className="ml-2 font-bold">{profile.total_harvests}{t.times}</span>
         </div>
         <div className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
-          <span className="opacity-50">{t.visitLevel}{profile.level}</span>
+          {(() => {
+            const title = getFarmerTitle(profile.today_input_chars ?? 0);
+            return (
+              <span>
+                <span className="opacity-50">{title.emoji}</span>
+                <span className="ml-2 font-bold">{locale === 'ko' ? title.ko : title.en}</span>
+              </span>
+            );
+          })()}
         </div>
       </div>
 

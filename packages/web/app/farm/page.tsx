@@ -70,7 +70,7 @@ export default function FarmApp() {
             status_message: profile.status_message,
             bookmarks: [],
             activity: {
-              today_input_chars: 0,
+              today_input_chars: profile.today_input_chars ?? 0,
               today_harvests: profile.today_harvests ?? 0,
               today_water_received: 0,
               today_water_given: profile.today_water_given ?? 0,

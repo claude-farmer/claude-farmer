@@ -22,7 +22,7 @@ function extractUserId(request: NextRequest, bodyGithubId?: string): string | nu
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { github_id, nickname, avatar_url, level, total_harvests, unique_items, streak_days, today_harvests, today_water_given, inventory, status_message, farm } = body;
+    const { github_id, nickname, avatar_url, level, total_harvests, unique_items, streak_days, today_input_chars, today_harvests, today_water_given, inventory, status_message, farm } = body;
 
     const userId = extractUserId(request, github_id);
     if (!userId) {
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       total_harvests: total_harvests || 0,
       unique_items: typeof unique_items === 'number' ? unique_items : undefined,
       streak_days: typeof streak_days === 'number' ? streak_days : undefined,
+      today_input_chars: typeof today_input_chars === 'number' ? today_input_chars : undefined,
       today_harvests: typeof today_harvests === 'number' ? today_harvests : undefined,
       today_water_given: typeof today_water_given === 'number' ? today_water_given : undefined,
       inventory: Array.isArray(inventory) ? inventory.slice(0, 100).map((item: Record<string, unknown>) => ({
