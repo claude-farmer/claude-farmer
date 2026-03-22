@@ -22,7 +22,7 @@ function extractUserId(request: NextRequest, bodyGithubId?: string): string | nu
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { github_id, nickname, avatar_url, level, total_harvests, status_message, farm } = body;
+    const { github_id, nickname, avatar_url, level, total_harvests, unique_items, streak_days, status_message, farm } = body;
 
     const userId = extractUserId(request, github_id);
     if (!userId) {
@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
       avatar_url: (avatar_url || '').slice(0, 500),
       level: level || 1,
       total_harvests: total_harvests || 0,
+      unique_items: typeof unique_items === 'number' ? unique_items : undefined,
+      streak_days: typeof streak_days === 'number' ? streak_days : undefined,
       status_message: status_message ? {
         ...status_message,
         text: (status_message.text || '').slice(0, 200),

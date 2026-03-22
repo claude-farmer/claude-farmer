@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import FarmCanvas, { type FarmCanvasHandle } from './FarmCanvas';
 import { TOTAL_ITEMS, getTimeOfDay } from '@claude-farmer/shared';
 import type { LocalState, Footprint, FarmNotifications } from '@claude-farmer/shared';
@@ -10,12 +10,18 @@ interface FarmViewProps {
   state: LocalState;
   footprints?: Footprint[];
   notifications?: FarmNotifications | null;
+  serverUniqueItems?: number;
+  isLoggedIn?: boolean;
+  onStatusUpdate?: (text: string) => void;
 }
 
-export default function FarmView({ state, footprints, notifications }: FarmViewProps) {
+export default function FarmView({ state, footprints, notifications, serverUniqueItems, isLoggedIn, onStatusUpdate }: FarmViewProps) {
   const { t } = useLocale();
   const canvasRef = useRef<FarmCanvasHandle>(null);
   const prevWaterCountRef = useRef<number | null>(null);
+  const [editingStatus, setEditingStatus] = useState(false);
+  const [statusDraft, setStatusDraft] = useState('');
+  const statusInputRef = useRef<HTMLInputElement>(null);
   const { farm, user, status_message, inventory, activity } = state;
 
   // 물 받을 때 캔버스 이펙트 트리거
@@ -36,7 +42,9 @@ export default function FarmView({ state, footprints, notifications }: FarmViewP
   }, [notifications?.water_received_count, notifications?.water_received, farm.grid]);
   const hour = new Date().getHours();
   const tod = getTimeOfDay(hour);
-  const uniqueItems = new Set(inventory.map(i => i.id)).size;
+  const localUniqueItems = new Set(inventory.map(i => i.id)).size;
+  const uniqueItems = serverUniqueItems ?? localUniqueItems;
+  const waterReceivedCount = notifications?.water_received_count ?? activity.today_water_received;
 
   const greetingMap = {
     morning: t.greeting_morning,
@@ -89,7 +97,7 @@ export default function FarmView({ state, footprints, notifications }: FarmViewP
         </div>
         <div className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
           <span className="opacity-50">💧 {t.waterReceived}</span>
-          <span className="ml-2 font-bold">{activity.today_water_received}{t.times}</span>
+          <span className="ml-2 font-bold">{waterReceivedCount}{t.times}</span>
         </div>
         <div className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
           <span className="opacity-50">🔥 {t.streak}</span>
@@ -98,15 +106,62 @@ export default function FarmView({ state, footprints, notifications }: FarmViewP
       </div>
 
       <div className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
-        <div className="flex items-center gap-2">
-          <span>💬</span>
-          {status_message?.text ? (
-            <span>{status_message.text}</span>
-          ) : (
-            <span className="opacity-40">{t.setBubble}</span>
-          )}
-        </div>
-        {status_message?.link && (
+        {editingStatus ? (
+          <div className="flex items-center gap-2">
+            <span>💬</span>
+            <input
+              ref={statusInputRef}
+              type="text"
+              value={statusDraft}
+              onChange={e => setStatusDraft(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  onStatusUpdate?.(statusDraft);
+                  setEditingStatus(false);
+                } else if (e.key === 'Escape') {
+                  setEditingStatus(false);
+                }
+              }}
+              maxLength={200}
+              placeholder={t.setBubble}
+              className="flex-1 bg-transparent border-b border-[var(--border)] outline-none text-sm px-1 py-0.5"
+              autoFocus
+            />
+            <button
+              onClick={() => {
+                onStatusUpdate?.(statusDraft);
+                setEditingStatus(false);
+              }}
+              className="text-xs bg-[var(--accent)] text-black px-2 py-1 rounded font-bold hover:opacity-90"
+            >
+              OK
+            </button>
+            <button
+              onClick={() => setEditingStatus(false)}
+              className="text-xs opacity-40 hover:opacity-70 px-1"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div
+            className={`flex items-center gap-2 ${isLoggedIn ? 'cursor-pointer hover:opacity-80' : ''}`}
+            onClick={() => {
+              if (!isLoggedIn) return;
+              setStatusDraft(status_message?.text ?? '');
+              setEditingStatus(true);
+            }}
+          >
+            <span>💬</span>
+            {status_message?.text ? (
+              <span>{status_message.text}</span>
+            ) : (
+              <span className="opacity-40">{t.setBubble}</span>
+            )}
+            {isLoggedIn && <span className="ml-auto text-xs opacity-30">✏️</span>}
+          </div>
+        )}
+        {!editingStatus && status_message?.link && (
           <a
             href={status_message.link}
             target="_blank"

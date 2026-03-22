@@ -75,6 +75,8 @@ export interface PublicProfile {
   avatar_url: string;
   level: number;
   total_harvests: number;
+  unique_items?: number;
+  streak_days?: number;
   status_message: StatusMessage | null;
   farm_snapshot: Farm;
   last_active: string;

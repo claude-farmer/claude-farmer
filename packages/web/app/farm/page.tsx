@@ -6,7 +6,7 @@ import FarmView from '@/components/FarmView';
 import BagView from '@/components/BagView';
 import ExploreView from '@/components/ExploreView';
 import FarmVisitView from '@/components/FarmVisitView';
-import { fetchSession, fetchFarm, logout, fetchBookmarks, toggleBookmark } from '@/lib/api';
+import { fetchSession, fetchFarm, logout, fetchBookmarks, toggleBookmark, updateStatus } from '@/lib/api';
 import { MOCK_STATE, MOCK_NEIGHBORS } from '@/lib/mock-data';
 import { useLocale } from '@/lib/locale-context';
 import usePolling from '@/hooks/usePolling';
@@ -22,6 +22,7 @@ export default function FarmApp() {
   const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
   const [footprints, setFootprints] = useState<Footprint[]>([]);
   const [visitingId, setVisitingId] = useState<string | null>(null);
+  const [serverUniqueItems, setServerUniqueItems] = useState<number>(0);
 
   // 30초 polling으로 알림 조회 (로그인 시)
   const { data: notifications } = usePolling<FarmNotifications>(
@@ -35,10 +36,17 @@ export default function FarmApp() {
     { interval: 30_000, enabled: !!user }
   );
 
-  // polling 결과로 footprints 업데이트
+  // polling 결과로 footprints + unique_items + streak 업데이트
   useEffect(() => {
-    if (farmPolled?.footprints) {
-      setFootprints(farmPolled.footprints);
+    if (farmPolled) {
+      if (farmPolled.footprints) setFootprints(farmPolled.footprints);
+      if (typeof farmPolled.unique_items === 'number') setServerUniqueItems(farmPolled.unique_items);
+      if (typeof farmPolled.streak_days === 'number') {
+        setState(prev => ({
+          ...prev,
+          activity: { ...prev.activity, streak_days: farmPolled.streak_days ?? prev.activity.streak_days },
+        }));
+      }
     }
   }, [farmPolled]);
 
@@ -66,11 +74,12 @@ export default function FarmApp() {
               today_harvests: 0,
               today_water_received: 0,
               today_water_given: 0,
-              streak_days: 1,
+              streak_days: profile.streak_days ?? 1,
               last_active_date: new Date().toISOString().slice(0, 10),
             },
             last_synced: profile.last_active,
           });
+          setServerUniqueItems(profile.unique_items ?? 0);
           // 서버에서 북마크 로드
           const bm = await fetchBookmarks();
           setBookmarks(bm);
@@ -94,6 +103,15 @@ export default function FarmApp() {
     // 북마크 프로필 목록도 리프레시
     const bm = await fetchBookmarks();
     setBookmarks(bm);
+  };
+
+  const handleStatusUpdate = async (text: string) => {
+    if (!user) return;
+    const newStatus = text.trim()
+      ? { text: text.trim().slice(0, 200), updated_at: new Date().toISOString() }
+      : null;
+    setState(prev => ({ ...prev, status_message: newStatus }));
+    await updateStatus(newStatus);
   };
 
   const handleLogout = async () => {
@@ -151,7 +169,16 @@ export default function FarmApp() {
           />
         ) : (
           <>
-            {tab === 'farm' && <FarmView state={state} footprints={footprints} notifications={notifications} />}
+            {tab === 'farm' && (
+              <FarmView
+                state={state}
+                footprints={footprints}
+                notifications={notifications}
+                serverUniqueItems={serverUniqueItems}
+                isLoggedIn={!!user}
+                onStatusUpdate={handleStatusUpdate}
+              />
+            )}
             {tab === 'bag' && <BagView inventory={state.inventory} />}
             {tab === 'explore' && (
               <ExploreView

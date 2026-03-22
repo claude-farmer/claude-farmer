@@ -13,6 +13,8 @@ export async function syncToServer(state: LocalState): Promise<boolean> {
         avatar_url: state.user.avatar_url,
         level: state.farm.level,
         total_harvests: state.farm.total_harvests,
+        unique_items: new Set(state.inventory.map(i => i.id)).size,
+        streak_days: state.activity.streak_days,
         status_message: state.status_message,
         farm: state.farm,
       }),

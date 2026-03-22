@@ -116,6 +116,19 @@ export async function toggleBookmark(targetId: string, action: 'add' | 'remove')
   }
 }
 
+export async function updateStatus(statusMessage: { text: string; updated_at: string } | null): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status_message: statusMessage }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function subscribe(email: string): Promise<boolean> {
   try {
     const res = await fetch(`${BASE}/api/subscribe`, {
