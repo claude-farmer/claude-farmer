@@ -27,12 +27,11 @@ export async function waterCommand(user: string): Promise<void> {
       console.log(chalk.red(`\n${t(locale, 'waterUserNotFound', { target })}\n`));
     } else if (result.error === 'Daily water limit reached') {
       console.log(chalk.yellow(`\n💧 ${t(locale, 'waterServerLimit')}\n`));
+    } else if (result.error === 'Network error') {
+      // Only accept offline mode for actual network failures
+      console.log(chalk.dim(`\n💧 ${t(locale, 'waterSentOffline', { target })}\n`));
     } else {
-      await withState(s => {
-        s.activity.today_water_given++;
-        return s;
-      });
-      console.log(chalk.blue(`\n💧 ${t(locale, 'waterSentOffline', { target })}\n`));
+      console.log(chalk.red(`\n❌ ${result.error || 'Unknown error'}\n`));
     }
     return;
   }

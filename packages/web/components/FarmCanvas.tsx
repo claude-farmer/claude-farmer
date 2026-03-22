@@ -98,6 +98,8 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
     <div className="relative">
       <canvas
         ref={canvasRef}
+        role="img"
+        aria-label="Pixel art farm"
         className={`w-full max-w-[1024px] ${className ?? ''}`}
         style={{ aspectRatio: '256 / 192', imageRendering: 'pixelated' }}
         onMouseMove={handleMouseMove}

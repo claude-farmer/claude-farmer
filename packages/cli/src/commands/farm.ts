@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import {
   CROP_EMOJI, getTimeOfDay, TIME_EMOJI, TOTAL_ITEMS, t, getTimeGreeting,
+  GRID_COLS,
 } from '@claude-farmer/shared';
 import type { CropSlot } from '@claude-farmer/shared';
 import { stateExists, loadState } from '../core/state.js';
@@ -38,12 +39,12 @@ export async function showFarm(): Promise<void> {
   console.log(chalk.dim('━'.repeat(40)));
 
   const g = farm.grid;
-  for (let row = 0; row < 4; row++) {
+  for (let row = 0; row < GRID_COLS; row++) {
     const top = row === 0 ? '┌────┬────┬────┬────┐' : '├────┼────┼────┼────┤';
     console.log(chalk.dim(top));
     const cells = [];
-    for (let col = 0; col < 4; col++) {
-      cells.push(cropCell(g[row * 4 + col]));
+    for (let col = 0; col < GRID_COLS; col++) {
+      cells.push(cropCell(g[row * GRID_COLS + col]));
     }
     console.log(chalk.dim('│') + cells.join(chalk.dim('│')) + chalk.dim('│'));
   }

@@ -1,7 +1,7 @@
 import { PALETTE } from './palette';
 import { CHARACTER_SPRITE, CROP_SPRITES, drawSprite } from './sprites';
 import type { CropSlot, Footprint } from '@claude-farmer/shared';
-import { getTimeOfDay, isBoostTime, type TimeOfDay } from '@claude-farmer/shared';
+import { getTimeOfDay, isBoostTime, type TimeOfDay, GRID_SIZE, GRID_COLS } from '@claude-farmer/shared';
 
 // 캔버스 설정: 256×192px 기본, 4× 스케일
 const BASE_W = 256;
@@ -265,12 +265,12 @@ export class FarmRenderer {
       s => this.frame - s.startFrame < s.duration
     );
 
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < GRID_SIZE; i++) {
       const slot = grid[i];
       if (!slot) continue;
 
-      const row = Math.floor(i / 4);
-      const col = i % 4;
+      const row = Math.floor(i / GRID_COLS);
+      const col = i % GRID_COLS;
       let x = GRID_OFFSET_X + col * CELL_SIZE + (CELL_SIZE - TILE) / 2;
       let y = GRID_OFFSET_Y + row * CELL_SIZE + (CELL_SIZE - TILE) / 2;
 
@@ -474,8 +474,8 @@ export class FarmRenderer {
   // ── 수확 이펙트 ──
   drawHarvestEffect(slotIndex: number, color: string) {
     const ctx = this.ctx;
-    const row = Math.floor(slotIndex / 4);
-    const col = slotIndex % 4;
+    const row = Math.floor(slotIndex / GRID_COLS);
+    const col = slotIndex % GRID_COLS;
     const cx = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2;
     const cy = GRID_OFFSET_Y + row * CELL_SIZE + CELL_SIZE / 2;
 
@@ -493,8 +493,8 @@ export class FarmRenderer {
   // ── 물 주기 이펙트 ──
   drawWaterEffect(slotIndex: number) {
     const ctx = this.ctx;
-    const row = Math.floor(slotIndex / 4);
-    const col = slotIndex % 4;
+    const row = Math.floor(slotIndex / GRID_COLS);
+    const col = slotIndex % GRID_COLS;
     const cx = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2;
     const cy = GRID_OFFSET_Y + row * CELL_SIZE;
 
@@ -516,8 +516,8 @@ export class FarmRenderer {
       const elapsed = this.frame - anim.startFrame;
       if (elapsed >= anim.duration) return false;
 
-      const row = Math.floor(anim.slotIndex / 4);
-      const col = anim.slotIndex % 4;
+      const row = Math.floor(anim.slotIndex / GRID_COLS);
+      const col = anim.slotIndex % GRID_COLS;
       const cx = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2;
       const startY = GRID_OFFSET_Y + row * CELL_SIZE - 4;
       const progress = elapsed / anim.duration;
@@ -716,8 +716,8 @@ export class FarmRenderer {
 
   // 성장 +1 (또는 부스트 +2)
   triggerGrowthEffect(slotIndex: number, boost = false) {
-    const row = Math.floor(slotIndex / 4);
-    const col = slotIndex % 4;
+    const row = Math.floor(slotIndex / GRID_COLS);
+    const col = slotIndex % GRID_COLS;
     const x = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2 - 4;
     const y = GRID_OFFSET_Y + row * CELL_SIZE;
 
@@ -739,8 +739,8 @@ export class FarmRenderer {
 
   // 심기 이펙트 (흙 파티클)
   triggerPlantEffect(slotIndex: number) {
-    const row = Math.floor(slotIndex / 4);
-    const col = slotIndex % 4;
+    const row = Math.floor(slotIndex / GRID_COLS);
+    const col = slotIndex % GRID_COLS;
     const cx = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2;
     const cy = GRID_OFFSET_Y + row * CELL_SIZE + CELL_SIZE / 2;
 
@@ -768,8 +768,8 @@ export class FarmRenderer {
 
   // Legendary 수확 플래시 + 대형 파티클
   triggerLegendaryHarvest(slotIndex: number) {
-    const row = Math.floor(slotIndex / 4);
-    const col = slotIndex % 4;
+    const row = Math.floor(slotIndex / GRID_COLS);
+    const col = slotIndex % GRID_COLS;
     const cx = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2;
     const cy = GRID_OFFSET_Y + row * CELL_SIZE + CELL_SIZE / 2;
 
@@ -797,8 +797,8 @@ export class FarmRenderer {
 
   // 일반 수확 이펙트 (등급별 색상 파티클)
   triggerHarvestParticles(slotIndex: number, rarityColor: string) {
-    const row = Math.floor(slotIndex / 4);
-    const col = slotIndex % 4;
+    const row = Math.floor(slotIndex / GRID_COLS);
+    const col = slotIndex % GRID_COLS;
     const cx = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2;
     const cy = GRID_OFFSET_Y + row * CELL_SIZE + CELL_SIZE / 2;
 
@@ -829,8 +829,8 @@ export class FarmRenderer {
   triggerWaterReceivedEffect(slotIndex: number, nickname?: string) {
     this.triggerWaterAnim(slotIndex);
 
-    const row = Math.floor(slotIndex / 4);
-    const col = slotIndex % 4;
+    const row = Math.floor(slotIndex / GRID_COLS);
+    const col = slotIndex % GRID_COLS;
     const x = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2 - 4;
     const y = GRID_OFFSET_Y + row * CELL_SIZE - 2;
 

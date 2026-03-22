@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { LocalState, CropType, GrowthStage, InventoryItem } from '@claude-farmer/shared';
-import { CROPS, MAX_GROWTH_STAGE, CROP_EMOJI, GRID_SIZE, calculateLevel } from '@claude-farmer/shared';
+import { CROPS, MAX_GROWTH_STAGE, CROP_EMOJI, GRID_SIZE, GRID_COLS, calculateLevel } from '@claude-farmer/shared';
 import { rollGacha, TOTAL_ITEMS } from '@claude-farmer/shared';
 import { type Locale, detectLocale, getDict } from '@claude-farmer/shared';
 
@@ -263,11 +263,15 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
     this.webviewView = webviewView;
     webviewView.webview.options = { enableScripts: true };
 
+    // Track webview disposal to avoid stale references
+    webviewView.onDidDispose(() => {
+      this.webviewView = undefined;
+    });
+
     webviewView.webview.onDidReceiveMessage(async (msg) => {
       if (msg.type === 'openWeb') {
         vscode.env.openExternal(vscode.Uri.parse('https://claudefarmer.com'));
       } else if (msg.type === 'openFarm') {
-        // [1] Open user's own farm page
         const id = this.state?.user?.github_id || '';
         const url = id
           ? `https://claudefarmer.com/farm?user=${encodeURIComponent(id)}`
@@ -278,20 +282,20 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
       } else if (msg.type === 'ready') {
         await this.loadAndSend();
       } else if (msg.type === 'setStatus') {
-        // [3] Status bubble editing
-        if (this.state) {
+        if (this.state && typeof msg.text === 'string') {
+          const text = msg.text.slice(0, 50);
           this.state.status_message = {
-            text: msg.text,
+            text,
             updated_at: new Date().toISOString(),
           };
           await saveState(this.state);
           this.sendState();
         }
       } else if (msg.type === 'setLang') {
-        // [2] Language toggle
-        await vscode.workspace.getConfiguration('claudeFarmer').update('language', msg.lang, true);
+        if (msg.lang === 'en' || msg.lang === 'ko' || msg.lang === 'auto') {
+          await vscode.workspace.getConfiguration('claudeFarmer').update('language', msg.lang, true);
+        }
       } else if (msg.type === 'checkUpdate') {
-        // [2] Update check
         vscode.env.openExternal(vscode.Uri.parse('https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode'));
       }
     });
@@ -617,9 +621,9 @@ function renderFarm(c, cx, grid, isDemo) {
 
   // Crops
   if(grid){
-    for(let i=0;i<grid.length&&i<16;i++){
+    for(let i=0;i<grid.length&&i<${GRID_SIZE};i++){
       const slot=grid[i]; if(!slot)continue;
-      const row=Math.floor(i/4),col=i%4;
+      const row=Math.floor(i/${GRID_COLS}),col=i%${GRID_COLS};
       const bx=72+col*32,by=60+row*24;
       const stage=slot.stage;
       const color=cropColors[slot.crop]||'#7BC74D';
@@ -695,7 +699,7 @@ function updateCharacter() {
       for (let i=0;i<farmState.length;i++) if(farmState[i]) occupiedSlots.push(i);
       if (occupiedSlots.length > 0) {
         const slot = occupiedSlots[Math.floor(Math.random()*occupiedSlots.length)];
-        const row=Math.floor(slot/4),col=slot%4;
+        const row=Math.floor(slot/${GRID_COLS}),col=slot%${GRID_COLS};
         charTargetX = 72+col*32+Math.random()*8;
         charTargetY = 60+row*24;
         charMode = 'walk';
@@ -877,7 +881,7 @@ window.addEventListener('message',(e)=>{
         for(let i=0;i<farmState.length;i++)if(farmState[i])occupied.push(i);
         if(occupied.length>0){
           const slot=occupied[Math.floor(Math.random()*occupied.length)];
-          const row=Math.floor(slot/4),col=slot%4;
+          const row=Math.floor(slot/${GRID_COLS}),col=slot%${GRID_COLS};
           charTargetX=72+col*32+Math.random()*8;
           charTargetY=60+row*24;
           charMode='walk';walkTimer=0;

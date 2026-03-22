@@ -39,11 +39,15 @@ export async function POST(request: NextRequest) {
     }
 
     const profile: PublicProfile = {
-      nickname: nickname || userId,
-      avatar_url: avatar_url || '',
+      nickname: (nickname || userId).slice(0, 50),
+      avatar_url: (avatar_url || '').slice(0, 500),
       level: level || 1,
       total_harvests: total_harvests || 0,
-      status_message: status_message || null,
+      status_message: status_message ? {
+        ...status_message,
+        text: (status_message.text || '').slice(0, 200),
+        link: status_message.link ? (status_message.link as string).slice(0, 500) : undefined,
+      } : null,
       farm_snapshot: farm || { level: 1, grid: new Array(GRID_SIZE).fill(null), total_harvests: 0 },
       last_active: new Date().toISOString(),
     };

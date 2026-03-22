@@ -1,14 +1,14 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { type Locale, detectLocale } from '@claude-farmer/shared';
+import { type Locale, detectLocale, DATA_DIR } from '@claude-farmer/shared';
 import { ensureDataDir } from './state.js';
 
 interface CliConfig {
   lang?: Locale;
 }
 
-const configPath = join(homedir(), '.claude-farmer', 'config.json');
+const configPath = join(homedir(), DATA_DIR, 'config.json');
 
 function loadConfig(): CliConfig {
   try {

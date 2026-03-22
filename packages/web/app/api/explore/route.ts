@@ -6,7 +6,8 @@ import type { PublicProfile } from '@claude-farmer/shared';
 export async function GET(request: NextRequest) {
   try {
     const exclude = request.nextUrl.searchParams.get('exclude') || '';
-    const count = parseInt(request.nextUrl.searchParams.get('count') || '10');
+    const rawCount = parseInt(request.nextUrl.searchParams.get('count') || '10');
+    const count = Math.min(Math.max(rawCount || 10, 1), 50);
 
     // 최근 활동 유저 목록 (최근 100명)
     const recentUsers = await redis.zrange(keys.recentActive, 0, 99, { rev: true }) as string[];

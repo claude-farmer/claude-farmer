@@ -9,7 +9,7 @@ function getResend() {
 export async function POST(request: NextRequest) {
   const { email } = await request.json();
 
-  if (!email || !email.includes('@')) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
   }
 

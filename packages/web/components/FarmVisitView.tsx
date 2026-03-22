@@ -114,7 +114,7 @@ export default function FarmVisitView({
       {profile.status_message?.text && (
         <div className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
           <span>💬 {profile.status_message.text}</span>
-          {profile.status_message.link && (
+          {profile.status_message.link && /^https?:\/\//i.test(profile.status_message.link) && (
             <a
               href={profile.status_message.link}
               target="_blank"

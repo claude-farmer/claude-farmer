@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Rarity, InventoryItem } from '@claude-farmer/shared';
 import { GACHA_ITEMS, RARITY_LABEL, RARITY_COLOR, TOTAL_ITEMS } from '@claude-farmer/shared';
 import { useLocale } from '@/lib/locale-context';
@@ -19,6 +19,16 @@ export default function BagView({ inventory }: BagViewProps) {
 
   const selected = selectedItem ? GACHA_ITEMS.find(i => i.id === selectedItem) : null;
   const selectedInv = selectedItem ? inventory.find(i => i.id === selectedItem) : null;
+
+  // Escape key to close modal
+  useEffect(() => {
+    if (!selectedItem) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedItem(null);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [selectedItem]);
 
   return (
     <div className="flex flex-col gap-4 p-4">

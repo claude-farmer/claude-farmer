@@ -1,4 +1,5 @@
-export type Locale = 'en' | 'ko';
+import type { Locale } from '@claude-farmer/shared';
+export type { Locale };
 
 export function detectLocale(): Locale {
   if (typeof navigator === 'undefined') return 'en';
