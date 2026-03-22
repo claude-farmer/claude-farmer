@@ -73,8 +73,15 @@ export class FarmRenderer {
   private shakeEffects: ShakeEffect[] = [];
   private levelUpBanners: LevelUpBanner[] = [];
   private particles: Particle[] = [];
+  private static readonly MAX_PARTICLES = 100;
   // 발자국 위치 캐시 (hover 감지용)
   private footprintPositions: { x: number; y: number; fp: Footprint }[] = [];
+
+  private addParticle(p: Particle) {
+    if (this.particles.length < FarmRenderer.MAX_PARTICLES) {
+      this.particles.push(p);
+    }
+  }
 
   constructor(private canvas: HTMLCanvasElement) {
     canvas.width = BASE_W;
@@ -320,6 +327,7 @@ export class FarmRenderer {
         ctx.fillStyle = flicker ? '#ef4444' : '#fbbf24';
         ctx.fillRect(charX + 6, charY - 7, 1, 2);
       } else {
+        ctx.globalAlpha = 1;
         ctx.fillStyle = '#FFFFFF';
         const dotCount = (this.frame % 60) / 20 | 0;
         for (let i = 0; i <= dotCount; i++) {
@@ -687,7 +695,7 @@ export class FarmRenderer {
       // 꽃가루 파티클 추가
       if (elapsed % 3 === 0 && progress < 0.7) {
         for (let i = 0; i < 2; i++) {
-          this.particles.push({
+          this.addParticle({
             x: centerX + (Math.random() - 0.5) * 80,
             y: centerY + (Math.random() - 0.5) * 40,
             vx: (Math.random() - 0.5) * 0.8,
@@ -737,7 +745,7 @@ export class FarmRenderer {
     const cy = GRID_OFFSET_Y + row * CELL_SIZE + CELL_SIZE / 2;
 
     for (let i = 0; i < 3; i++) {
-      this.particles.push({
+      this.addParticle({
         x: cx,
         y: cy,
         vx: (Math.random() - 0.5) * 1.5,
@@ -775,7 +783,7 @@ export class FarmRenderer {
     // 큰 별 파티클 12개
     for (let i = 0; i < 12; i++) {
       const angle = (i / 12) * Math.PI * 2;
-      this.particles.push({
+      this.addParticle({
         x: cx,
         y: cy,
         vx: Math.cos(angle) * 1.5,
@@ -796,7 +804,7 @@ export class FarmRenderer {
 
     for (let i = 0; i < 6; i++) {
       const angle = (i / 6) * Math.PI * 2;
-      this.particles.push({
+      this.addParticle({
         x: cx,
         y: cy,
         vx: Math.cos(angle) * 0.8,

@@ -28,8 +28,11 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<FarmRenderer | null>(null);
-  const rafRef = useRef<number>(0);
+  const stateRef = useRef<FarmRenderState>({ grid, characterWorking: working, footprints, farmOwnerId });
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+
+  // props가 변경될 때마다 ref만 업데이트 (renderer 재생성 없음)
+  stateRef.current = { grid, characterWorking: working, footprints, farmOwnerId };
 
   useImperativeHandle(ref, () => ({
     triggerWaterAnim: (slot) => rendererRef.current?.triggerWaterAnim(slot),
@@ -41,24 +44,25 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
     triggerWaterReceivedEffect: (slot, nick) => rendererRef.current?.triggerWaterReceivedEffect(slot, nick),
   }));
 
+  // renderer는 canvas 마운트 시 한번만 생성
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     rendererRef.current = new FarmRenderer(canvas);
 
-    // ~12fps for pixel art feel
+    // ~12fps for pixel art feel — stateRef에서 최신 데이터를 읽음
     const interval = setInterval(() => {
       const renderer = rendererRef.current;
       if (!renderer) return;
-      renderer.render({ grid, characterWorking: working, footprints, farmOwnerId });
+      renderer.render(stateRef.current);
     }, 80);
 
     return () => {
       clearInterval(interval);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rendererRef.current = null;
     };
-  }, [grid, working, footprints, farmOwnerId]);
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -77,7 +81,7 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
       const timeText = hoursAgo < 1 ? `${Math.floor(hoursAgo * 60)}m`
         : hoursAgo < 24 ? `${Math.floor(hoursAgo)}h`
         : 'yesterday';
-      const waterText = fp.watered ? ' +' : '';
+      const waterText = fp.watered ? ' 💧' : '';
       setTooltip({
         text: `@${fp.nickname} · ${timeText}${waterText}`,
         x: e.clientX - rect.left,
@@ -101,7 +105,7 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
       />
       {tooltip && (
         <div
-          className="absolute pointer-events-none bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap"
+          className="absolute pointer-events-none bg-black/80 text-white text-xs px-2 py-1 rounded max-w-[200px] truncate"
           style={{ left: tooltip.x + 8, top: tooltip.y - 24 }}
         >
           {tooltip.text}

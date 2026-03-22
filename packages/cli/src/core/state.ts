@@ -23,8 +23,15 @@ export function stateExists(): boolean {
 }
 
 export async function loadState(): Promise<LocalState> {
-  const raw = await readFile(statePath, 'utf-8');
-  return JSON.parse(raw) as LocalState;
+  try {
+    const raw = await readFile(statePath, 'utf-8');
+    return JSON.parse(raw) as LocalState;
+  } catch {
+    throw new Error(
+      `Failed to read ${statePath}. File may be corrupted.\n` +
+      `Try: rm "${statePath}" and run "claude-farmer init" again.`
+    );
+  }
 }
 
 export async function saveState(state: LocalState): Promise<void> {

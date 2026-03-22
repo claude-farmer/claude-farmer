@@ -29,22 +29,35 @@ export default function FarmVisitView({
   const [waterRemaining, setWaterRemaining] = useState(DAILY_WATER_LIMIT);
   const [watering, setWatering] = useState(false);
   const [waterFeedback, setWaterFeedback] = useState<string | null>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
+    let cancelled = false;
+
     // 방문 기록 + 프로필 로드
     visitFarm(targetId);
     fetchFarmWithFootprints(targetId).then(data => {
+      if (cancelled) return;
       if (data) {
         setProfile(data);
         setFootprints(data.footprints ?? []);
       }
     });
+
+    return () => {
+      cancelled = true;
+      mountedRef.current = false;
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    };
   }, [targetId]);
 
   const handleWater = async () => {
     if (waterRemaining <= 0 || watering) return;
     setWatering(true);
-    const result = await waterUser(currentUserId, targetId);
+    const result = await waterUser(targetId);
+    if (!mountedRef.current) return;
     if (result.ok && result.remaining != null) {
       setWaterRemaining(result.remaining);
       // 랜덤 슬롯에 물 주기 애니메이션
@@ -56,7 +69,10 @@ export default function FarmVisitView({
         : Math.floor(Math.random() * 16);
       canvasRef.current?.triggerWaterAnim(slot);
       setWaterFeedback('+1');
-      setTimeout(() => setWaterFeedback(null), 1200);
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = setTimeout(() => {
+        if (mountedRef.current) setWaterFeedback(null);
+      }, 1200);
     } else if (result.remaining === 0) {
       setWaterRemaining(0);
     }

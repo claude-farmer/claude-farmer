@@ -15,13 +15,13 @@ interface FarmViewProps {
 export default function FarmView({ state, footprints, notifications }: FarmViewProps) {
   const { t } = useLocale();
   const canvasRef = useRef<FarmCanvasHandle>(null);
-  const prevWaterCountRef = useRef(0);
+  const prevWaterCountRef = useRef<number | null>(null);
   const { farm, user, status_message, inventory, activity } = state;
 
   // 물 받을 때 캔버스 이펙트 트리거
   useEffect(() => {
     const count = notifications?.water_received_count ?? 0;
-    if (count > prevWaterCountRef.current && prevWaterCountRef.current > 0) {
+    if (prevWaterCountRef.current !== null && count > prevWaterCountRef.current) {
       // 새로운 물 → 랜덤 슬롯에 이펙트
       const occupied = farm.grid
         .map((s, i) => s ? i : -1)

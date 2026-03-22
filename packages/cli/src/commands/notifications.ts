@@ -17,7 +17,7 @@ export async function showNotifications(githubId: string, locale: Locale): Promi
   const data = await fetchNotifications(githubId);
   if (!data) return;
 
-  if (data.visitor_count === 0 && data.water_received_count === 0) return;
+  if ((data.visitor_count ?? 0) === 0 && (data.water_received_count ?? 0) === 0) return;
 
   const hour = new Date().getHours();
   const tod = getTimeOfDay(hour);
@@ -26,7 +26,7 @@ export async function showNotifications(githubId: string, locale: Locale): Promi
   console.log(`\n${chalk.green('🌱')} ${t(locale, greetKey)}\n`);
 
   // 물 주기 알림
-  for (const w of data.water_received) {
+  for (const w of data.water_received ?? []) {
     const timeAgo = getTimeAgo(w.at, locale);
     if (w.crop_slot != null) {
       console.log(`  ${chalk.blue('💧')} ${t(locale, 'notifWateredSlot', { nickname: `@${w.from_nickname}`, slot: w.crop_slot, timeAgo })}`);

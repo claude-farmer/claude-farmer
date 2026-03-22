@@ -39,12 +39,12 @@ export async function syncFarm(data: Record<string, unknown>): Promise<boolean> 
   }
 }
 
-export async function waterUser(from: string, to: string): Promise<{ ok: boolean; remaining?: number; error?: string }> {
+export async function waterUser(to: string, cropSlot?: number): Promise<{ ok: boolean; remaining?: number; error?: string }> {
   try {
     const res = await fetch(`${BASE}/api/water`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to }),
+      body: JSON.stringify({ to, crop_slot: cropSlot }),
     });
     return await res.json();
   } catch {
