@@ -43,7 +43,7 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
   const hour = new Date().getHours();
   const tod = getTimeOfDay(hour);
   const localUniqueItems = new Set(inventory.map(i => i.id)).size;
-  const uniqueItems = serverUniqueItems ?? localUniqueItems;
+  const uniqueItems = localUniqueItems > 0 ? localUniqueItems : (serverUniqueItems ?? 0);
   const waterReceivedCount = notifications?.water_received_count ?? activity.today_water_received;
 
   const greetingMap = {

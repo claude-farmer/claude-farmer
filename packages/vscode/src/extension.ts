@@ -283,13 +283,25 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
         await this.loadAndSend();
       } else if (msg.type === 'setStatus') {
         if (this.state && typeof msg.text === 'string') {
-          const text = msg.text.slice(0, 50);
-          this.state.status_message = {
-            text,
-            updated_at: new Date().toISOString(),
-          };
+          const text = msg.text.slice(0, 200);
+          this.state.status_message = text
+            ? { text, updated_at: new Date().toISOString() }
+            : null;
           await saveState(this.state);
           this.sendState();
+          // 서버에도 동기화
+          try {
+            await fetch('https://claudefarmer.com/api/farm/status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                github_id: this.state.user.github_id,
+                status_message: this.state.status_message,
+              }),
+            });
+          } catch {
+            // 네트워크 실패 시 로컬만 저장 (silent fail)
+          }
         }
       } else if (msg.type === 'setLang') {
         if (msg.lang === 'en' || msg.lang === 'ko' || msg.lang === 'auto') {
@@ -479,7 +491,7 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
   <div class="status-section">
     <div class="status-display" id="statusDisplay" onclick="toggleStatusEdit()"></div>
     <div class="status-edit" id="statusEdit" style="display:none">
-      <input id="statusInput" placeholder="${locale === 'ko' ? '말풍선을 입력하세요...' : 'Type your status...'}" maxlength="50" onkeydown="if(event.key==='Enter')saveStatus()">
+      <input id="statusInput" placeholder="${locale === 'ko' ? '말풍선을 입력하세요...' : 'Type your status...'}" maxlength="200" onkeydown="if(event.key==='Enter')saveStatus()">
       <button onclick="saveStatus()">OK</button>
     </div>
   </div>

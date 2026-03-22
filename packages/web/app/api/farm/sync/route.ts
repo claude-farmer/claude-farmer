@@ -22,7 +22,7 @@ function extractUserId(request: NextRequest, bodyGithubId?: string): string | nu
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { github_id, nickname, avatar_url, level, total_harvests, unique_items, streak_days, status_message, farm } = body;
+    const { github_id, nickname, avatar_url, level, total_harvests, unique_items, streak_days, today_harvests, today_water_given, inventory, status_message, farm } = body;
 
     const userId = extractUserId(request, github_id);
     if (!userId) {
@@ -45,6 +45,14 @@ export async function POST(request: NextRequest) {
       total_harvests: total_harvests || 0,
       unique_items: typeof unique_items === 'number' ? unique_items : undefined,
       streak_days: typeof streak_days === 'number' ? streak_days : undefined,
+      today_harvests: typeof today_harvests === 'number' ? today_harvests : undefined,
+      today_water_given: typeof today_water_given === 'number' ? today_water_given : undefined,
+      inventory: Array.isArray(inventory) ? inventory.slice(0, 100).map((item: Record<string, unknown>) => ({
+        id: String(item.id || '').slice(0, 20),
+        name: String(item.name || '').slice(0, 50),
+        rarity: (['common', 'rare', 'epic', 'legendary'] as const).includes(item.rarity as 'common') ? item.rarity as 'common' | 'rare' | 'epic' | 'legendary' : 'common' as const,
+        obtained_at: String(item.obtained_at || ''),
+      })) : undefined,
       status_message: status_message ? {
         ...status_message,
         text: (status_message.text || '').slice(0, 200),

@@ -146,7 +146,8 @@ cd packages/vscode && npm run dev
 | `/api/auth/callback` | GET | OAuth callback (cookie, CLI redirect, or VSCode URI) |
 | `/api/auth/session` | GET | Get current session user |
 | `/api/auth/logout` | POST | Delete session cookie |
-| `/api/farm/sync` | POST | CLI → server profile sync |
+| `/api/farm/sync` | POST | CLI → server profile sync (includes unique_items, streak_days) |
+| `/api/farm/status` | POST | Update own status message (session/body auth) |
 | `/api/farm/[id]` | GET | Public profile lookup (includes footprints) |
 | `/api/farm/[id]/notifications` | GET | Farm notifications (visitors, water received) |
 | `/api/farm/[id]/visit` | POST | Record farm visit (session auth) |

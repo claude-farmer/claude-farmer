@@ -2,28 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
 import type { PublicProfile } from '@claude-farmer/shared';
 
+// 요청에서 인증된 사용자 ID 추출 (session cookie 또는 body github_id)
+function extractUserId(request: NextRequest, bodyGithubId?: string): string | null {
+  const session = request.cookies.get('cf_session')?.value;
+  if (session) {
+    try {
+      return JSON.parse(session).github_id;
+    } catch {
+      // fallthrough to body
+    }
+  }
+  return bodyGithubId || null;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Web: session cookie에서 유저 ID 추출
-    const session = request.cookies.get('cf_session')?.value;
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const body = await request.json();
+    const { status_message, github_id } = body;
 
-    let userId: string;
-    try {
-      userId = JSON.parse(session).github_id;
-    } catch {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    const userId = extractUserId(request, github_id);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const profile = await redis.get<PublicProfile>(keys.user(userId));
     if (!profile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-
-    const body = await request.json();
-    const { status_message } = body;
 
     profile.status_message = status_message
       ? {
