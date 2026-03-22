@@ -27,7 +27,7 @@ claude-farmer/
 ├── shared/              → @claude-farmer/shared (types, constants, gacha, i18n)
 │   └── src/
 │       ├── types.ts     → All type definitions (CropSlot, GachaItem, LocalState, etc.)
-│       ├── constants.ts → Config values (GRID_SIZE, RARITY_WEIGHTS, level calc)
+│       ├── constants.ts → Config values (GRID_SIZE, RARITY_WEIGHTS, level calc, farmer titles)
 │       ├── gacha.ts     → 24 gacha items + rollGacha() function
 │       └── i18n.ts      → Translation dict (en/ko), detectLocale(), t() helper
 ├── packages/
@@ -48,7 +48,7 @@ claude-farmer/
 │   │   │   ├── og/            → Dynamic OG image generation
 │   │   │   └── api/
 │   │   │       ├── auth/      → login, callback (GitHub OAuth), session, logout
-│   │   │       ├── farm/      → sync, [id] (profile+footprints), [id]/notifications, [id]/visit
+│   │   │       ├── farm/      → sync, status, [id] (profile+footprints), [id]/notifications, [id]/visit
 │   │   │       ├── water/     → Watering (3/day limit, optional crop_slot)
 │   │   │       ├── explore/   → Random user discovery
 │   │   │       └── subscribe/ → Email subscription (Resend)
@@ -146,7 +146,7 @@ cd packages/vscode && npm run dev
 | `/api/auth/callback` | GET | OAuth callback (cookie, CLI redirect, or VSCode URI) |
 | `/api/auth/session` | GET | Get current session user |
 | `/api/auth/logout` | POST | Delete session cookie |
-| `/api/farm/sync` | POST | CLI → server profile sync (includes unique_items, streak_days) |
+| `/api/farm/sync` | POST | CLI → server full profile sync (inventory, activity, stats) |
 | `/api/farm/status` | POST | Update own status message (session/body auth) |
 | `/api/farm/[id]` | GET | Public profile lookup (includes footprints) |
 | `/api/farm/[id]/notifications` | GET | Farm notifications (visitors, water received) |
@@ -166,6 +166,39 @@ cd packages/vscode && npm run dev
 - **Notifications**: CLI shows social notifications on `claude-farmer farm`; Web polls `/notifications`
 - **Hover tooltip**: Mouse over footprints shows visitor nickname + time
 - **Redis keys**: `farm:{id}:visitors` (sorted set), `farm:{id}:footprints` (hash), `farm:{id}:water_detail:{date}` (sorted set)
+
+## Farmer Title (Activity Badge)
+
+Daily coding activity (input chars) determines a fun title displayed on the farm:
+
+| Chars | Emoji | EN | KO |
+| ----- | ----- | -- | -- |
+| 0 | 😴 | Resting Farmer | 휴식 중인 농부 |
+| 500+ | 🌱 | Strolling Farmer | 산책하는 농부 |
+| 2,000+ | 🧑‍🌾 | Diligent Farmer | 부지런한 농부 |
+| 5,000+ | 🔥 | Blazing Farmer | 열혈 농부 |
+| 10,000+ | ⚡ | Legendary Farmer | 전설의 농부 |
+
+- Helper: `getFarmerTitle()` in `shared/src/constants.ts`
+- Shown on own farm (FarmView) and when visiting others (FarmVisitView)
+- Resets daily with activity stats
+
+## Data Sync (CLI → Server → Web)
+
+CLI syncs full state to server via `/api/farm/sync`:
+
+| Field | Source | Server Storage |
+| ----- | ------ | -------------- |
+| `farm_snapshot` (grid, level) | CLI local state | `PublicProfile` in Redis |
+| `inventory` | CLI local state | `PublicProfile.inventory` |
+| `unique_items` | Computed from inventory | `PublicProfile.unique_items` |
+| `streak_days` | CLI activity tracking | `PublicProfile.streak_days` |
+| `today_input_chars` | CLI activity tracking | `PublicProfile.today_input_chars` |
+| `today_harvests` | CLI activity tracking | `PublicProfile.today_harvests` |
+| `today_water_given` | CLI activity tracking | `PublicProfile.today_water_given` |
+| `status_message` | CLI/Web/VSCode | `PublicProfile.status_message` |
+
+Web reads from server on login and polls every 30s. VSCode reads local state directly.
 
 ## Boost Time (21:00–06:00)
 
