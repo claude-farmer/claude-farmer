@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const clientId = process.env.GITHUB_CLIENT_ID;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://claudefarmer.com';
+  const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://claudefarmer.com').trim();
   const cliPort = request.nextUrl.searchParams.get('cli_port');
   const from = request.nextUrl.searchParams.get('from'); // 'vscode' | null
 

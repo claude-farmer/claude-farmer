@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Web OAuth: 세션 쿠키 설정 후 /farm으로 리다이렉트
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://claudefarmer.com';
+  const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://claudefarmer.com').trim();
   const res = NextResponse.redirect(new URL('/farm', baseUrl));
   res.cookies.set('cf_session', JSON.stringify({
     github_id: user.login,
