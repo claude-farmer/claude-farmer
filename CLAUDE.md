@@ -132,5 +132,5 @@ cd packages/vscode && npm run dev
 
 - **Web**: Vercel → claudefarmer.com
 - **CLI**: npm → `npm install -g claude-farmer`
-- **VSCode**: Marketplace → `claude-farmer.claude-farmer-vscode`
+- **VSCode**: Marketplace → `doribear.claude-farmer-vscode`
 - **CI/CD**: GitHub Actions (push to main → build + lint)

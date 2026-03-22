@@ -5,7 +5,7 @@
 Claude Code를 쓰면 농장이 자동으로 자라는 방치형 픽셀아트 농장 게임입니다.
 
 [![npm](https://img.shields.io/npm/v/claude-farmer)](https://www.npmjs.com/package/claude-farmer)
-[![VSCode Marketplace](https://img.shields.io/visual-studio-marketplace/v/claude-farmer.claude-farmer-vscode)](https://marketplace.visualstudio.com/items?itemName=claude-farmer.claude-farmer-vscode)
+[![VSCode Marketplace](https://img.shields.io/visual-studio-marketplace/v/doribear.claude-farmer-vscode)](https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ## 어떻게 작동하나요?
@@ -69,7 +69,7 @@ claude-farmer watch        # 백그라운드 감지 모드
 VSCode 마켓플레이스에서 **Claude Farmer**를 검색하거나:
 
 ```
-ext install claude-farmer.claude-farmer-vscode
+ext install doribear.claude-farmer-vscode
 ```
 
 사이드바에서 픽셀아트 농장을 직접 볼 수 있습니다. 에디터에서 코딩하면 자동으로 농장이 자라요!
@@ -110,7 +110,7 @@ claude-farmer/
 
 - 🌐 [claudefarmer.com](https://claudefarmer.com)
 - 📦 [npm: claude-farmer](https://www.npmjs.com/package/claude-farmer)
-- 🧩 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=claude-farmer.claude-farmer-vscode)
+- 🧩 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode)
 - 🐙 [GitHub](https://github.com/claude-farmer/claude-farmer)
 
 ## License
