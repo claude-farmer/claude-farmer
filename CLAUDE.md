@@ -236,6 +236,6 @@ FarmCanvas exposes these via `forwardRef`/`useImperativeHandle` so parent compon
 ## Deployment
 
 - **Web**: Vercel → claudefarmer.com
-- **CLI**: npm → `npm install -g claude-farmer` (v0.2.1)
-- **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.2.2)
+- **CLI**: npm → `npm install -g claude-farmer` (v0.3.0)
+- **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.3.0)
 - **CI/CD**: GitHub Actions (push to main → build + lint)
