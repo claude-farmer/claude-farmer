@@ -109,7 +109,7 @@ function PixelFarmPreview() {
 }
 
 export default function Landing() {
-  const { t } = useLocale();
+  const { locale, t, setLocale } = useLocale();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -247,7 +247,18 @@ export default function Landing() {
         <div className="flex gap-4 justify-center mb-2">
           <a href="https://github.com/claude-farmer/claude-farmer" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">GitHub</a>
           <a href="https://www.npmjs.com/package/claude-farmer" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">npm</a>
-          <a href="https://marketplace.visualstudio.com/items?itemName=claude-farmer.claude-farmer-vscode" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">VSCode</a>
+          <a href="https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">VSCode</a>
+        </div>
+        <div className="flex gap-2 justify-center mb-2">
+          <button
+            onClick={() => setLocale('en')}
+            className={`hover:opacity-60 ${locale === 'en' ? 'underline opacity-100' : ''}`}
+          >EN</button>
+          <span>|</span>
+          <button
+            onClick={() => setLocale('ko')}
+            className={`hover:opacity-60 ${locale === 'ko' ? 'underline opacity-100' : ''}`}
+          >KO</button>
         </div>
         <p>{t.footerLicense}</p>
       </footer>

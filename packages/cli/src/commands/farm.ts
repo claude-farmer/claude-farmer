@@ -1,11 +1,10 @@
 import chalk from 'chalk';
 import {
-  CROP_EMOJI, CROP_NAME_KO, RARITY_LABEL,
-  getTimeOfDay, TIME_GREETING, TIME_EMOJI,
-  TOTAL_ITEMS,
+  CROP_EMOJI, getTimeOfDay, TIME_EMOJI, TOTAL_ITEMS, t, getTimeGreeting,
 } from '@claude-farmer/shared';
 import type { CropSlot } from '@claude-farmer/shared';
 import { stateExists, loadState } from '../core/state.js';
+import { getLocale } from '../core/config.js';
 
 function cropCell(slot: CropSlot | null): string {
   if (!slot) return '    ';
@@ -15,8 +14,10 @@ function cropCell(slot: CropSlot | null): string {
 }
 
 export async function showFarm(): Promise<void> {
+  const locale = getLocale();
+
   if (!stateExists()) {
-    console.log(chalk.yellow('\n🌱 아직 농장이 없어요! `claude-farmer init`으로 시작해보세요.\n'));
+    console.log(chalk.yellow(`\n🌱 ${t(locale, 'noFarm')}\n`));
     return;
   }
 
@@ -24,18 +25,17 @@ export async function showFarm(): Promise<void> {
   const { farm, user, status_message, inventory, activity } = state;
   const hour = new Date().getHours();
   const tod = getTimeOfDay(hour);
-  const greeting = TIME_GREETING[tod];
+  const greeting = getTimeGreeting(locale, tod);
   const emoji = TIME_EMOJI[tod];
 
   const uniqueItems = new Set(inventory.map(i => i.id)).size;
 
   console.log('');
   console.log(
-    `${chalk.green.bold(`🌱 @${user.nickname}의 농장`)} ${chalk.dim(`(Lv.${farm.level})`)}          ${emoji} ${greeting}`
+    `${chalk.green.bold(`🌱 @${user.nickname}${t(locale, 'farmOf')}`)} ${chalk.dim(`(Lv.${farm.level})`)}          ${emoji} ${greeting}`
   );
   console.log(chalk.dim('━'.repeat(40)));
 
-  // 4×4 그리드
   const g = farm.grid;
   for (let row = 0; row < 4; row++) {
     const top = row === 0 ? '┌────┬────┬────┬────┐' : '├────┼────┼────┼────┤';
@@ -53,7 +53,7 @@ export async function showFarm(): Promise<void> {
   }
 
   console.log('');
-  console.log(`📦 도감: ${uniqueItems}/${TOTAL_ITEMS} (${Math.round(uniqueItems / TOTAL_ITEMS * 100)}%)  🪙 수확: ${farm.total_harvests}회`);
-  console.log(`💧 오늘 받은 물: ${activity.today_water_received}회  🔥 연속: ${activity.streak_days}일`);
+  console.log(`📦 ${t(locale, 'collection')} ${uniqueItems}/${TOTAL_ITEMS} (${Math.round(uniqueItems / TOTAL_ITEMS * 100)}%)  🪙 ${farm.total_harvests}${t(locale, 'harvests')}`);
+  console.log(`💧 ${t(locale, 'waterReceived')} ${activity.today_water_received}  🔥 ${t(locale, 'streak')} ${activity.streak_days}${t(locale, 'days')}`);
   console.log('');
 }

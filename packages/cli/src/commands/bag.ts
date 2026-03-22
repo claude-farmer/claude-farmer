@@ -1,7 +1,8 @@
 import chalk from 'chalk';
 import type { Rarity } from '@claude-farmer/shared';
-import { RARITY_LABEL, RARITY_COLOR, GACHA_ITEMS, TOTAL_ITEMS } from '@claude-farmer/shared';
+import { RARITY_LABEL, GACHA_ITEMS, TOTAL_ITEMS, t } from '@claude-farmer/shared';
 import { stateExists, loadState } from '../core/state.js';
+import { getLocale } from '../core/config.js';
 
 const rarityChalk: Record<Rarity, (s: string) => string> = {
   common: (s) => chalk.gray(s),
@@ -11,8 +12,10 @@ const rarityChalk: Record<Rarity, (s: string) => string> = {
 };
 
 export async function bagCommand(): Promise<void> {
+  const locale = getLocale();
+
   if (!stateExists()) {
-    console.log(chalk.yellow('\n🌱 먼저 `claude-farmer init`으로 시작해주세요.\n'));
+    console.log(chalk.yellow(`\n🌱 ${t(locale, 'initFirst')}\n`));
     return;
   }
 
@@ -21,7 +24,7 @@ export async function bagCommand(): Promise<void> {
   const uniqueCount = ownedIds.size;
 
   console.log('');
-  console.log(chalk.bold(`📖 도감  ${uniqueCount}/${TOTAL_ITEMS} 수집`));
+  console.log(chalk.bold(`📖 ${t(locale, 'bagTitle')}  ${uniqueCount}/${TOTAL_ITEMS} ${t(locale, 'bagCollected')}`));
   console.log(chalk.dim('━'.repeat(35)));
 
   const rarities: Rarity[] = ['common', 'rare', 'epic', 'legendary'];

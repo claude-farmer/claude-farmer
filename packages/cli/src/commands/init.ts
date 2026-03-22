@@ -2,8 +2,10 @@ import { createServer } from 'node:http';
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import chalk from 'chalk';
+import { t } from '@claude-farmer/shared';
 import { openUrl } from '../lib/open-url.js';
 import { stateExists, ensureDataDir, saveState, createDefaultState } from '../core/state.js';
+import { getLocale } from '../core/config.js';
 
 const BASE_URL = 'https://claudefarmer.com';
 
@@ -13,11 +15,11 @@ interface OAuthResult {
   avatar_url: string;
 }
 
-function waitForOAuthCallback(port: number): Promise<OAuthResult> {
+function waitForOAuthCallback(port: number, locale: 'en' | 'ko'): Promise<OAuthResult> {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       server.close();
-      reject(new Error('OAuth 시간 초과 (2분)'));
+      reject(new Error(t(locale, 'oauthTimeout')));
     }, 120_000);
 
     const server = createServer((req, res) => {
@@ -31,8 +33,8 @@ function waitForOAuthCallback(port: number): Promise<OAuthResult> {
         res.end(`
           <html><body style="background:#1a1d27;color:#e5e7eb;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0">
             <div style="text-align:center">
-              <h1>🌱 인증 완료!</h1>
-              <p>터미널로 돌아가세요. 이 창은 닫아도 됩니다.</p>
+              <h1>🌱 ${t(locale, 'oauthCallbackTitle')}</h1>
+              <p>${t(locale, 'oauthCallbackBody')}</p>
             </div>
           </body></html>
         `);
@@ -49,50 +51,50 @@ function waitForOAuthCallback(port: number): Promise<OAuthResult> {
 }
 
 export async function initCommand(): Promise<void> {
+  const locale = getLocale();
+
   if (stateExists()) {
-    console.log(chalk.yellow('🌱 이미 초기화되어 있어요! `claude-farmer`로 농장을 확인해보세요.'));
+    console.log(chalk.yellow(`🌱 ${t(locale, 'alreadyInit')}`));
     return;
   }
 
-  console.log(chalk.green.bold('\n🌱 Claude Farmer에 오신 걸 환영해요!\n'));
-  console.log('코딩하면 농장이 자동으로 자라는 방치형 게임이에요.\n');
+  console.log(chalk.green.bold(`\n🌱 ${t(locale, 'welcomeTitle')}\n`));
+  console.log(`${t(locale, 'welcomeDesc')}\n`);
 
   const rl = createInterface({ input: stdin, output: stdout });
 
   try {
-    const method = await rl.question(chalk.cyan('로그인 방법 선택 [1] GitHub 로그인 (추천)  [2] 수동 입력: '));
+    const method = await rl.question(chalk.cyan(t(locale, 'loginMethodPrompt')));
 
     let githubId: string;
     let displayName: string;
     let avatarUrl: string;
 
     if (method.trim() === '2') {
-      // 수동 입력
-      githubId = (await rl.question(chalk.cyan('GitHub 아이디: '))).trim();
+      githubId = (await rl.question(chalk.cyan(t(locale, 'githubIdPrompt')))).trim();
       if (!githubId) {
-        console.log(chalk.red('앗, GitHub 아이디를 입력해주세요!'));
+        console.log(chalk.red(t(locale, 'githubIdRequired')));
         return;
       }
-      const nickname = (await rl.question(chalk.cyan('닉네임 (농장에 표시돼요): '))).trim();
+      const nickname = (await rl.question(chalk.cyan(t(locale, 'nicknamePrompt')))).trim();
       displayName = nickname || githubId;
       avatarUrl = `https://github.com/${githubId}.png`;
     } else {
-      // GitHub OAuth
       rl.close();
       const port = 19274;
       const loginUrl = `${BASE_URL}/api/auth/login?cli_port=${port}`;
 
-      console.log(chalk.dim('\n브라우저에서 GitHub 로그인 페이지를 여는 중...\n'));
+      console.log(chalk.dim(`\n${t(locale, 'openingBrowser')}\n`));
 
-      const oauthPromise = waitForOAuthCallback(port);
+      const oauthPromise = waitForOAuthCallback(port, locale);
 
       try {
         await openUrl(loginUrl);
       } catch {
-        console.log(chalk.yellow(`브라우저가 열리지 않으면 직접 열어주세요:\n${loginUrl}\n`));
+        console.log(chalk.yellow(`${t(locale, 'browserFallback')}\n${loginUrl}\n`));
       }
 
-      console.log(chalk.dim('GitHub 로그인을 완료하면 자동으로 진행됩니다...\n'));
+      console.log(chalk.dim(`${t(locale, 'waitingOAuth')}\n`));
 
       try {
         const result = await oauthPromise;
@@ -100,24 +102,26 @@ export async function initCommand(): Promise<void> {
         displayName = result.nickname;
         avatarUrl = result.avatar_url;
       } catch (err) {
-        console.log(chalk.red(`\n인증 실패: ${(err as Error).message}`));
-        console.log(chalk.dim('`claude-farmer init`으로 다시 시도해보세요.\n'));
+        console.log(chalk.red(`\n${t(locale, 'oauthFailed')} ${(err as Error).message}`));
+        console.log(chalk.dim(`${t(locale, 'oauthRetry')}\n`));
         return;
       }
 
-      console.log(chalk.green(`✓ GitHub 로그인 성공: ${githubId}\n`));
+      console.log(chalk.green(`✓ ${t(locale, 'oauthSuccess')} ${githubId}\n`));
     }
 
     await ensureDataDir();
     const state = createDefaultState(githubId, displayName, avatarUrl);
     await saveState(state);
 
-    console.log(chalk.green.bold('✅ 초기화 완료!'));
-    console.log(`   닉네임: ${chalk.yellow(displayName)}`);
-    console.log(`   농장 크기: 4×4 (16칸)`);
+    console.log(chalk.green.bold(`✅ ${t(locale, 'initDone')}`));
+    console.log(`   ${t(locale, 'initNickname')} ${chalk.yellow(displayName)}`);
+    console.log(`   ${t(locale, 'initFarmSize')}`);
     console.log('');
-    console.log(chalk.dim('Claude Code를 사용하면 자동으로 농장이 자라요 🌱'));
-    console.log(chalk.dim('`claude-farmer`로 농장을 확인해보세요!\n'));
+    console.log(chalk.dim(`${t(locale, 'initHint')} 🌱`));
+    console.log(chalk.dim(t(locale, 'initCheck')));
+    console.log(chalk.dim(t(locale, 'langHint')));
+    console.log('');
   } finally {
     try { rl.close(); } catch { /* already closed */ }
   }

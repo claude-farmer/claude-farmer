@@ -1,23 +1,25 @@
 import chalk from 'chalk';
-import { stateExists, withState } from '../core/state.js';
+import { t } from '@claude-farmer/shared';
+import { stateExists, withState, loadState } from '../core/state.js';
+import { getLocale } from '../core/config.js';
 
 export async function statusCommand(message?: string): Promise<void> {
+  const locale = getLocale();
+
   if (!stateExists()) {
-    console.log(chalk.yellow('\n🌱 먼저 `claude-farmer init`으로 시작해주세요.\n'));
+    console.log(chalk.yellow(`\n🌱 ${t(locale, 'initFirst')}\n`));
     return;
   }
 
   if (!message) {
-    // 현재 상태 메세지 보여주기
-    const { withState: _ } = await import('../core/state.js');
-    const state = await (await import('../core/state.js')).loadState();
+    const state = await loadState();
     if (state.status_message?.text) {
-      console.log(`\n💬 현재 말풍선: "${state.status_message.text}"`);
+      console.log(`\n💬 ${t(locale, 'currentStatus')} "${state.status_message.text}"`);
       if (state.status_message.link) {
         console.log(`🔗 ${state.status_message.link}`);
       }
     } else {
-      console.log(chalk.dim('\n💬 말풍선이 비어있어요. `claude-farmer status "메세지"` 로 설정해보세요!'));
+      console.log(chalk.dim(`\n💬 ${t(locale, 'statusEmpty')}`));
     }
     console.log('');
     return;
@@ -31,5 +33,5 @@ export async function statusCommand(message?: string): Promise<void> {
     return state;
   });
 
-  console.log(`\n💬 말풍선 설정: "${chalk.yellow(message)}"\n`);
+  console.log(`\n💬 ${t(locale, 'statusSet')} "${chalk.yellow(message)}"\n`);
 }

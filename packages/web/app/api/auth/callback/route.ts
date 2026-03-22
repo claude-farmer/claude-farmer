@@ -4,6 +4,7 @@ import { redis, keys } from '@/lib/redis';
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
   const cliPort = request.nextUrl.searchParams.get('cli_port');
+  const from = request.nextUrl.searchParams.get('from');
 
   if (!code) {
     return NextResponse.json({ error: 'Missing code' }, { status: 400 });
@@ -55,6 +56,12 @@ export async function GET(request: NextRequest) {
   if (cliPort) {
     const cliCallback = `http://localhost:${cliPort}/callback?github_id=${encodeURIComponent(user.login)}&nickname=${encodeURIComponent(user.name || user.login)}&avatar_url=${encodeURIComponent(user.avatar_url)}`;
     return NextResponse.redirect(cliCallback);
+  }
+
+  // VSCode OAuth: vscode:// URI 스킴으로 리다이렉트
+  if (from === 'vscode') {
+    const vscodeUri = `vscode://doribear.claude-farmer-vscode/callback?github_id=${encodeURIComponent(user.login)}&nickname=${encodeURIComponent(user.name || user.login)}&avatar_url=${encodeURIComponent(user.avatar_url)}`;
+    return NextResponse.redirect(vscodeUri);
   }
 
   // Web OAuth: 세션 쿠키 설정 후 /farm으로 리다이렉트
