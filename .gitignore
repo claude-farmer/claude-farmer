@@ -8,3 +8,4 @@ dist/
 .private/
 claude-farmer-spec.md
 .vercel
+.claude/
