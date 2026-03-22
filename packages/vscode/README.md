@@ -7,22 +7,36 @@ An idle pixel-art farming game that lives right in your VSCode sidebar. You code
 ## What Happens
 
 1. Install the extension
-2. Code as usual
-3. Glance at the sidebar — hey, your farm is growing!
-4. Crops go through 4 stages: seed → sprout → growing → harvest
-5. Harvesting triggers gacha drops — collect all 24 items!
+2. Log in with GitHub (one click from the sidebar)
+3. Code as usual
+4. Glance at the sidebar — hey, your farm is growing!
 
 ## Features
 
 - 🌱 **Zero Effort** — just code. Seeds plant themselves, crops grow on their own
 - 🎨 **Pixel Art** — cute 16×16 farm with time-based sky (sunrise, noon, sunset, night)
-- 🎲 **Gacha Collection** — Common / Rare / Epic / Legendary drops
+- 🧑‍🌾 **Animated Character** — walks around, waters crops, shows zzz when idle
+- 💬 **Status Bubble** — set a message that shows above your character. Click to edit!
+- 🎲 **Gacha Collection** — Common / Rare / Epic / Legendary drops with progress bar
 - 💧 **Social** — visit and water other developers' farms
-- 🔑 **GitHub Login** — one-click setup, right from the sidebar
+- 🌍 **Full View** — open your farm on claudefarmer.com with one click
+- 🌐 **i18n** — auto-detects language, switch EN/KO right from the sidebar
+
+## Activity Detection
+
+Your coding activity makes things happen:
+
+- **Type 50+ characters** → seeds planted, crops grow
+- **Save a file** → activity triggered
+- **Switch terminals** → activity triggered
+- Growth flash effects and stacked notifications keep you in the loop
 
 ## Language
 
-Auto-detects from your VS Code language. Change it in Settings → `claudeFarmer.language` (auto / en / ko).
+Auto-detects from your VS Code language. Change it:
+
+- **Sidebar footer**: click EN or KO
+- **Settings**: `claudeFarmer.language` (auto / en / ko)
 
 ## Requirements
 
@@ -37,4 +51,4 @@ Auto-detects from your VS Code language. Change it in Settings → `claudeFarmer
 
 ## License
 
-MIT — made with 🌱 by [doribear](https://doribear.com)
+MIT — built with 🌱 by [doribear.com](https://doribear.com)
