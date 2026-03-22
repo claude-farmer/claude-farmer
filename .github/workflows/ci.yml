@@ -34,6 +34,8 @@ jobs:
       - name: Build Web
         run: npx turbo run build --filter=@claude-farmer/web
 
+      - name: Build VSCode
+        run: npx turbo run build --filter=claude-farmer-vscode
+
       - name: Lint Web
         run: npx turbo run lint --filter=@claude-farmer/web
-        continue-on-error: true

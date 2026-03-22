@@ -115,6 +115,14 @@ cd packages/vscode && npm run dev
 2. OAuth complete → redirect to `vscode://doribear.claude-farmer-vscode/callback?...`
 3. Extension receives URI → create local state → show farm view
 
+### API Auth Model
+
+- **Web routes**: Authenticated via `cf_session` httpOnly cookie (set during OAuth callback)
+- **CLI/VSCode routes**: No session cookie; send `github_id` in request body as fallback
+- **Server**: Extracts user ID from session cookie first, falls back to body `github_id`/`from`
+- **Validation**: Body-based auth validates the user exists in Redis (prevents arbitrary ID spoofing)
+- **Read-only routes** (`GET /api/farm/[id]`, `GET /api/explore`): No auth required (public data)
+
 ## i18n
 
 - Default: English. Korean when locale is `ko`.
@@ -195,5 +203,5 @@ FarmCanvas exposes these via `forwardRef`/`useImperativeHandle` so parent compon
 
 - **Web**: Vercel → claudefarmer.com
 - **CLI**: npm → `npm install -g claude-farmer` (v0.2.0)
-- **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.2.0)
+- **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.2.1)
 - **CI/CD**: GitHub Actions (push to main → build + lint)

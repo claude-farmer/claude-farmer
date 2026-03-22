@@ -28,7 +28,7 @@ export async function sendWater(from: string, to: string): Promise<{ ok: boolean
     const res = await fetch(`${BASE_URL}/api/water`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to }),
+      body: JSON.stringify({ from, to }), // 서버는 session cookie → body from fallback
     });
     return await res.json();
   } catch {
