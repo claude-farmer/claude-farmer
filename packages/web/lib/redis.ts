@@ -30,6 +30,7 @@ export const keys = {
   visitors: (id: string) => `farm:${id}:visitors`,
   footprints: (id: string) => `farm:${id}:footprints`,
   waterDetail: (id: string) => `farm:${id}:water_detail:${todayKey()}`,
+  bookmarks: (id: string) => `user:${id}:bookmarks`,
 };
 
 function todayKey(): string {

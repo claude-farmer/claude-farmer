@@ -5,7 +5,8 @@ import TabBar from '@/components/TabBar';
 import FarmView from '@/components/FarmView';
 import BagView from '@/components/BagView';
 import ExploreView from '@/components/ExploreView';
-import { fetchSession, fetchFarm, logout } from '@/lib/api';
+import FarmVisitView from '@/components/FarmVisitView';
+import { fetchSession, fetchFarm, logout, fetchBookmarks, toggleBookmark } from '@/lib/api';
 import { MOCK_STATE, MOCK_NEIGHBORS } from '@/lib/mock-data';
 import { useLocale } from '@/lib/locale-context';
 import usePolling from '@/hooks/usePolling';
@@ -18,7 +19,9 @@ export default function FarmApp() {
   const [state, setState] = useState<LocalState>(MOCK_STATE);
   const [loading, setLoading] = useState(true);
   const [bookmarks, setBookmarks] = useState<PublicProfile[]>(MOCK_NEIGHBORS);
+  const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
   const [footprints, setFootprints] = useState<Footprint[]>([]);
+  const [visitingId, setVisitingId] = useState<string | null>(null);
 
   // 30초 polling으로 알림 조회 (로그인 시)
   const { data: notifications } = usePolling<FarmNotifications>(
@@ -68,13 +71,30 @@ export default function FarmApp() {
             },
             last_synced: profile.last_active,
           });
-          setBookmarks([]);
+          // 서버에서 북마크 로드
+          const bm = await fetchBookmarks();
+          setBookmarks(bm);
+          setBookmarkIds(bm.map(b => b.github_id));
         }
       }
       setLoading(false);
     }
     init();
   }, []);
+
+  const handleVisit = (profile: PublicProfile & { github_id?: string }) => {
+    const id = (profile as PublicProfile & { github_id: string }).github_id;
+    if (id) setVisitingId(id);
+  };
+
+  const handleToggleBookmark = async (targetId: string) => {
+    const action = bookmarkIds.includes(targetId) ? 'remove' : 'add';
+    const newIds = await toggleBookmark(targetId, action);
+    setBookmarkIds(newIds);
+    // 북마크 프로필 목록도 리프레시
+    const bm = await fetchBookmarks();
+    setBookmarks(bm);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -121,16 +141,29 @@ export default function FarmApp() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {tab === 'farm' && <FarmView state={state} footprints={footprints} notifications={notifications} />}
-        {tab === 'bag' && <BagView inventory={state.inventory} />}
-        {tab === 'explore' && (
-          <ExploreView
-            bookmarks={bookmarks}
-            currentUser={user?.github_id}
+        {visitingId && user ? (
+          <FarmVisitView
+            targetId={visitingId}
+            currentUserId={user.github_id}
+            onBack={() => setVisitingId(null)}
+            isBookmarked={bookmarkIds.includes(visitingId)}
+            onToggleBookmark={handleToggleBookmark}
           />
+        ) : (
+          <>
+            {tab === 'farm' && <FarmView state={state} footprints={footprints} notifications={notifications} />}
+            {tab === 'bag' && <BagView inventory={state.inventory} />}
+            {tab === 'explore' && (
+              <ExploreView
+                bookmarks={bookmarks}
+                currentUser={user?.github_id}
+                onVisit={handleVisit}
+              />
+            )}
+          </>
         )}
       </div>
-      <TabBar active={tab} onChange={setTab} />
+      {!visitingId && <TabBar active={tab} onChange={setTab} />}
     </div>
   );
 }

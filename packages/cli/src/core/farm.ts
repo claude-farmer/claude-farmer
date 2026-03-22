@@ -1,5 +1,5 @@
 import type { LocalState, CropSlot, CropType, GrowthStage, InventoryItem } from '@claude-farmer/shared';
-import { CROPS, GRID_SIZE, MAX_GROWTH_STAGE, calculateLevel } from '@claude-farmer/shared';
+import { CROPS, GRID_SIZE, MAX_GROWTH_STAGE, calculateLevel, isBoostTime, BOOST_MULTIPLIER } from '@claude-farmer/shared';
 import { rollGacha } from '@claude-farmer/shared';
 
 function randomCrop(): CropType {
@@ -71,12 +71,15 @@ export interface GrowResult {
 }
 
 export function growCrops(state: LocalState): GrowResult[] {
+  const boost = isBoostTime();
+  const growAmount = boost ? BOOST_MULTIPLIER : 1;
   const results: GrowResult[] = [];
   for (let i = 0; i < state.farm.grid.length; i++) {
     const slot = state.farm.grid[i];
     if (slot && slot.stage < MAX_GROWTH_STAGE) {
-      slot.stage = (slot.stage + 1) as GrowthStage;
-      results.push({ slotIndex: i, crop: slot.crop, newStage: slot.stage });
+      const newStage = Math.min(MAX_GROWTH_STAGE, slot.stage + growAmount) as GrowthStage;
+      slot.stage = newStage;
+      results.push({ slotIndex: i, crop: slot.crop, newStage });
     }
   }
   return results;
@@ -91,7 +94,7 @@ export function harvestSlot(state: LocalState, slotIndex: number): HarvestResult
   const slot = state.farm.grid[slotIndex];
   if (!slot) return null;
 
-  const item = rollGacha();
+  const item = rollGacha(isBoostTime());
   const reward: InventoryItem = {
     id: item.id,
     name: item.name,

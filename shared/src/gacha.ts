@@ -1,5 +1,5 @@
 import type { GachaItem, Rarity } from './types.js';
-import { RARITY_WEIGHTS } from './constants.js';
+import { RARITY_WEIGHTS, BOOST_RARITY_WEIGHTS } from './constants.js';
 
 // ── 가챠 아이템 전체 목록 ──
 export const GACHA_ITEMS: GachaItem[] = [
@@ -38,18 +38,19 @@ export const GACHA_ITEMS: GachaItem[] = [
 
 export const TOTAL_ITEMS = GACHA_ITEMS.length; // 24
 
-function rollRarity(): Rarity {
+function rollRarity(boost = false): Rarity {
+  const weights = boost ? BOOST_RARITY_WEIGHTS : RARITY_WEIGHTS;
   const roll = Math.random() * 100;
   let cumulative = 0;
-  for (const [rarity, weight] of Object.entries(RARITY_WEIGHTS) as [Rarity, number][]) {
+  for (const [rarity, weight] of Object.entries(weights) as [Rarity, number][]) {
     cumulative += weight;
     if (roll < cumulative) return rarity;
   }
   return 'common';
 }
 
-export function rollGacha(): GachaItem {
-  const rarity = rollRarity();
+export function rollGacha(boost = false): GachaItem {
+  const rarity = rollRarity(boost);
   const pool = GACHA_ITEMS.filter(item => item.rarity === rarity);
   const idx = Math.floor(Math.random() * pool.length);
   return pool[idx];

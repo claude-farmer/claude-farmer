@@ -1,6 +1,7 @@
 'use client';
 
-import FarmCanvas from './FarmCanvas';
+import { useRef, useEffect } from 'react';
+import FarmCanvas, { type FarmCanvasHandle } from './FarmCanvas';
 import { TOTAL_ITEMS, getTimeOfDay } from '@claude-farmer/shared';
 import type { LocalState, Footprint, FarmNotifications } from '@claude-farmer/shared';
 import { useLocale } from '@/lib/locale-context';
@@ -13,7 +14,26 @@ interface FarmViewProps {
 
 export default function FarmView({ state, footprints, notifications }: FarmViewProps) {
   const { t } = useLocale();
+  const canvasRef = useRef<FarmCanvasHandle>(null);
+  const prevWaterCountRef = useRef(0);
   const { farm, user, status_message, inventory, activity } = state;
+
+  // 물 받을 때 캔버스 이펙트 트리거
+  useEffect(() => {
+    const count = notifications?.water_received_count ?? 0;
+    if (count > prevWaterCountRef.current && prevWaterCountRef.current > 0) {
+      // 새로운 물 → 랜덤 슬롯에 이펙트
+      const occupied = farm.grid
+        .map((s, i) => s ? i : -1)
+        .filter(i => i >= 0);
+      const slot = occupied.length > 0
+        ? occupied[Math.floor(Math.random() * occupied.length)]
+        : 0;
+      const latest = notifications?.water_received?.[0];
+      canvasRef.current?.triggerWaterReceivedEffect(slot, latest?.from_nickname);
+    }
+    prevWaterCountRef.current = count;
+  }, [notifications?.water_received_count, notifications?.water_received, farm.grid]);
   const hour = new Date().getHours();
   const tod = getTimeOfDay(hour);
   const uniqueItems = new Set(inventory.map(i => i.id)).size;
@@ -40,7 +60,7 @@ export default function FarmView({ state, footprints, notifications }: FarmViewP
       </div>
 
       <div className="rounded-lg overflow-hidden border border-[var(--border)]">
-        <FarmCanvas grid={farm.grid} footprints={footprints} farmOwnerId={state.user.github_id} />
+        <FarmCanvas ref={canvasRef} grid={farm.grid} footprints={footprints} farmOwnerId={state.user.github_id} />
       </div>
 
       {notifications && notifications.visitor_count > 0 && (

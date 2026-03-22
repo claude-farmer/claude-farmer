@@ -50,6 +50,22 @@ export const RARITY_LABEL: Record<Rarity, string> = {
   legendary: 'Legendary',
 };
 
+// ── 부스트 타임 (21시 ~ 6시) ──
+export function isBoostTime(hour?: number): boolean {
+  const h = hour ?? new Date().getHours();
+  return h >= 21 || h < 6;
+}
+
+export const BOOST_MULTIPLIER = 2;
+
+// 부스트 시 가챠 확률 보정 (Rare +5%, Epic +2%)
+export const BOOST_RARITY_WEIGHTS = {
+  common: 53,
+  rare: 33,
+  epic: 12,
+  legendary: 2,
+} as const;
+
 // ── 물 주기 ──
 export const DAILY_WATER_LIMIT = 3;
 

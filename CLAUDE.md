@@ -123,11 +123,12 @@ cd packages/vscode && npm run dev
 - **CLI**: Auto-detect via `$LANG` env var + `claude-farmer config --lang ko|en`
 - Shared translation module: `shared/src/i18n.ts`
 
-## Web UI Screens (3)
+## Web UI Screens (4)
 
-1. **Farm** — Canvas 2D pixel art (256×192, 4× scale), time-based background
+1. **Farm** — Canvas 2D pixel art (256×192, 4× scale), time-based background, notifications
 2. **Codex** — Rarity-grouped progress bars + item grid (obtained/locked)
 3. **Explore** — Neighbor list + random visit + watering (3/day) + bookmarks
+4. **Farm Visit** — View another user's farm, water crops, toggle bookmark
 
 ## API Routes
 
@@ -143,6 +144,8 @@ cd packages/vscode && npm run dev
 | `/api/farm/[id]/visit` | POST | Record farm visit (session auth) |
 | `/api/water` | POST | Water a user's farm (3/day limit, optional crop_slot) |
 | `/api/explore` | GET | Random user discovery |
+| `/api/bookmarks` | GET | List bookmarked user profiles (session auth) |
+| `/api/bookmarks` | POST | Add/remove bookmark (session auth) |
 | `/api/subscribe` | POST | Email subscription + welcome email |
 
 ## Social System ("Ghost Visits")
@@ -154,6 +157,33 @@ cd packages/vscode && npm run dev
 - **Notifications**: CLI shows social notifications on `claude-farmer farm`; Web polls `/notifications`
 - **Hover tooltip**: Mouse over footprints shows visitor nickname + time
 - **Redis keys**: `farm:{id}:visitors` (sorted set), `farm:{id}:footprints` (hash), `farm:{id}:water_detail:{date}` (sorted set)
+
+## Boost Time (21:00–06:00)
+
+- **2× growth**: Crops advance 2 stages per turn during boost hours
+- **2× planting**: Plant every 2 turns instead of 3
+- **Boosted gacha**: Common 53%, Rare 33%, Epic 12%, Legendary 2%
+- **Visual**: Character afterimage (purple tint), pulsing gold "BOOST" badge, enhanced night palette
+- Helper: `isBoostTime()` and `BOOST_MULTIPLIER` in `shared/src/constants.ts`
+
+## Bookmarks
+
+- **Redis set**: `user:{id}:bookmarks` stores bookmarked user IDs
+- **API**: `GET /api/bookmarks` (list), `POST /api/bookmarks` (add/remove)
+- **UI**: Star toggle on farm visit screen, bookmarked farms shown in Explore tab
+
+## Visual Effects System (Canvas)
+
+The FarmRenderer exposes trigger methods for rich visual feedback:
+
+- **FloatingText**: Rising, fading text ("+1", "+2") on growth/harvest
+- **Particle**: Colored particles for planting (dirt), harvesting (rarity color), legendary (gold burst)
+- **ScreenFlash**: Full-canvas color flash on legendary harvest
+- **ShakeEffect**: Per-slot crop shake on growth
+- **LevelUpBanner**: Centered banner on level-up events
+- **WaterAnim**: Blue droplet animation on watered slots
+
+FarmCanvas exposes these via `forwardRef`/`useImperativeHandle` so parent components (FarmView, FarmVisitView) can trigger them on game events.
 
 ## Design Principles
 

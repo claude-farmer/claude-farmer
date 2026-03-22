@@ -1,7 +1,7 @@
 import { PALETTE } from './palette';
 import { CHARACTER_SPRITE, CROP_SPRITES, drawSprite } from './sprites';
 import type { CropSlot, Footprint } from '@claude-farmer/shared';
-import { getTimeOfDay, type TimeOfDay } from '@claude-farmer/shared';
+import { getTimeOfDay, isBoostTime, type TimeOfDay } from '@claude-farmer/shared';
 
 // 캔버스 설정: 256×192px 기본, 4× 스케일
 const BASE_W = 256;
@@ -25,12 +25,54 @@ interface WaterAnim {
   duration: number; // frames
 }
 
+interface FloatingText {
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  startFrame: number;
+  duration: number;
+}
+
+interface ScreenFlash {
+  color: string;
+  startFrame: number;
+  duration: number;
+}
+
+interface ShakeEffect {
+  slotIndex: number;
+  startFrame: number;
+  duration: number;
+}
+
+interface LevelUpBanner {
+  level: number;
+  startFrame: number;
+  duration: number;
+}
+
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  color: string;
+  life: number;
+  maxLife: number;
+}
+
 export class FarmRenderer {
   private ctx: CanvasRenderingContext2D;
   private frame = 0;
   private animTimer = 0;
   private stars: { x: number; y: number; blink: boolean }[] = [];
   private waterAnims: WaterAnim[] = [];
+  private floatingTexts: FloatingText[] = [];
+  private screenFlashes: ScreenFlash[] = [];
+  private shakeEffects: ShakeEffect[] = [];
+  private levelUpBanners: LevelUpBanner[] = [];
+  private particles: Particle[] = [];
   // 발자국 위치 캐시 (hover 감지용)
   private footprintPositions: { x: number; y: number; fp: Footprint }[] = [];
 
@@ -53,24 +95,30 @@ export class FarmRenderer {
     const ctx = this.ctx;
     const hour = new Date().getHours();
     const tod = getTimeOfDay(hour);
+    const boost = isBoostTime(hour);
 
     ctx.clearRect(0, 0, BASE_W, BASE_H);
 
-    this.drawSky(tod);
+    this.drawSky(tod, boost);
     this.drawGround();
     if (state.footprints?.length) {
       this.drawFootprints(state.footprints, state.farmOwnerId ?? '');
     }
     this.drawGrid(state.grid);
-    this.drawCharacter(state.characterWorking);
+    this.drawCharacter(state.characterWorking, boost);
     this.drawWeatherEffects(tod);
+    if (boost) this.drawBoostBadge();
     this.drawWaterAnims();
+    this.drawFloatingTexts();
+    this.drawParticles();
+    this.drawScreenFlashes();
+    this.drawLevelUpBanners();
 
     this.frame++;
   }
 
   // ── 하늘 ──
-  private drawSky(tod: TimeOfDay) {
+  private drawSky(tod: TimeOfDay, boost = false) {
     const ctx = this.ctx;
     const skyH = SKY_TILES * TILE;
     const colors = PALETTE.sky[tod];
@@ -151,8 +199,9 @@ export class FarmRenderer {
 
   private drawStars() {
     const ctx = this.ctx;
+    const blinkSpeed = isBoostTime() ? 30 : 60;
     for (const star of this.stars) {
-      if (star.blink && this.frame % 60 < 30) continue;
+      if (star.blink && this.frame % blinkSpeed < blinkSpeed / 2) continue;
       ctx.fillStyle = PALETTE.star;
       ctx.fillRect(Math.round(star.x), Math.round(star.y), 1, 1);
     }
@@ -204,14 +253,28 @@ export class FarmRenderer {
 
   // ── 작물 그리드 ──
   private drawGrid(grid: (CropSlot | null)[]) {
+    // 만료된 shakeEffects 정리
+    this.shakeEffects = this.shakeEffects.filter(
+      s => this.frame - s.startFrame < s.duration
+    );
+
     for (let i = 0; i < 16; i++) {
       const slot = grid[i];
       if (!slot) continue;
 
       const row = Math.floor(i / 4);
       const col = i % 4;
-      const x = GRID_OFFSET_X + col * CELL_SIZE + (CELL_SIZE - TILE) / 2;
-      const y = GRID_OFFSET_Y + row * CELL_SIZE + (CELL_SIZE - TILE) / 2;
+      let x = GRID_OFFSET_X + col * CELL_SIZE + (CELL_SIZE - TILE) / 2;
+      let y = GRID_OFFSET_Y + row * CELL_SIZE + (CELL_SIZE - TILE) / 2;
+
+      // shake 적용
+      const shake = this.shakeEffects.find(s => s.slotIndex === i);
+      if (shake) {
+        const progress = (this.frame - shake.startFrame) / shake.duration;
+        const intensity = Math.max(0, 1 - progress) * 2;
+        x += Math.sin(this.frame * 3) * intensity;
+        y += Math.cos(this.frame * 5) * intensity * 0.5;
+      }
 
       const sprites = CROP_SPRITES[slot.crop];
       if (sprites && sprites[slot.stage]) {
@@ -221,21 +284,77 @@ export class FarmRenderer {
   }
 
   // ── 캐릭터 ──
-  private drawCharacter(working: boolean) {
+  private drawCharacter(working: boolean, boost = false) {
+    const ctx = this.ctx;
     const charX = GRID_OFFSET_X + 4 * CELL_SIZE + 12;
-    const bounceY = this.frame % 40 < 20 ? 0 : -1;
+    const bouncePeriod = boost ? 24 : 40; // 부스트 시 더 빠른 바운스
+    const bounceY = this.frame % bouncePeriod < bouncePeriod / 2 ? 0 : -1;
     const charY = GRID_OFFSET_Y + 2 * CELL_SIZE + bounceY;
 
-    drawSprite(this.ctx, CHARACTER_SPRITE, charX, charY, 1);
+    // 부스트 잔영
+    if (boost) {
+      const afterimages = [
+        { offset: 2, alpha: 0.1 },
+        { offset: 1, alpha: 0.25 },
+      ];
+      for (const ai of afterimages) {
+        ctx.globalAlpha = ai.alpha;
+        // 보라 틴트 오버레이
+        drawSprite(ctx, CHARACTER_SPRITE, charX - ai.offset, charY + ai.offset, 1);
+        ctx.globalAlpha = ai.alpha * 0.3;
+        ctx.fillStyle = '#a78bfa';
+        ctx.fillRect(charX - ai.offset, charY + ai.offset, TILE, TILE);
+      }
+      ctx.globalAlpha = 1;
+    }
 
-    // 작업중이면 머리 위에 표시
+    drawSprite(ctx, CHARACTER_SPRITE, charX, charY, 1);
+
+    // 작업중 표시
     if (working) {
-      this.ctx.fillStyle = '#FFFFFF';
-      const dotCount = (this.frame % 60) / 20 | 0;
-      for (let i = 0; i <= dotCount; i++) {
-        this.ctx.fillRect(charX + 4 + i * 3, charY - 4, 1, 1);
+      if (boost) {
+        // 부스트: 🔥 표현 (빨간+노란 깜빡이는 점)
+        const flicker = this.frame % 12 < 6;
+        ctx.fillStyle = flicker ? '#fbbf24' : '#ef4444';
+        ctx.fillRect(charX + 5, charY - 5, 2, 2);
+        ctx.fillStyle = flicker ? '#ef4444' : '#fbbf24';
+        ctx.fillRect(charX + 6, charY - 7, 1, 2);
+      } else {
+        ctx.fillStyle = '#FFFFFF';
+        const dotCount = (this.frame % 60) / 20 | 0;
+        for (let i = 0; i <= dotCount; i++) {
+          ctx.fillRect(charX + 4 + i * 3, charY - 4, 1, 1);
+        }
       }
     }
+  }
+
+  // ── 부스트 배지 ──
+  private drawBoostBadge() {
+    const ctx = this.ctx;
+    const pulse = 0.85 + Math.sin(this.frame * 0.1) * 0.15;
+    ctx.globalAlpha = pulse;
+    // 배경
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(BASE_W - 42, 2, 40, 8);
+    // 텍스트 (픽셀 폰트 시뮬레이션: 작은 사각형)
+    ctx.fillStyle = '#000000';
+    // "BOOST" 를 작은 점으로 표현하기엔 너무 작으므로, 심볼로 대체
+    ctx.fillRect(BASE_W - 40, 4, 1, 4); // 🔥 심볼
+    ctx.fillRect(BASE_W - 38, 3, 1, 5);
+    ctx.fillRect(BASE_W - 36, 4, 1, 4);
+    // ×2 표시
+    ctx.fillRect(BASE_W - 14, 4, 2, 1);
+    ctx.fillRect(BASE_W - 14, 6, 2, 1);
+    ctx.fillRect(BASE_W - 12, 5, 1, 1);
+    ctx.fillRect(BASE_W - 15, 5, 1, 1);
+    ctx.fillRect(BASE_W - 9, 3, 1, 6); // "2"
+    ctx.fillRect(BASE_W - 8, 3, 2, 1);
+    ctx.fillRect(BASE_W - 8, 5, 2, 1);
+    ctx.fillRect(BASE_W - 8, 8, 2, 1);
+    ctx.fillRect(BASE_W - 6, 4, 1, 1);
+    ctx.fillRect(BASE_W - 8, 7, 1, 1);
+    ctx.globalAlpha = 1;
   }
 
   // ── 날씨 이펙트 ──
@@ -253,8 +372,8 @@ export class FarmRenderer {
     }
 
     if (tod === 'night') {
-      // 반딧불
-      const fireflyCount = 3;
+      // 반딧불 (부스트 시 2배)
+      const fireflyCount = isBoostTime() ? 8 : 3;
       for (let i = 0; i < fireflyCount; i++) {
         const phase = (this.frame + i * 40) % 120;
         if (phase < 60) {
@@ -426,6 +545,293 @@ export class FarmRenderer {
       }
 
       return true;
+    });
+  }
+
+  // ── 플로팅 텍스트 ──
+  private drawFloatingTexts() {
+    const ctx = this.ctx;
+    this.floatingTexts = this.floatingTexts.filter(ft => {
+      const elapsed = this.frame - ft.startFrame;
+      if (elapsed >= ft.duration) return false;
+
+      const progress = elapsed / ft.duration;
+      const alpha = 1 - progress;
+      const offsetY = progress * 12;
+
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = ft.color;
+
+      // 픽셀 폰트로 텍스트 그리기 (간단한 +1, +2 등)
+      const chars = ft.text.split('');
+      let cx = ft.x;
+      for (const ch of chars) {
+        this.drawPixelChar(cx, ft.y - offsetY, ch, ft.color);
+        cx += 4;
+      }
+
+      ctx.globalAlpha = 1;
+      return true;
+    });
+  }
+
+  private drawPixelChar(x: number, y: number, ch: string, color: string) {
+    const ctx = this.ctx;
+    ctx.fillStyle = color;
+    if (ch === '+') {
+      ctx.fillRect(x + 1, y, 1, 3);
+      ctx.fillRect(x, y + 1, 3, 1);
+    } else if (ch === '1') {
+      ctx.fillRect(x + 1, y, 1, 4);
+      ctx.fillRect(x, y + 3, 3, 1);
+    } else if (ch === '2') {
+      ctx.fillRect(x, y, 3, 1);
+      ctx.fillRect(x + 2, y + 1, 1, 1);
+      ctx.fillRect(x, y + 2, 3, 1);
+      ctx.fillRect(x, y + 3, 1, 1);
+      ctx.fillRect(x, y + 4, 3, 1);
+    }
+  }
+
+  // ── 파티클 시스템 ──
+  private drawParticles() {
+    const ctx = this.ctx;
+    this.particles = this.particles.filter(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy -= 0.02; // 약간 위로 떠오름
+      p.life--;
+
+      if (p.life <= 0) return false;
+
+      const alpha = p.life / p.maxLife;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+      ctx.globalAlpha = 1;
+      return true;
+    });
+  }
+
+  // ── 화면 플래시 ──
+  private drawScreenFlashes() {
+    const ctx = this.ctx;
+    this.screenFlashes = this.screenFlashes.filter(sf => {
+      const elapsed = this.frame - sf.startFrame;
+      if (elapsed >= sf.duration) return false;
+
+      const progress = elapsed / sf.duration;
+      const alpha = (1 - progress) * 0.5;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = sf.color;
+      ctx.fillRect(0, 0, BASE_W, BASE_H);
+      ctx.globalAlpha = 1;
+      return true;
+    });
+  }
+
+  // ── 레벨업 배너 ──
+  private drawLevelUpBanners() {
+    const ctx = this.ctx;
+    this.levelUpBanners = this.levelUpBanners.filter(lb => {
+      const elapsed = this.frame - lb.startFrame;
+      if (elapsed >= lb.duration) return false;
+
+      const progress = elapsed / lb.duration;
+
+      // 등장 → 유지 → 페이드아웃
+      let alpha: number;
+      let scale: number;
+      if (progress < 0.15) {
+        alpha = progress / 0.15;
+        scale = 0.5 + (progress / 0.15) * 0.5;
+      } else if (progress < 0.7) {
+        alpha = 1;
+        scale = 1;
+      } else {
+        alpha = 1 - (progress - 0.7) / 0.3;
+        scale = 1;
+      }
+
+      const centerX = BASE_W / 2;
+      const centerY = BASE_H / 2 - 10;
+
+      ctx.globalAlpha = alpha;
+
+      // 배경 박스
+      const boxW = 60 * scale;
+      const boxH = 16 * scale;
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(centerX - boxW / 2, centerY - boxH / 2, boxW, boxH);
+
+      // 테두리
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(centerX - boxW / 2, centerY - boxH / 2, boxW, 1);
+      ctx.fillRect(centerX - boxW / 2, centerY + boxH / 2 - 1, boxW, 1);
+      ctx.fillRect(centerX - boxW / 2, centerY - boxH / 2, 1, boxH);
+      ctx.fillRect(centerX + boxW / 2 - 1, centerY - boxH / 2, 1, boxH);
+
+      // Level up text (간단한 점 표시)
+      ctx.fillStyle = '#000000';
+      // ★ 심볼
+      ctx.fillRect(centerX - 20, centerY - 2, 2, 2);
+      ctx.fillRect(centerX - 19, centerY - 3, 1, 1);
+      ctx.fillRect(centerX - 19, centerY + 1, 1, 1);
+
+      // "Lv" + 숫자
+      ctx.fillRect(centerX - 8, centerY - 3, 1, 7);
+      ctx.fillRect(centerX - 7, centerY + 3, 3, 1);
+      // 레벨 숫자 (간단히 큰 점)
+      ctx.fillRect(centerX + 5, centerY - 2, 3, 5);
+
+      // 꽃가루 파티클 추가
+      if (elapsed % 3 === 0 && progress < 0.7) {
+        for (let i = 0; i < 2; i++) {
+          this.particles.push({
+            x: centerX + (Math.random() - 0.5) * 80,
+            y: centerY + (Math.random() - 0.5) * 40,
+            vx: (Math.random() - 0.5) * 0.8,
+            vy: -Math.random() * 0.5,
+            color: ['#fbbf24', '#f472b6', '#a78bfa', '#4ade80'][Math.floor(Math.random() * 4)],
+            life: 20,
+            maxLife: 20,
+          });
+        }
+      }
+
+      ctx.globalAlpha = 1;
+      return true;
+    });
+  }
+
+  // ── Public trigger methods ──
+
+  // 성장 +1 (또는 부스트 +2)
+  triggerGrowthEffect(slotIndex: number, boost = false) {
+    const row = Math.floor(slotIndex / 4);
+    const col = slotIndex % 4;
+    const x = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2 - 4;
+    const y = GRID_OFFSET_Y + row * CELL_SIZE;
+
+    this.floatingTexts.push({
+      x, y,
+      text: boost ? '+2' : '+1',
+      color: boost ? '#fbbf24' : '#4ade80',
+      startFrame: this.frame,
+      duration: 20,
+    });
+
+    // 작물 흔들림
+    this.shakeEffects.push({
+      slotIndex,
+      startFrame: this.frame,
+      duration: 8,
+    });
+  }
+
+  // 심기 이펙트 (흙 파티클)
+  triggerPlantEffect(slotIndex: number) {
+    const row = Math.floor(slotIndex / 4);
+    const col = slotIndex % 4;
+    const cx = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2;
+    const cy = GRID_OFFSET_Y + row * CELL_SIZE + CELL_SIZE / 2;
+
+    for (let i = 0; i < 3; i++) {
+      this.particles.push({
+        x: cx,
+        y: cy,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: -Math.random() * 1.5,
+        color: '#8B6914',
+        life: 12,
+        maxLife: 12,
+      });
+    }
+  }
+
+  // 레벨업 배너
+  triggerLevelUp(level: number) {
+    this.levelUpBanners.push({
+      level,
+      startFrame: this.frame,
+      duration: 50, // ~4초 at 12fps
+    });
+  }
+
+  // Legendary 수확 플래시 + 대형 파티클
+  triggerLegendaryHarvest(slotIndex: number) {
+    const row = Math.floor(slotIndex / 4);
+    const col = slotIndex % 4;
+    const cx = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2;
+    const cy = GRID_OFFSET_Y + row * CELL_SIZE + CELL_SIZE / 2;
+
+    // 금색 화면 플래시
+    this.screenFlashes.push({
+      color: '#fbbf24',
+      startFrame: this.frame,
+      duration: 8,
+    });
+
+    // 큰 별 파티클 12개
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2;
+      this.particles.push({
+        x: cx,
+        y: cy,
+        vx: Math.cos(angle) * 1.5,
+        vy: Math.sin(angle) * 1.5 - 0.3,
+        color: ['#fbbf24', '#FFF176', '#fbbf24'][i % 3],
+        life: 25,
+        maxLife: 25,
+      });
+    }
+  }
+
+  // 일반 수확 이펙트 (등급별 색상 파티클)
+  triggerHarvestParticles(slotIndex: number, rarityColor: string) {
+    const row = Math.floor(slotIndex / 4);
+    const col = slotIndex % 4;
+    const cx = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2;
+    const cy = GRID_OFFSET_Y + row * CELL_SIZE + CELL_SIZE / 2;
+
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      this.particles.push({
+        x: cx,
+        y: cy,
+        vx: Math.cos(angle) * 0.8,
+        vy: Math.sin(angle) * 0.8 - 0.3,
+        color: rarityColor,
+        life: 18,
+        maxLife: 18,
+      });
+    }
+
+    // 등급 텍스트
+    this.floatingTexts.push({
+      x: cx - 4, y: cy - 4,
+      text: '+1',
+      color: rarityColor,
+      startFrame: this.frame,
+      duration: 18,
+    });
+  }
+
+  // 물 받을 때 이펙트 (+닉네임 표시)
+  triggerWaterReceivedEffect(slotIndex: number, nickname?: string) {
+    this.triggerWaterAnim(slotIndex);
+
+    const row = Math.floor(slotIndex / 4);
+    const col = slotIndex % 4;
+    const x = GRID_OFFSET_X + col * CELL_SIZE + CELL_SIZE / 2 - 4;
+    const y = GRID_OFFSET_Y + row * CELL_SIZE - 2;
+
+    this.floatingTexts.push({
+      x, y,
+      text: '+1',
+      color: '#64B5F6',
+      startFrame: this.frame,
+      duration: 20,
     });
   }
 

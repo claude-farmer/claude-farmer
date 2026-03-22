@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { FarmRenderer, type FarmRenderState } from '@/canvas/renderer';
 import type { CropSlot, Footprint } from '@claude-farmer/shared';
 
@@ -12,11 +12,34 @@ interface FarmCanvasProps {
   farmOwnerId?: string;
 }
 
-export default function FarmCanvas({ grid, working = false, className, footprints, farmOwnerId }: FarmCanvasProps) {
+export interface FarmCanvasHandle {
+  triggerWaterAnim: (slotIndex: number) => void;
+  triggerGrowthEffect: (slotIndex: number, boost?: boolean) => void;
+  triggerPlantEffect: (slotIndex: number) => void;
+  triggerHarvestParticles: (slotIndex: number, rarityColor: string) => void;
+  triggerLegendaryHarvest: (slotIndex: number) => void;
+  triggerLevelUp: (level: number) => void;
+  triggerWaterReceivedEffect: (slotIndex: number, nickname?: string) => void;
+}
+
+const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCanvas(
+  { grid, working = false, className, footprints, farmOwnerId },
+  ref
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<FarmRenderer | null>(null);
   const rafRef = useRef<number>(0);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    triggerWaterAnim: (slot) => rendererRef.current?.triggerWaterAnim(slot),
+    triggerGrowthEffect: (slot, boost) => rendererRef.current?.triggerGrowthEffect(slot, boost),
+    triggerPlantEffect: (slot) => rendererRef.current?.triggerPlantEffect(slot),
+    triggerHarvestParticles: (slot, color) => rendererRef.current?.triggerHarvestParticles(slot, color),
+    triggerLegendaryHarvest: (slot) => rendererRef.current?.triggerLegendaryHarvest(slot),
+    triggerLevelUp: (level) => rendererRef.current?.triggerLevelUp(level),
+    triggerWaterReceivedEffect: (slot, nick) => rendererRef.current?.triggerWaterReceivedEffect(slot, nick),
+  }));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -54,7 +77,7 @@ export default function FarmCanvas({ grid, working = false, className, footprint
       const timeText = hoursAgo < 1 ? `${Math.floor(hoursAgo * 60)}m`
         : hoursAgo < 24 ? `${Math.floor(hoursAgo)}h`
         : 'yesterday';
-      const waterText = fp.watered ? ' 💧' : '';
+      const waterText = fp.watered ? ' +' : '';
       setTooltip({
         text: `@${fp.nickname} · ${timeText}${waterText}`,
         x: e.clientX - rect.left,
@@ -86,4 +109,6 @@ export default function FarmCanvas({ grid, working = false, className, footprint
       )}
     </div>
   );
-}
+});
+
+export default FarmCanvas;

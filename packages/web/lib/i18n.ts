@@ -73,6 +73,21 @@ const dict = {
     searching: 'Searching...',
     discoveredFarms: 'Discovered Farms',
 
+    // Visit screen
+    visitBack: 'Back',
+    visitWater: 'Water',
+    visitWaterRemaining: '{remaining}/3',
+    visitWaterDone: 'No water left today',
+    visitBookmark: 'Bookmark',
+    visitBookmarked: 'Bookmarked',
+    visitLevel: 'Lv.',
+
+    // Boost
+    boostActive: 'BOOST x2 Active!',
+
+    // Level up
+    levelUp: 'Level Up!',
+
     // Tab bar
     tabFarm: 'Farm',
     tabBag: 'Codex',
@@ -133,6 +148,18 @@ const dict = {
     randomVisit: '랜덤 농장 방문',
     searching: '찾는 중...',
     discoveredFarms: '발견한 농장',
+
+    visitBack: '돌아가기',
+    visitWater: '물 주기',
+    visitWaterRemaining: '{remaining}/3',
+    visitWaterDone: '오늘 물 다 줬어요',
+    visitBookmark: '북마크',
+    visitBookmarked: '북마크됨',
+    visitLevel: 'Lv.',
+
+    boostActive: '부스트 x2 활성!',
+
+    levelUp: '레벨업!',
 
     tabFarm: '농장',
     tabBag: '도감',

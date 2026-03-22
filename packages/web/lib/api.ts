@@ -91,6 +91,31 @@ export async function fetchFarmWithFootprints(id: string): Promise<(PublicProfil
   }
 }
 
+export async function fetchBookmarks(): Promise<(PublicProfile & { github_id: string })[]> {
+  try {
+    const res = await fetch(`${BASE}/api/bookmarks`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function toggleBookmark(targetId: string, action: 'add' | 'remove'): Promise<string[]> {
+  try {
+    const res = await fetch(`${BASE}/api/bookmarks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_id: targetId, action }),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.bookmarks ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export async function subscribe(email: string): Promise<boolean> {
   try {
     const res = await fetch(`${BASE}/api/subscribe`, {

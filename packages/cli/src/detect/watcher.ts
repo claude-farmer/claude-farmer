@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import chalk from 'chalk';
-import { CROP_NAME_KO, RARITY_LABEL } from '@claude-farmer/shared';
+import { CROP_NAME_KO, RARITY_LABEL, isBoostTime } from '@claude-farmer/shared';
 import type { LocalState } from '@claude-farmer/shared';
 import { withState, stateExists } from '../core/state.js';
 import { plantCrop, growCrops, autoHarvest } from '../core/farm.js';
@@ -31,14 +31,16 @@ async function onClaudeActivity(): Promise<void> {
 
   await withState(async (state: LocalState) => {
     state.activity.today_input_chars += 100; // 추정치
+    const boost = isBoostTime();
 
-    // 매 턴마다 성장
+    // 매 턴마다 성장 (부스트 시 2× 적용은 growCrops 내부에서)
     const growResults = growCrops(state);
     for (const g of growResults) {
       if (g.newStage === 1) {
         notify(chalk.green(`🌱 ${CROP_NAME_KO[g.crop]} 씨앗을 심었어요`));
       } else if (g.newStage === 2) {
-        notify(chalk.green(`🌿 ${CROP_NAME_KO[g.crop]}가 쑥쑥 자라는 중...`));
+        const prefix = boost ? chalk.yellow('🔥 +2 부스트! ') : '';
+        notify(`${prefix}${chalk.green(`🌿 ${CROP_NAME_KO[g.crop]}가 쑥쑥 자라는 중...`)}`);
       }
     }
 
@@ -53,8 +55,9 @@ async function onClaudeActivity(): Promise<void> {
       notify(`🌾 ${CROP_NAME_KO[h.crop]} 수확! → ${color(`⭐ ${rarityLabel} ${h.reward.name} 획득!`)}`);
     }
 
-    // 3턴마다 새 작물 심기
-    if (turnCount % 3 === 0) {
+    // 심기 주기: 일반 3턴, 부스트 2턴 (실질 2× 심기)
+    const plantInterval = boost ? 2 : 3;
+    if (turnCount % plantInterval === 0) {
       const plantResult = plantCrop(state);
       if (plantResult) {
         notify(chalk.green(`🌱 ${CROP_NAME_KO[plantResult.crop]} 씨앗을 심었어요`));
