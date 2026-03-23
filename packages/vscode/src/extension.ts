@@ -8,6 +8,39 @@ import { CROPS, MAX_GROWTH_STAGE, CROP_EMOJI, GRID_SIZE, GRID_COLS, calculateLev
 import { rollGacha, TOTAL_ITEMS } from '@claude-farmer/shared';
 import { type Locale, detectLocale, getDict } from '@claude-farmer/shared';
 
+// ── Server sync ──
+const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5분 간격
+let lastSyncTime = 0;
+
+async function syncToServer(state: LocalState): Promise<void> {
+  const now = Date.now();
+  if (now - lastSyncTime < SYNC_INTERVAL_MS) return;
+  lastSyncTime = now;
+  try {
+    await fetch('https://claudefarmer.com/api/farm/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        github_id: state.user.github_id,
+        nickname: state.user.nickname,
+        avatar_url: state.user.avatar_url,
+        level: state.farm.level,
+        total_harvests: state.farm.total_harvests,
+        unique_items: new Set(state.inventory.map(i => i.id)).size,
+        streak_days: state.activity.streak_days,
+        today_input_chars: state.activity.today_input_chars,
+        today_harvests: state.activity.today_harvests,
+        today_water_given: state.activity.today_water_given,
+        inventory: state.inventory,
+        status_message: state.status_message,
+        farm: state.farm,
+      }),
+    });
+  } catch {
+    // 네트워크 실패 시 silent fail
+  }
+}
+
 // ── State management ──
 const DATA_DIR = '.claude-farmer';
 const STATE_FILE = 'state.json';
@@ -180,6 +213,8 @@ export function activate(context: vscode.ExtensionContext) {
           if (githubId && nickname) {
             const state = createDefaultState(githubId, nickname, avatarUrl || '');
             await saveState(state);
+            lastSyncTime = 0; // 즉시 동기화
+            syncToServer(state);
             provider.onLoginComplete(state);
             const d = getDict(getExtensionLocale());
             vscode.window.showInformationMessage(`🌱 Claude Farmer: ${nickname}, ${d.vscodeWelcome}!`);
@@ -328,7 +363,10 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
 
   private async loadAndSend() {
     this.state = await loadState();
-    if (this.state) resetDailyIfNeeded(this.state);
+    if (this.state) {
+      resetDailyIfNeeded(this.state);
+      syncToServer(this.state);
+    }
     this.sendState();
   }
 
@@ -371,6 +409,7 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
     growCrops(this.state);
     const harvested = autoHarvest(this.state);
     await saveState(this.state);
+    syncToServer(this.state);
     this.sendState();
 
     if (this.webviewView) {
