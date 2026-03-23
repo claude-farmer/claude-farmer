@@ -65,6 +65,8 @@ export async function POST(request: NextRequest) {
 
     await redis.set(keys.user(userId), profile);
     await redis.zadd(keys.recentActive, { score: Date.now(), member: userId });
+    // 닉네임 → github_id 인덱스 (검색용)
+    await redis.hset(keys.nicknameIndex, { [profile.nickname.toLowerCase()]: userId });
 
     return NextResponse.json({ ok: true });
   } catch {

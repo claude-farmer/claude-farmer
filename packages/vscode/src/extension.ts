@@ -324,7 +324,6 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
             : null;
           await saveState(this.state);
           this.sendState();
-          // 서버에도 동기화
           try {
             await fetch('https://claudefarmer.com/api/farm/status', {
               method: 'POST',
@@ -334,9 +333,7 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
                 status_message: this.state.status_message,
               }),
             });
-          } catch {
-            // 네트워크 실패 시 로컬만 저장 (silent fail)
-          }
+          } catch { /* silent */ }
         }
       } else if (msg.type === 'setLang') {
         if (msg.lang === 'en' || msg.lang === 'ko' || msg.lang === 'auto') {
@@ -344,6 +341,100 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
         }
       } else if (msg.type === 'checkUpdate') {
         vscode.env.openExternal(vscode.Uri.parse('https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode'));
+      } else if (msg.type === 'explore') {
+        // 랜덤 농장 탐험
+        try {
+          const exclude = this.state?.user?.github_id || '';
+          const res = await fetch(`https://claudefarmer.com/api/explore?exclude=${exclude}&count=5`);
+          const profiles = res.ok ? await res.json() : [];
+          this.postMessage({ type: 'exploreResult', profiles });
+        } catch { this.postMessage({ type: 'exploreResult', profiles: [] }); }
+      } else if (msg.type === 'search') {
+        // 유저 검색
+        try {
+          const res = await fetch(`https://claudefarmer.com/api/explore/search?q=${encodeURIComponent(msg.query)}`);
+          const profiles = res.ok ? await res.json() : [];
+          this.postMessage({ type: 'searchResult', profiles });
+        } catch { this.postMessage({ type: 'searchResult', profiles: [] }); }
+      } else if (msg.type === 'fetchFarm') {
+        // 다른 유저 농장 조회
+        try {
+          const res = await fetch(`https://claudefarmer.com/api/farm/${msg.targetId}`);
+          const profile = res.ok ? await res.json() : null;
+          this.postMessage({ type: 'farmResult', profile });
+        } catch { this.postMessage({ type: 'farmResult', profile: null }); }
+      } else if (msg.type === 'visitFarm') {
+        // 농장 방문 기록
+        if (this.state) {
+          try {
+            await fetch(`https://claudefarmer.com/api/farm/${msg.targetId}/visit`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ from: this.state.user.github_id }),
+            });
+          } catch { /* silent */ }
+        }
+      } else if (msg.type === 'water') {
+        // 물 주기
+        if (this.state) {
+          try {
+            const res = await fetch('https://claudefarmer.com/api/water', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ from: this.state.user.github_id, to: msg.targetId }),
+            });
+            const data = res.ok ? await res.json() : { ok: false };
+            this.postMessage({ type: 'waterResult', ...data });
+          } catch { this.postMessage({ type: 'waterResult', ok: false }); }
+        }
+      } else if (msg.type === 'getBookmarks') {
+        // 북마크 목록 조회
+        if (this.state) {
+          try {
+            const res = await fetch(`https://claudefarmer.com/api/bookmarks`, {
+              headers: { 'Cookie': `cf_session=${JSON.stringify({ github_id: this.state.user.github_id })}` },
+            });
+            // 쿠키 인증 안되므로 로컬 북마크 + 서버 프로필 조회 방식
+            const bookmarkIds = this.state.bookmarks || [];
+            const profiles: unknown[] = [];
+            for (const id of bookmarkIds) {
+              try {
+                const r = await fetch(`https://claudefarmer.com/api/farm/${id}`);
+                if (r.ok) {
+                  const p = await r.json();
+                  profiles.push({ ...p, github_id: id });
+                }
+              } catch { /* skip */ }
+            }
+            this.postMessage({ type: 'bookmarksResult', profiles, bookmarkIds });
+          } catch { this.postMessage({ type: 'bookmarksResult', profiles: [], bookmarkIds: [] }); }
+        }
+      } else if (msg.type === 'toggleBookmark') {
+        // 북마크 추가/삭제 (로컬 state에 저장)
+        if (this.state) {
+          const ids = this.state.bookmarks || [];
+          const idx = ids.indexOf(msg.targetId);
+          if (idx >= 0) {
+            ids.splice(idx, 1);
+          } else {
+            ids.push(msg.targetId);
+          }
+          this.state.bookmarks = ids;
+          await saveState(this.state);
+          // 서버에도 동기화 시도
+          try {
+            await fetch('https://claudefarmer.com/api/bookmarks', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                github_id: this.state.user.github_id,
+                target_id: msg.targetId,
+                action: idx >= 0 ? 'remove' : 'add',
+              }),
+            });
+          } catch { /* silent */ }
+          this.postMessage({ type: 'bookmarkToggled', bookmarkIds: this.state.bookmarks });
+        }
       }
     });
 
@@ -370,6 +461,12 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
     this.sendState();
   }
 
+  private postMessage(msg: unknown) {
+    if (this.webviewView) {
+      this.webviewView.webview.postMessage(msg);
+    }
+  }
+
   private sendState() {
     if (!this.webviewView) return;
     if (this.state) {
@@ -388,6 +485,7 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
           waterReceived: this.state.activity.today_water_received,
           streakDays: this.state.activity.streak_days,
           statusMessage: this.state.status_message?.text || null,
+          bookmarkIds: this.state.bookmarks || [],
         },
       });
     } else {
@@ -469,7 +567,6 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
 @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeOut { from{opacity:1} to{opacity:0} }
 .notif-item.out { animation:fadeOut .3s ease forwards; }
-/* Progress bar */
 .progress-section { margin-top:6px; }
 .progress-bar { height:3px; background:var(--vscode-panel-border,#2a2d3a); border-radius:2px; overflow:hidden; }
 .progress-fill { height:100%; background:#fbbf24; border-radius:2px; transition:width .5s ease; }
@@ -486,6 +583,38 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
 .lang-toggle button { background:none; border:none; color:var(--vscode-sideBar-foreground,#e5e7eb); cursor:pointer; font-size:10px; opacity:.6; }
 .lang-toggle button:hover { opacity:1; }
 .lang-toggle button.active { opacity:1; text-decoration:underline; }
+
+/* Tab bar */
+.tab-bar { display:flex; gap:0; margin-bottom:8px; border-bottom:1px solid var(--vscode-panel-border,#2a2d3a); }
+.tab-btn { flex:1; background:none; border:none; color:var(--vscode-sideBar-foreground,#e5e7eb); padding:8px 4px; cursor:pointer; font-size:12px; font-weight:bold; opacity:.5; border-bottom:2px solid transparent; transition:all .2s; }
+.tab-btn:hover { opacity:.8; }
+.tab-btn.active { opacity:1; border-bottom-color:#fbbf24; }
+
+/* Explore view */
+.explore-section { margin-bottom:10px; }
+.explore-section h3 { font-size:11px; font-weight:bold; opacity:.5; margin-bottom:6px; }
+.search-row { display:flex; gap:4px; margin-bottom:8px; }
+.search-row input { flex:1; background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); border-radius:4px; padding:6px 8px; color:var(--vscode-input-foreground,#e5e7eb); font-size:11px; outline:none; }
+.search-row input:focus { border-color:#fbbf24; }
+.search-row button { background:#fbbf24; color:#000; border:none; border-radius:4px; padding:6px 10px; cursor:pointer; font-size:11px; font-weight:bold; white-space:nowrap; }
+.profile-card { background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); border-radius:4px; padding:8px; margin-bottom:4px; cursor:pointer; transition:border-color .2s; }
+.profile-card:hover { border-color:#fbbf24; }
+.profile-name { font-weight:bold; font-size:12px; }
+.profile-level { font-size:10px; opacity:.5; margin-left:4px; }
+.profile-status { font-size:10px; opacity:.6; margin-top:2px; }
+.profile-harvests { font-size:10px; opacity:.4; float:right; }
+.empty-msg { text-align:center; opacity:.4; font-size:11px; padding:12px; white-space:pre-line; }
+
+/* Visit view */
+.visit-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.visit-back { background:none; border:none; color:var(--vscode-sideBar-foreground,#e5e7eb); cursor:pointer; font-size:11px; opacity:.7; padding:4px 0; }
+.visit-back:hover { opacity:1; }
+.visit-info { text-align:center; margin:6px 0; }
+.visit-nickname { font-size:14px; font-weight:bold; }
+.visit-level { font-size:11px; opacity:.5; }
+.visit-status { font-size:11px; opacity:.6; margin-top:4px; }
+.visit-actions { display:flex; gap:4px; margin-top:8px; }
+.visit-actions .btn { flex:1; }
 
 /* Onboarding */
 .onboarding { padding:4px 0; }
@@ -505,54 +634,103 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
 </head>
 <body>
 
-<!-- ── Farm View ── -->
+<!-- ── Main App (logged in) ── -->
 <div id="app" style="display:none">
-  <div class="header">
-    <span id="nickname"></span>
-    <span id="level"></span>
-  </div>
-  <canvas id="farm" width="256" height="192"></canvas>
-
-  <!-- [6] Activity progress bar -->
-  <div class="progress-section" id="progressSection" style="display:none">
-    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-    <div class="progress-label" id="progressLabel"></div>
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tabFarm" onclick="switchTab('farm')">🌱 ${d.vscodeTabFarm}</button>
+    <button class="tab-btn" id="tabExplore" onclick="switchTab('explore')">🌍 ${d.vscodeTabExplore}</button>
   </div>
 
-  <div class="stats">
-    <div class="stat"><div class="stat-label">🌾 ${d.vscodeHarvest}</div><div class="stat-value" id="harvests">0</div></div>
-    <div class="stat"><div class="stat-label">📦 ${d.vscodeCollection}</div><div class="stat-value" id="collection">0/24</div></div>
-    <div class="stat"><div class="stat-label">💧 ${d.vscodeWater}</div><div class="stat-value" id="water">0</div></div>
-    <div class="stat"><div class="stat-label">🔥 ${d.vscodeStreak}</div><div class="stat-value" id="streak">0${dl}</div></div>
-  </div>
-
-  <!-- [3] Status bubble editing -->
-  <div class="status-section">
-    <div class="status-display" id="statusDisplay" onclick="toggleStatusEdit()"></div>
-    <div class="status-edit" id="statusEdit" style="display:none">
-      <input id="statusInput" placeholder="${locale === 'ko' ? '말풍선을 입력하세요...' : 'Type your status...'}" maxlength="200" onkeydown="if(event.key==='Enter')saveStatus()">
-      <button onclick="saveStatus()">OK</button>
+  <!-- ── Farm Tab ── -->
+  <div id="farmTab">
+    <div class="header">
+      <span id="nickname"></span>
+      <span id="level"></span>
+    </div>
+    <canvas id="farm" width="256" height="192"></canvas>
+    <div class="progress-section" id="progressSection" style="display:none">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-label" id="progressLabel"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">🌾 ${d.vscodeHarvest}</div><div class="stat-value" id="harvests">0</div></div>
+      <div class="stat"><div class="stat-label">📦 ${d.vscodeCollection}</div><div class="stat-value" id="collection">0/24</div></div>
+      <div class="stat"><div class="stat-label">💧 ${d.vscodeWater}</div><div class="stat-value" id="water">0</div></div>
+      <div class="stat"><div class="stat-label">🔥 ${d.vscodeStreak}</div><div class="stat-value" id="streak">0${dl}</div></div>
+    </div>
+    <div class="status-section">
+      <div class="status-display" id="statusDisplay" onclick="toggleStatusEdit()"></div>
+      <div class="status-edit" id="statusEdit" style="display:none">
+        <input id="statusInput" placeholder="${locale === 'ko' ? '말풍선을 입력하세요...' : 'Type your status...'}" maxlength="200" onkeydown="if(event.key==='Enter')saveStatus()">
+        <button onclick="saveStatus()">OK</button>
+      </div>
+    </div>
+    <div class="notif-area" id="notifArea"></div>
+    <div class="actions">
+      <div class="btn-row">
+        <button class="btn" onclick="checkUpdate()">🔄 ${locale === 'ko' ? '업데이트' : 'Update'}</button>
+        <button class="btn" onclick="openWeb()">🌐 ${d.vscodeVisitWeb}</button>
+      </div>
+    </div>
+    <div class="footer">
+      <span>v0.3.1</span>
+      <div class="lang-toggle">
+        <button onclick="setLang('en')" class="${locale === 'en' ? 'active' : ''}">EN</button>
+        <span>|</span>
+        <button onclick="setLang('ko')" class="${locale === 'ko' ? 'active' : ''}">KO</button>
+      </div>
     </div>
   </div>
 
-  <!-- [6] Notification area -->
-  <div class="notif-area" id="notifArea"></div>
+  <!-- ── Explore Tab ── -->
+  <div id="exploreTab" style="display:none">
+    <!-- Bookmarks -->
+    <div class="explore-section">
+      <h3>⭐ ${d.vscodeMyNeighbors}</h3>
+      <div id="bookmarksList">
+        <div class="empty-msg">${d.vscodeNoNeighbors.replace(/\n/g, '<br>')}</div>
+      </div>
+    </div>
 
-  <div class="actions">
-    <button class="btn btn-primary" onclick="openFarm()">🌍 ${d.vscodeOpenFull}</button>
-    <div class="btn-row">
-      <button class="btn" onclick="checkUpdate()">🔄 ${locale === 'ko' ? '업데이트' : 'Update'}</button>
-      <button class="btn" onclick="openWeb()">🌐 ${d.vscodeVisitWeb}</button>
+    <!-- Search -->
+    <div class="explore-section">
+      <div class="search-row">
+        <input id="searchInput" placeholder="${d.vscodeSearchPlaceholder}" onkeydown="if(event.key==='Enter')doSearch()">
+        <button onclick="doSearch()">🔍 ${d.vscodeSearchBtn}</button>
+      </div>
+      <div id="searchResultsSection" style="display:none">
+        <h3>🔍 ${d.vscodeSearchResults}</h3>
+        <div id="searchResultsList"></div>
+      </div>
+    </div>
+
+    <!-- Random Visit -->
+    <button class="btn btn-primary" onclick="doExplore()" id="exploreBtn" style="width:100%;margin-bottom:8px;">
+      🎲 ${d.vscodeRandomVisit}
+    </button>
+    <div id="randomSection" style="display:none">
+      <div class="explore-section">
+        <h3>🎲 ${d.vscodeDiscoveredFarms}</h3>
+        <div id="randomList"></div>
+      </div>
     </div>
   </div>
 
-  <!-- [2] Language toggle + version -->
-  <div class="footer">
-    <span>v0.2.0</span>
-    <div class="lang-toggle">
-      <button onclick="setLang('en')" class="${locale === 'en' ? 'active' : ''}">EN</button>
-      <span>|</span>
-      <button onclick="setLang('ko')" class="${locale === 'ko' ? 'active' : ''}">KO</button>
+  <!-- ── Farm Visit View ── -->
+  <div id="visitView" style="display:none">
+    <div class="visit-header">
+      <button class="visit-back" onclick="closeVisit()">← ${d.vscodeVisitBack}</button>
+    </div>
+    <canvas id="visitCanvas" width="256" height="192"></canvas>
+    <div class="visit-info">
+      <div><span class="visit-nickname" id="visitNickname"></span> <span class="visit-level" id="visitLevel"></span></div>
+      <div class="visit-status" id="visitStatus"></div>
+      <div style="font-size:10px;opacity:.4;margin-top:2px;">🌾 <span id="visitHarvests">0</span></div>
+    </div>
+    <div class="visit-actions">
+      <button class="btn btn-primary" id="waterBtn" onclick="doWater()">💧 ${d.vscodeVisitWater}</button>
+      <button class="btn" id="bookmarkBtn" onclick="doToggleBookmark()">⭐ ${d.vscodeVisitBookmark}</button>
     </div>
   </div>
 </div>
@@ -586,7 +764,7 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
     <button class="btn" onclick="openWeb()">🌐 ${d.vscodeVisitWeb}</button>
   </div>
   <div class="footer" style="margin-top:10px">
-    <span>v0.2.0</span>
+    <span>v0.3.1</span>
     <div class="lang-toggle">
       <button onclick="setLang('en')" class="${locale === 'en' ? 'active' : ''}">EN</button>
       <span>|</span>
@@ -599,26 +777,34 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
 const vscode = acquireVsCodeApi();
 const canvas = document.getElementById('farm');
 const ctx = canvas ? canvas.getContext('2d') : null;
+const visitCanvas = document.getElementById('visitCanvas');
+const visitCtx = visitCanvas ? visitCanvas.getContext('2d') : null;
 const dl = '${dl}';
 let frame = 0;
 let farmState = null;
 let initialized = false;
 let statusMsg = null;
 let editingStatus = false;
+let currentTab = 'farm';
+let myGithubId = '';
+let bookmarkIds = [];
 
-// [4] Character animation state
-let charMode = 'idle'; // 'idle' | 'walk' | 'water'
+// Visit state
+let visitingId = null;
+let visitGrid = null;
+let visitProfile = null;
+let waterRemaining = 3;
+
+// Character animation state
+let charMode = 'idle';
 let charX = 210, charY = 80;
 let charTargetX = 210, charTargetY = 80;
-let charDir = 1; // 1=right, -1=left
+let charDir = 1;
 let idleTimer = 0;
 let walkTimer = 0;
 let waterAnimFrame = 0;
 let lastActivityFrame = -999;
-// [6] Growth flash effect
 let growFlashFrames = [];
-// Notification queue
-let notifQueue = [];
 
 const demoCanvas = document.getElementById('farmDemo');
 const demoCtx = demoCanvas ? demoCanvas.getContext('2d') : null;
@@ -633,11 +819,121 @@ const cropColors = {
   strawberry:'#FF6B81',pumpkin:'#F97316',radish:'#FBB6CE'
 };
 
+// ── Tab switching ──
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('farmTab').style.display = tab === 'farm' ? 'block' : 'none';
+  document.getElementById('exploreTab').style.display = tab === 'explore' ? 'block' : 'none';
+  document.getElementById('visitView').style.display = 'none';
+  document.getElementById('tabFarm').className = 'tab-btn' + (tab === 'farm' ? ' active' : '');
+  document.getElementById('tabExplore').className = 'tab-btn' + (tab === 'explore' ? ' active' : '');
+  visitingId = null;
+  if (tab === 'explore') {
+    vscode.postMessage({ type: 'getBookmarks' });
+  }
+}
+
+// ── Profile card HTML ──
+function profileCardHtml(p) {
+  const status = p.status_message && p.status_message.text
+    ? '<div class="profile-status">💬 "' + escHtml(p.status_message.text) + '"</div>' : '';
+  return '<div class="profile-card" onclick="openVisit(\\'' + escHtml(p.github_id) + '\\')">'
+    + '<span class="profile-harvests">🌾 ' + (p.total_harvests||0) + '</span>'
+    + '<span class="profile-name">🧑‍💻 ' + escHtml(p.nickname) + '</span>'
+    + '<span class="profile-level">Lv.' + (p.level||1) + '</span>'
+    + status + '</div>';
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function renderProfileList(containerId, profiles) {
+  const el = document.getElementById(containerId);
+  if (!profiles || profiles.length === 0) {
+    el.innerHTML = '<div class="empty-msg">${d.vscodeSearchNoResults}</div>';
+  } else {
+    el.innerHTML = profiles.filter(p => p.github_id !== myGithubId).map(profileCardHtml).join('');
+  }
+}
+
+// ── Search ──
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (q.length < 2) return;
+  vscode.postMessage({ type: 'search', query: q });
+}
+
+// ── Random explore ──
+function doExplore() {
+  document.getElementById('exploreBtn').textContent = '🔄 ${d.vscodeSearching}';
+  vscode.postMessage({ type: 'explore' });
+}
+
+// ── Farm Visit ──
+function openVisit(targetId) {
+  visitingId = targetId;
+  visitGrid = null;
+  visitProfile = null;
+  waterRemaining = 3;
+  document.getElementById('farmTab').style.display = 'none';
+  document.getElementById('exploreTab').style.display = 'none';
+  document.getElementById('visitView').style.display = 'block';
+  document.getElementById('visitNickname').textContent = '...';
+  document.getElementById('visitLevel').textContent = '';
+  document.getElementById('visitStatus').textContent = '';
+  document.getElementById('visitHarvests').textContent = '0';
+  updateBookmarkBtn();
+  vscode.postMessage({ type: 'visitFarm', targetId });
+  vscode.postMessage({ type: 'fetchFarm', targetId });
+}
+
+function closeVisit() {
+  visitingId = null;
+  visitGrid = null;
+  document.getElementById('visitView').style.display = 'none';
+  document.getElementById('exploreTab').style.display = 'block';
+  document.getElementById('tabExplore').className = 'tab-btn active';
+  document.getElementById('tabFarm').className = 'tab-btn';
+  currentTab = 'explore';
+}
+
+function doWater() {
+  if (!visitingId || waterRemaining <= 0) return;
+  vscode.postMessage({ type: 'water', targetId: visitingId });
+}
+
+function doToggleBookmark() {
+  if (!visitingId) return;
+  vscode.postMessage({ type: 'toggleBookmark', targetId: visitingId });
+}
+
+function updateBookmarkBtn() {
+  const btn = document.getElementById('bookmarkBtn');
+  const isBookmarked = bookmarkIds.includes(visitingId);
+  btn.textContent = isBookmarked ? '⭐ ${d.vscodeVisitBookmarked}' : '☆ ${d.vscodeVisitBookmark}';
+  btn.className = isBookmarked ? 'btn btn-primary' : 'btn';
+}
+
+function updateWaterBtn() {
+  const btn = document.getElementById('waterBtn');
+  if (waterRemaining <= 0) {
+    btn.textContent = '💧 ${d.vscodeVisitWaterDone}';
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+  } else {
+    btn.textContent = '💧 ${d.vscodeVisitWater} (' + waterRemaining + '${d.vscodeVisitWaterRemaining})';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
+}
+
+// ── Render farm (shared between own + visit) ──
 function renderFarm(c, cx, grid, isDemo) {
   frame++;
   cx.clearRect(0, 0, 256, 192);
 
-  // Sky
   const hour = new Date().getHours();
   let skyTop, skyBot;
   if (hour>=6&&hour<11){skyTop='#FFF3E0';skyBot='#FFCCBC';}
@@ -648,7 +944,6 @@ function renderFarm(c, cx, grid, isDemo) {
   grad.addColorStop(0,skyTop);grad.addColorStop(1,skyBot);
   cx.fillStyle=grad;cx.fillRect(0,0,256,48);
 
-  // Stars at night
   if(hour>=21||hour<6){
     cx.fillStyle='#FFFFFF';
     for(let i=0;i<15;i++){
@@ -656,21 +951,17 @@ function renderFarm(c, cx, grid, isDemo) {
     }
   }
 
-  // Ground
   cx.fillStyle='#7BC74D';cx.fillRect(0,48,256,144);
   cx.fillStyle='#5A9E32';
   for(let x=0;x<256;x+=7)for(let y=48;y<192;y+=5)cx.fillRect(x+(y*3%5),y,1,1);
 
-  // Soil
   cx.fillStyle='#8B6914';cx.fillRect(62,54,132,100);
   cx.fillStyle='#6B4E0A';
   for(let x=62;x<194;x+=4)for(let y=54;y<154;y+=4)cx.fillRect(x+(y*2%3),y+(x%2),1,1);
 
-  // Grid lines
   cx.fillStyle='#6B4E0A';
   for(let i=0;i<=4;i++){cx.fillRect(64+i*32-1,54,1,100);cx.fillRect(62,56+i*24-1,132,1);}
 
-  // Crops
   if(grid){
     for(let i=0;i<grid.length&&i<${GRID_SIZE};i++){
       const slot=grid[i]; if(!slot)continue;
@@ -679,7 +970,6 @@ function renderFarm(c, cx, grid, isDemo) {
       const stage=slot.stage;
       const color=cropColors[slot.crop]||'#7BC74D';
 
-      // [6] Growth flash
       let flashing = growFlashFrames.some(f=>f.slot===i&&frame-f.frame<15);
 
       cx.fillStyle='#7BC74D';
@@ -692,7 +982,6 @@ function renderFarm(c, cx, grid, isDemo) {
         if(frame%30<15){cx.fillStyle='#FFFFFF';cx.fillRect(bx+3,by+16-h-3,1,1);cx.fillRect(bx+9,by+16-h-1,1,1);}
       }
 
-      // [6] Flash effect on growth
       if(flashing){
         cx.fillStyle='rgba(255,255,255,'+(0.3+0.3*Math.sin(frame*0.5))+')';
         cx.fillRect(bx+2,by+4,12,14);
@@ -700,15 +989,12 @@ function renderFarm(c, cx, grid, isDemo) {
     }
   }
 
-  // [4] Character with animations
   if(!isDemo) {
     updateCharacter();
     drawCharacter(cx);
   } else {
-    // Demo character - just bounce
     const bounce=frame%40<20?0:-1;
     drawCharPixels(cx, 210, 80+bounce, 1);
-    // Demo zzz
     if(frame%120<80){
       cx.fillStyle='rgba(255,255,255,0.5)';
       cx.font='5px monospace';
@@ -719,10 +1005,8 @@ function renderFarm(c, cx, grid, isDemo) {
   }
 }
 
-// [4] Character AI — walks to crops, waters, idles with zzz
 function updateCharacter() {
   const sinceActivity = frame - lastActivityFrame;
-
   if (charMode === 'walk') {
     const dx = charTargetX - charX;
     const dy = charTargetY - charY;
@@ -742,9 +1026,7 @@ function updateCharacter() {
     waterAnimFrame--;
     if (waterAnimFrame <= 0) { charMode = 'idle'; idleTimer = 0; }
   } else {
-    // idle
     idleTimer++;
-    // Randomly walk to a crop every ~300 frames if active recently
     if (sinceActivity < 300 && idleTimer > 80 + Math.random()*120 && farmState) {
       const occupiedSlots = [];
       for (let i=0;i<farmState.length;i++) if(farmState[i]) occupiedSlots.push(i);
@@ -755,11 +1037,9 @@ function updateCharacter() {
         charTargetY = 60+row*24;
         charMode = 'walk';
         walkTimer = 0;
-        // Sometimes water
         if (Math.random() < 0.3) waterAnimFrame = 30;
       }
     }
-    // Return to rest spot after long idle
     if (idleTimer > 400) {
       charTargetX = 210; charTargetY = 80;
       if (Math.abs(charX-210)>3 || Math.abs(charY-80)>3) {
@@ -773,7 +1053,6 @@ function drawCharacter(cx) {
   const px = Math.round(charX), py = Math.round(charY);
   const sinceActivity = frame - lastActivityFrame;
 
-  // [4] Status bubble on canvas
   if (statusMsg && sinceActivity > 200) {
     cx.fillStyle = 'rgba(0,0,0,0.6)';
     const tw = Math.min(statusMsg.length*4+8, 100);
@@ -788,8 +1067,6 @@ function drawCharacter(cx) {
   if (charMode === 'idle') {
     const bounce = frame%40<20?0:-1;
     drawCharPixels(cx, px, py+bounce, charDir);
-
-    // [4] zzz when idle for long
     if (sinceActivity > 200) {
       const alpha = 0.3+0.2*Math.sin(frame*0.03);
       cx.globalAlpha = alpha;
@@ -802,17 +1079,14 @@ function drawCharacter(cx) {
       cx.globalAlpha = 1;
     }
   } else if (charMode === 'walk') {
-    // Walking animation - bobbing
     const bob = walkTimer%12<6?0:-1;
     drawCharPixels(cx, px, py+bob, charDir);
-    // Footstep dots
     if(walkTimer%8===0){
       cx.fillStyle='rgba(90,158,50,0.5)';
       cx.fillRect(px+2,py+12,2,1);
     }
   } else if (charMode === 'water') {
     drawCharPixels(cx, px, py, charDir);
-    // Water drops
     const wf = 30-waterAnimFrame;
     cx.fillStyle='#60A5FA';
     for(let i=0;i<3;i++){
@@ -824,20 +1098,15 @@ function drawCharacter(cx) {
 }
 
 function drawCharPixels(cx, x, y, dir) {
-  // Hat
   cx.fillStyle='#5C3A1E';
   cx.fillRect(x,y,6,3);
-  // Face
   cx.fillStyle='#FFD5B8';
   cx.fillRect(x+1,y+3,4,3);
-  // Eyes
   cx.fillStyle='#3E2723';
   if(dir>0){cx.fillRect(x+2,y+4,1,1);cx.fillRect(x+4,y+4,1,1);}
   else{cx.fillRect(x+1,y+4,1,1);cx.fillRect(x+3,y+4,1,1);}
-  // Body
   cx.fillStyle='#6C9BD2';
   cx.fillRect(x,y+6,6,4);
-  // Legs
   cx.fillStyle='#5B7A9E';
   cx.fillRect(x+1,y+10,2,2);
   cx.fillRect(x+3,y+10,2,2);
@@ -860,19 +1129,20 @@ function updateUI(data) {
   document.getElementById('streak').textContent=data.streakDays+dl;
   farmState=data.grid;
   statusMsg=data.statusMessage;
+  myGithubId=data.githubId;
+  if (data.bookmarkIds) bookmarkIds = data.bookmarkIds;
 
-  // [3] Status display
   const sd=document.getElementById('statusDisplay');
   if(data.statusMessage){
     sd.textContent='💬 "'+data.statusMessage+'"';
     sd.style.display='block';
+    sd.style.opacity='0.8';
   } else {
     sd.textContent='💬 ${locale === 'ko' ? '말풍선을 설정해보세요' : 'Set a status message'}';
     sd.style.opacity='0.4';
     sd.style.display='block';
   }
 
-  // [6] Progress bar for collection
   const pct=Math.round(data.uniqueItems/data.totalItems*100);
   const ps=document.getElementById('progressSection');
   const pf=document.getElementById('progressFill');
@@ -882,7 +1152,6 @@ function updateUI(data) {
   pl.textContent='${locale === 'ko' ? '도감 진행률' : 'Codex'} '+pct+'%';
 }
 
-// [3] Status editing
 function toggleStatusEdit(){
   editingStatus=!editingStatus;
   const el=document.getElementById('statusEdit');
@@ -901,7 +1170,6 @@ function saveStatus(){
   document.getElementById('statusEdit').style.display='none';
 }
 
-// [6] Show notification with auto-dismiss
 function showNotif(msg){
   const area=document.getElementById('notifArea');
   const el=document.createElement('div');
@@ -911,7 +1179,6 @@ function showNotif(msg){
   setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),300);},3000);
 }
 
-// [2]
 function setLang(l){vscode.postMessage({type:'setLang',lang:l});}
 function checkUpdate(){vscode.postMessage({type:'checkUpdate'});}
 function openWeb(){vscode.postMessage({type:'openWeb'});}
@@ -923,10 +1190,8 @@ window.addEventListener('message',(e)=>{
   if(msg.type==='state'){
     updateUI(msg.data);
   } else if(msg.type==='activity'){
-    // [4][6] Activity: character wakes up, growth flash
     lastActivityFrame=frame;
     if(charMode==='idle'){
-      // Wake up and walk to a random crop
       if(farmState){
         const occupied=[];
         for(let i=0;i<farmState.length;i++)if(farmState[i])occupied.push(i);
@@ -940,7 +1205,6 @@ window.addEventListener('message',(e)=>{
         }
       }
     }
-    // [6] Flash growth on all growing slots
     if(farmState){
       for(let i=0;i<farmState.length;i++){
         if(farmState[i]&&farmState[i].stage>0&&farmState[i].stage<3){
@@ -948,7 +1212,6 @@ window.addEventListener('message',(e)=>{
         }
       }
     }
-    // Show notifications
     if(msg.notifications){
       let delay=0;
       for(const n of msg.notifications){
@@ -962,18 +1225,60 @@ window.addEventListener('message',(e)=>{
       const types=['carrot','tomato','sunflower','strawberry','pumpkin','radish'];
       demoCrops.push({stage:0,crop:types[Math.floor(Math.random()*types.length)]});
     }
+  } else if(msg.type==='exploreResult'){
+    document.getElementById('exploreBtn').textContent='🎲 ${d.vscodeRandomVisit}';
+    document.getElementById('randomSection').style.display='block';
+    renderProfileList('randomList', msg.profiles);
+  } else if(msg.type==='searchResult'){
+    document.getElementById('searchResultsSection').style.display='block';
+    renderProfileList('searchResultsList', msg.profiles);
+  } else if(msg.type==='bookmarksResult'){
+    bookmarkIds = msg.bookmarkIds || [];
+    const el = document.getElementById('bookmarksList');
+    if (!msg.profiles || msg.profiles.length === 0) {
+      el.innerHTML = '<div class="empty-msg">${d.vscodeNoNeighbors.replace(/\n/g, '<br>')}</div>';
+    } else {
+      el.innerHTML = msg.profiles.map(profileCardHtml).join('');
+    }
+  } else if(msg.type==='farmResult'){
+    if(msg.profile) {
+      visitProfile = msg.profile;
+      visitGrid = msg.profile.farm_snapshot ? msg.profile.farm_snapshot.grid : null;
+      document.getElementById('visitNickname').textContent = msg.profile.nickname;
+      document.getElementById('visitLevel').textContent = '${d.vscodeVisitLevel}' + (msg.profile.level||1);
+      document.getElementById('visitHarvests').textContent = msg.profile.total_harvests||0;
+      const st = msg.profile.status_message && msg.profile.status_message.text;
+      document.getElementById('visitStatus').textContent = st ? '💬 "'+st+'"' : '';
+      updateWaterBtn();
+      updateBookmarkBtn();
+    }
+  } else if(msg.type==='waterResult'){
+    if(msg.ok) {
+      waterRemaining = typeof msg.remaining === 'number' ? msg.remaining : Math.max(0, waterRemaining-1);
+      updateWaterBtn();
+      showNotif('💧 ${locale === 'ko' ? '물을 줬어요!' : 'Watered!'}');
+    } else {
+      waterRemaining = 0;
+      updateWaterBtn();
+    }
+  } else if(msg.type==='bookmarkToggled'){
+    bookmarkIds = msg.bookmarkIds || [];
+    updateBookmarkBtn();
   }
 });
 
-// Clean up old flash frames
 setInterval(()=>{growFlashFrames=growFlashFrames.filter(f=>frame-f.frame<20);},1000);
 
 // Render loop
 setInterval(()=>{
-  if(initialized&&ctx&&farmState){
+  if(initialized && currentTab === 'farm' && ctx && farmState){
     renderFarm(canvas,ctx,farmState,false);
-  } else if(!initialized&&demoCtx){
+  } else if(!initialized && demoCtx){
     renderFarm(demoCanvas,demoCtx,demoCrops,true);
+  }
+  // Visit canvas rendering
+  if(visitingId && visitCtx && visitGrid){
+    renderFarm(visitCanvas,visitCtx,visitGrid,true);
   }
 },80);
 

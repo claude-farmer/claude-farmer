@@ -31,6 +31,7 @@ export const keys = {
   footprints: (id: string) => `farm:${id}:footprints`,
   waterDetail: (id: string) => `farm:${id}:water_detail:${todayKey()}`,
   bookmarks: (id: string) => `user:${id}:bookmarks`,
+  nicknameIndex: 'global:nickname_index',
 };
 
 function todayKey(): string {

@@ -52,6 +52,16 @@ export async function waterUser(to: string, cropSlot?: number): Promise<{ ok: bo
   }
 }
 
+export async function searchUser(query: string): Promise<(PublicProfile & { github_id: string })[]> {
+  try {
+    const res = await fetch(`${BASE}/api/explore/search?q=${encodeURIComponent(query)}`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchExplore(exclude: string, count = 10): Promise<(PublicProfile & { github_id: string })[]> {
   try {
     const res = await fetch(`${BASE}/api/explore?exclude=${exclude}&count=${count}`);

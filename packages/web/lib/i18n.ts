@@ -73,6 +73,11 @@ const dict = {
     randomVisit: 'Random Farm Visit',
     searching: 'Searching...',
     discoveredFarms: 'Discovered Farms',
+    searchPlaceholder: 'Search by GitHub ID or nickname',
+    searchBtn: 'Search',
+    searchResults: 'Search Results',
+    searchNoResults: 'No farmers found.',
+    searchMinChars: 'Enter at least 2 characters.',
 
     // Visit screen
     visitBack: 'Back',
@@ -149,6 +154,11 @@ const dict = {
     randomVisit: '랜덤 농장 방문',
     searching: '찾는 중...',
     discoveredFarms: '발견한 농장',
+    searchPlaceholder: 'GitHub ID 또는 닉네임으로 검색',
+    searchBtn: '검색',
+    searchResults: '검색 결과',
+    searchNoResults: '농부를 찾지 못했어요.',
+    searchMinChars: '2자 이상 입력해주세요.',
 
     visitBack: '돌아가기',
     visitWater: '물 주기',

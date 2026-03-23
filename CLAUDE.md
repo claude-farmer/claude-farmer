@@ -135,8 +135,13 @@ cd packages/vscode && npm run dev
 
 1. **Farm** — Canvas 2D pixel art (256×192, 4× scale), time-based background, notifications
 2. **Codex** — Rarity-grouped progress bars + item grid (obtained/locked)
-3. **Explore** — Neighbor list + random visit + watering (3/day) + bookmarks
+3. **Explore** — Neighbor list + random visit + user search + watering (3/day) + bookmarks
 4. **Farm Visit** — View another user's farm, water crops, toggle bookmark
+
+## VSCode Extension Screens (2 tabs)
+
+1. **Farm** — Canvas 2D pixel art sidebar, stats (harvest/codex/water/streak), status bubble, character animation
+2. **Explore** — Bookmarks (top), user search (GitHub ID or nickname), random farm visit, farm visit view with water/bookmark
 
 ## API Routes
 
@@ -153,6 +158,7 @@ cd packages/vscode && npm run dev
 | `/api/farm/[id]/visit` | POST | Record farm visit (session auth) |
 | `/api/water` | POST | Water a user's farm (3/day limit, optional crop_slot) |
 | `/api/explore` | GET | Random user discovery |
+| `/api/explore/search` | GET | Search users by GitHub ID or nickname |
 | `/api/bookmarks` | GET | List bookmarked user profiles (session auth) |
 | `/api/bookmarks` | POST | Add/remove bookmark (session auth) |
 | `/api/subscribe` | POST | Email subscription + welcome email |
@@ -166,6 +172,7 @@ cd packages/vscode && npm run dev
 - **Notifications**: CLI shows social notifications on `claude-farmer farm`; Web polls `/notifications`
 - **Hover tooltip**: Mouse over footprints shows visitor nickname + time
 - **Redis keys**: `farm:{id}:visitors` (sorted set), `farm:{id}:footprints` (hash), `farm:{id}:water_detail:{date}` (sorted set)
+- **Nickname index**: `global:nickname_index` (hash, `nickname_lowercase → github_id`) — updated on sync, used for user search
 
 ## Farmer Title (Activity Badge)
 
