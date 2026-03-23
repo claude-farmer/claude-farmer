@@ -3,7 +3,7 @@
 
 import { PALETTE } from './palette';
 
-type SpriteData = (string | null)[][];
+export type SpriteData = (string | null)[][];
 
 // ── 캐릭터 스프라이트 (16×16, 아래보기 기본 포즈) ──
 const CHAR_MAP: Record<string, string> = {

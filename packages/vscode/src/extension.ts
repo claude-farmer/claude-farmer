@@ -320,8 +320,9 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
       } else if (msg.type === 'setStatus') {
         if (this.state && typeof msg.text === 'string') {
           const text = msg.text.slice(0, 200);
+          const link = typeof msg.link === 'string' && /^https?:\/\//i.test(msg.link) ? msg.link.slice(0, 500) : undefined;
           this.state.status_message = text
-            ? { text, updated_at: new Date().toISOString() }
+            ? { text, link, updated_at: new Date().toISOString() }
             : null;
           await saveState(this.state);
           this.sendState();
@@ -468,10 +469,21 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private sendState() {
+  private async sendState() {
     if (!this.webviewView) return;
     if (this.state) {
       const uniqueItems = new Set(this.state.inventory.map(i => i.id)).size;
+
+      // 방문자 데이터 가져오기 (고스트 캐릭터용)
+      let visitors: { github_id: string; nickname: string; visited_at: string; watered?: boolean }[] = [];
+      try {
+        const res = await fetch(`https://claudefarmer.com/api/farm/${this.state.user.github_id}`);
+        if (res.ok) {
+          const data = await res.json();
+          visitors = data.footprints || [];
+        }
+      } catch { /* 네트워크 에러 시 빈 배열 유지 */ }
+
       this.webviewView.webview.postMessage({
         type: 'state',
         data: {
@@ -486,7 +498,10 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
           waterReceived: this.state.activity.today_water_received,
           streakDays: this.state.activity.streak_days,
           statusMessage: this.state.status_message?.text || null,
+          statusLink: this.state.status_message?.link || null,
+          character: this.state.user.character || null,
           bookmarkIds: this.state.bookmarks || [],
+          visitors,
         },
       });
     } else {
@@ -548,16 +563,16 @@ body {
   background: var(--vscode-sideBar-background,#1a1d27);
   color: var(--vscode-sideBar-foreground,#e5e7eb);
   font-family: var(--vscode-font-family,-apple-system,system-ui,sans-serif);
-  font-size: 12px; padding: 8px;
+  font-size: clamp(10px, 3vw, 12px); padding: 6px;
 }
-.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; font-size:11px; opacity:.7; }
+.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; font-size:clamp(9px, 2.8vw, 11px); opacity:.7; }
 canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; border-radius:6px; border:1px solid var(--vscode-panel-border,#2a2d3a); }
-.stats { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:8px; }
-.stat { background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); border-radius:4px; padding:6px; text-align:center; }
-.stat-label { opacity:.5; font-size:10px; }
-.stat-value { font-weight:bold; font-size:14px; }
-.status-section { margin-top:6px; }
-.status-display { padding:6px 8px; background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); border-radius:4px; font-size:11px; cursor:pointer; opacity:.8; }
+.stats { display:grid; grid-template-columns:1fr 1fr; gap:3px; margin-top:6px; }
+.stat { background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); border-radius:4px; padding:4px; text-align:center; }
+.stat-label { opacity:.5; font-size:clamp(8px, 2.5vw, 10px); }
+.stat-value { font-weight:bold; font-size:clamp(11px, 3.5vw, 14px); }
+.status-section { margin-top:4px; }
+.status-display { padding:4px 6px; background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); border-radius:4px; font-size:clamp(9px, 2.8vw, 11px); cursor:pointer; opacity:.8; }
 .status-display:hover { border-color:#fbbf24; }
 .status-edit { display:flex; gap:4px; margin-top:4px; }
 .status-edit input { flex:1; background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); border-radius:4px; padding:5px 8px; color:var(--vscode-input-foreground,#e5e7eb); font-size:11px; outline:none; }
@@ -573,12 +588,12 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
 .progress-fill { height:100%; background:#fbbf24; border-radius:2px; transition:width .5s ease; }
 .progress-label { font-size:9px; opacity:.4; margin-top:2px; text-align:center; }
 .actions { margin-top:8px; display:flex; flex-direction:column; gap:4px; }
-.btn { background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); color:var(--vscode-sideBar-foreground,#e5e7eb); padding:8px; border-radius:4px; cursor:pointer; font-size:11px; text-align:center; }
+.btn { background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); color:var(--vscode-sideBar-foreground,#e5e7eb); padding:6px; border-radius:4px; cursor:pointer; font-size:clamp(9px, 3vw, 11px); text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .btn:hover { border-color:#fbbf24; }
 .btn-primary { background:#fbbf24; color:#000; border-color:#fbbf24; font-weight:bold; }
 .btn-primary:hover { background:#f59e0b; }
-.btn-row { display:flex; gap:4px; }
-.btn-row .btn { flex:1; }
+.btn-row { display:flex; gap:3px; }
+.btn-row .btn { flex:1; min-width:0; }
 .footer { margin-top:8px; display:flex; justify-content:space-between; align-items:center; font-size:10px; opacity:.4; }
 .lang-toggle { display:flex; gap:4px; }
 .lang-toggle button { background:none; border:none; color:var(--vscode-sideBar-foreground,#e5e7eb); cursor:pointer; font-size:10px; opacity:.6; }
@@ -587,7 +602,7 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
 
 /* Tab bar */
 .tab-bar { display:flex; gap:0; margin-bottom:8px; border-bottom:1px solid var(--vscode-panel-border,#2a2d3a); }
-.tab-btn { flex:1; background:none; border:none; color:var(--vscode-sideBar-foreground,#e5e7eb); padding:8px 4px; cursor:pointer; font-size:12px; font-weight:bold; opacity:.5; border-bottom:2px solid transparent; transition:all .2s; }
+.tab-btn { flex:1; background:none; border:none; color:var(--vscode-sideBar-foreground,#e5e7eb); padding:6px 2px; cursor:pointer; font-size:clamp(10px, 3vw, 12px); font-weight:bold; opacity:.5; border-bottom:2px solid transparent; transition:all .2s; }
 .tab-btn:hover { opacity:.8; }
 .tab-btn.active { opacity:1; border-bottom-color:#fbbf24; }
 
@@ -598,9 +613,9 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
 .search-row input { flex:1; background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); border-radius:4px; padding:6px 8px; color:var(--vscode-input-foreground,#e5e7eb); font-size:11px; outline:none; }
 .search-row input:focus { border-color:#fbbf24; }
 .search-row button { background:#fbbf24; color:#000; border:none; border-radius:4px; padding:6px 10px; cursor:pointer; font-size:11px; font-weight:bold; white-space:nowrap; }
-.profile-card { background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); border-radius:4px; padding:8px; margin-bottom:4px; cursor:pointer; transition:border-color .2s; }
+.profile-card { background:var(--vscode-input-background,#232736); border:1px solid var(--vscode-panel-border,#2a2d3a); border-radius:4px; padding:6px; margin-bottom:3px; cursor:pointer; transition:border-color .2s; }
 .profile-card:hover { border-color:#fbbf24; }
-.profile-name { font-weight:bold; font-size:12px; }
+.profile-name { font-weight:bold; font-size:clamp(10px, 3vw, 12px); }
 .profile-level { font-size:10px; opacity:.5; margin-left:4px; }
 .profile-status { font-size:10px; opacity:.6; margin-top:2px; }
 .profile-harvests { font-size:10px; opacity:.4; float:right; }
@@ -649,7 +664,10 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
       <span id="nickname"></span>
       <span id="level"></span>
     </div>
-    <canvas id="farm" width="256" height="192"></canvas>
+    <div style="position:relative;">
+      <canvas id="farm" width="256" height="192" style="touch-action:none;cursor:grab;"></canvas>
+      <button id="viewModeBtn" onclick="toggleViewMode()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:6px 10px;font-size:16px;cursor:pointer;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;">👁</button>
+    </div>
     <div class="progress-section" id="progressSection" style="display:none">
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       <div class="progress-label" id="progressLabel"></div>
@@ -664,6 +682,7 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
       <div class="status-display" id="statusDisplay" onclick="toggleStatusEdit()"></div>
       <div class="status-edit" id="statusEdit" style="display:none">
         <input id="statusInput" placeholder="${locale === 'ko' ? '말풍선을 입력하세요...' : 'Type your status...'}" maxlength="200" onkeydown="if(event.key==='Enter')saveStatus()">
+        <input id="linkInput" placeholder="🔗 https://..." maxlength="500" style="margin-top:4px;font-size:11px;opacity:0.7" onkeydown="if(event.key==='Enter')saveStatus()">
         <button onclick="saveStatus()">OK</button>
       </div>
     </div>
@@ -723,7 +742,7 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
     <div class="visit-header">
       <button class="visit-back" onclick="closeVisit()">← ${d.vscodeVisitBack}</button>
     </div>
-    <canvas id="visitCanvas" width="256" height="192"></canvas>
+    <canvas id="visitCanvas" width="256" height="192" style="touch-action:none;cursor:grab;"></canvas>
     <div class="visit-info">
       <div><span class="visit-nickname" id="visitNickname"></span> <span class="visit-level" id="visitLevel"></span></div>
       <div class="visit-status" id="visitStatus"></div>
@@ -785,10 +804,50 @@ let frame = 0;
 let farmState = null;
 let initialized = false;
 let statusMsg = null;
+let statusLink = null;
 let editingStatus = false;
 let currentTab = 'farm';
 let myGithubId = '';
 let bookmarkIds = [];
+let myCharacter = null; // owner's CharacterAppearance
+
+// Character palette data
+const CHAR_HAIR_COLORS = ${JSON.stringify({
+  brown: { base: '#5C3A1E', highlight: '#7A5230' },
+  black: { base: '#2C1810', highlight: '#3E2723' },
+  blonde: { base: '#D4A543', highlight: '#E8C468' },
+  red: { base: '#A0522D', highlight: '#CD853F' },
+  pink: { base: '#E8A0BF', highlight: '#F0C0D0' },
+  blue: { base: '#4A6FA5', highlight: '#6B8FBF' },
+  white: { base: '#D0D0D0', highlight: '#EEEEEE' },
+  green: { base: '#5A9E5A', highlight: '#7BC77B' },
+})};
+const CHAR_SKIN_TONES = ${JSON.stringify({
+  light: { base: '#FFD5B8', shadow: '#E8B796' },
+  medium: { base: '#D4A574', shadow: '#B8886A' },
+  dark: { base: '#8B6544', shadow: '#6B4E30' },
+  pale: { base: '#FFF0E0', shadow: '#F0D8C0' },
+})};
+const CHAR_CLOTHES_COLORS = ${JSON.stringify({
+  blue: { base: '#6C9BD2', shadow: '#4A7FB5' },
+  red: { base: '#E57373', shadow: '#C05050' },
+  green: { base: '#81C784', shadow: '#5A9E5A' },
+  purple: { base: '#BA68C8', shadow: '#9040A0' },
+  orange: { base: '#FFB74D', shadow: '#E09530' },
+  pink: { base: '#F06292', shadow: '#D04070' },
+  teal: { base: '#4DB6AC', shadow: '#309088' },
+  yellow: { base: '#FFD54F', shadow: '#E0B830' },
+})};
+const ANIMAL_PALS = ${JSON.stringify({
+  bear: { base: '#8B6544', shadow: '#6B4E30', accent: '#D4A574', nose: '#2C1810' },
+  rabbit: { base: '#F5E6D3', shadow: '#E0CDB8', accent: '#FFB6C1', nose: '#FF9A9E' },
+  tiger: { base: '#E8A040', shadow: '#C08030', accent: '#2C1810', nose: '#2C1810' },
+  wolf: { base: '#8899AA', shadow: '#667788', accent: '#C0C8D0', nose: '#2C1810' },
+  frog: { base: '#5A9E32', shadow: '#488028', accent: '#7BC74D', nose: '#488028' },
+  husky: { base: '#7A8899', shadow: '#5A6877', accent: '#FFFFFF', nose: '#2C1810' },
+  bichon: { base: '#FAFAFA', shadow: '#E8E0D8', accent: '#F0E8E0', nose: '#2C1810' },
+  corgi: { base: '#D4A040', shadow: '#B08030', accent: '#FAFAFA', nose: '#2C1810' },
+})};
 
 // Visit state
 let visitingId = null;
@@ -806,6 +865,57 @@ let walkTimer = 0;
 let waterAnimFrame = 0;
 let lastActivityFrame = -999;
 let growFlashFrames = [];
+
+// View mode (1st/3rd person)
+let viewMode = 'third'; // 'first' | 'third'
+const FP_ZOOM = 2.5;
+let trackedGhostId = null;
+const ghosts = new Map(); // id → { nickname, pos, target, facing, mode, idleTimer, opacity, color }
+const ghostColors = ['#E57373','#81C784','#64B5F6','#FFB74D','#BA68C8','#4DB6AC','#F06292','#AED581'];
+function ghostColor(id) { let h=0; for(let i=0;i<id.length;i++) h=((h<<5)-h+id.charCodeAt(i))|0; return ghostColors[Math.abs(h)%ghostColors.length]; }
+let userListHitAreas = [];
+
+// Camera state (zoom/pan) — per-canvas
+const CAM_MIN_ZOOM = 1.0, CAM_MAX_ZOOM = 3.0, CAM_ZOOM_STEP = 0.25, CAM_LERP = 0.15;
+function makeCam() { return { x:0, y:0, zoom:1, tx:0, ty:0, tz:1 }; }
+const farmCam = makeCam();
+const visitCam = makeCam();
+let activeCam = farmCam;
+
+function clampCam(c) {
+  c.tz = Math.max(CAM_MIN_ZOOM, Math.min(CAM_MAX_ZOOM, Math.round(c.tz / CAM_ZOOM_STEP) * CAM_ZOOM_STEP));
+  const minX = -(256 * (c.tz - 1));
+  const minY = -(192 * (c.tz - 1));
+  c.tx = Math.max(minX, Math.min(0, c.tx));
+  c.ty = Math.max(minY, Math.min(0, c.ty));
+}
+
+function lerpCam(c) {
+  const dx = c.tx - c.x, dy = c.ty - c.y, dz = c.tz - c.zoom;
+  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(dz) < 0.01) {
+    c.x = c.tx; c.y = c.ty; c.zoom = c.tz;
+  } else {
+    c.x += dx * CAM_LERP; c.y += dy * CAM_LERP; c.zoom += dz * CAM_LERP;
+  }
+}
+
+function screenToWorldVS(sx, sy, cvs, cam) {
+  const rect = cvs.getBoundingClientRect();
+  const scX = 256 / rect.width, scY = 192 / rect.height;
+  return { x: (sx * scX - cam.x) / cam.zoom, y: (sy * scY - cam.y) / cam.zoom };
+}
+
+function zoomAtPointVS(sx, sy, delta, cvs, cam) {
+  const rect = cvs.getBoundingClientRect();
+  const scX = 256 / rect.width, scY = 192 / rect.height;
+  const cx = sx * scX, cy = sy * scY;
+  const wx = (cx - cam.x) / cam.zoom, wy = (cy - cam.y) / cam.zoom;
+  cam.tz += delta;
+  clampCam(cam);
+  cam.tx = cx - wx * cam.tz;
+  cam.ty = cy - wy * cam.tz;
+  clampCam(cam);
+}
 
 const demoCanvas = document.getElementById('farmDemo');
 const demoCtx = demoCanvas ? demoCanvas.getContext('2d') : null;
@@ -931,9 +1041,29 @@ function updateWaterBtn() {
 }
 
 // ── Render farm (shared between own + visit) ──
-function renderFarm(c, cx, grid, isDemo) {
+function renderFarm(c, cx, grid, isDemo, cam) {
   frame++;
   cx.clearRect(0, 0, 256, 192);
+
+  // 1인칭 모드: 캐릭터/고스트 추적
+  if (cam && !isDemo && viewMode === 'first') {
+    let tx = charX + 3, ty = charY + 6;
+    if (trackedGhostId) {
+      const g = ghosts.get(trackedGhostId);
+      if (g) { tx = g.pos.x + 3; ty = g.pos.y + 6; }
+    }
+    cam.tz = FP_ZOOM;
+    cam.tx = 128 - tx * FP_ZOOM;
+    cam.ty = 96 - ty * FP_ZOOM;
+    clampCam(cam);
+  }
+
+  // Camera transform
+  if (cam) { lerpCam(cam); }
+  const _cam = cam || { x:0, y:0, zoom:1 };
+  cx.save();
+  cx.translate(_cam.x, _cam.y);
+  cx.scale(_cam.zoom, _cam.zoom);
 
   const hour = new Date().getHours();
   let skyTop, skyBot;
@@ -955,6 +1085,39 @@ function renderFarm(c, cx, grid, isDemo) {
   cx.fillStyle='#7BC74D';cx.fillRect(0,48,256,144);
   cx.fillStyle='#5A9E32';
   for(let x=0;x<256;x+=7)for(let y=48;y<192;y+=5)cx.fillRect(x+(y*3%5),y,1,1);
+
+  // 잔디 장식: 꽃, 돌
+  const flowerData=[
+    {x:12,y:68,c:'#FF6B81'},{x:28,y:88,c:'#FACC15'},{x:8,y:118,c:'#FF9A9E'},
+    {x:38,y:103,c:'#FFFFFF'},{x:20,y:138,c:'#a78bfa'},
+    {x:205,y:73,c:'#FACC15'},{x:225,y:98,c:'#FF6B81'},{x:213,y:123,c:'#FFFFFF'},
+    {x:235,y:83,c:'#a78bfa'},{x:203,y:148,c:'#FF9A9E'}
+  ];
+  for(const f of flowerData){
+    cx.fillStyle='#5A9E32';cx.fillRect(f.x,f.y+1,1,2);
+    cx.fillStyle=f.c;cx.fillRect(f.x-1,f.y,1,1);cx.fillRect(f.x,f.y,1,1);cx.fillRect(f.x+1,f.y,1,1);
+    if(Math.sin(frame*0.05+f.x)>0.7) cx.fillRect(f.x+1,f.y-1,1,1);
+  }
+  const stoneData=[{x:45,y:63},{x:15,y:153},{x:230,y:63},{x:217,y:138}];
+  for(const s of stoneData){
+    cx.fillStyle='#9ca3af';cx.fillRect(s.x,s.y,3,2);
+    cx.fillStyle='#6b7280';cx.fillRect(s.x+1,s.y+1,1,1);
+  }
+
+  // 울타리
+  const fX=58,fY=52,fW=140,fH=104;
+  cx.fillStyle='#A0724A';
+  cx.fillRect(fX+1,fY+1,fW-2,1);cx.fillRect(fX+1,fY+3,fW-2,1);
+  cx.fillRect(fX+1,fY+fH-2,fW-2,1);cx.fillRect(fX+1,fY+fH-4,fW-2,1);
+  cx.fillRect(fX+1,fY+1,1,fH-2);cx.fillRect(fX+3,fY+1,1,fH-2);
+  cx.fillRect(fX+fW-2,fY+1,1,fH-2);cx.fillRect(fX+fW-4,fY+1,1,fH-2);
+  cx.fillStyle='#8B6914';
+  const fPosts=[[fX,fY],[fX+fW-2,fY],[fX,fY+fH-2],[fX+fW-2,fY+fH-2],
+    [fX+fW/2,fY],[fX+fW/2,fY+fH-2],[fX,fY+fH/2],[fX+fW-2,fY+fH/2]];
+  for(const[px,py] of fPosts) cx.fillRect(px,py,2,5);
+  // 흙길
+  cx.fillStyle='#C4A97D';cx.fillRect(122,fY+fH,12,6);
+  cx.fillStyle='#B8956E';cx.fillRect(124,fY+fH+2,2,1);cx.fillRect(129,fY+fH+4,2,1);
 
   cx.fillStyle='#8B6914';cx.fillRect(62,54,132,100);
   cx.fillStyle='#6B4E0A';
@@ -991,11 +1154,13 @@ function renderFarm(c, cx, grid, isDemo) {
   }
 
   if(!isDemo) {
+    updateGhosts();
+    drawGhosts(cx);
     updateCharacter();
     drawCharacter(cx);
   } else {
     const bounce=frame%40<20?0:-1;
-    drawCharPixels(cx, 210, 80+bounce, 1);
+    drawCharPixels(cx, 210, 80+bounce, 1, null);
     if(frame%120<80){
       cx.fillStyle='rgba(255,255,255,0.5)';
       cx.font='5px monospace';
@@ -1003,6 +1168,14 @@ function renderFarm(c, cx, grid, isDemo) {
       cx.fillText('z',218,76+zOff);
       cx.fillText('z',221,73+zOff);
     }
+  }
+
+  cx.restore(); // End camera transform
+
+  // HUD (zoom-independent)
+  if (!isDemo) {
+    drawUserIconSidebar(cx);
+    drawBottomInfoPanelVS(cx);
   }
 }
 
@@ -1055,19 +1228,12 @@ function drawCharacter(cx) {
   const sinceActivity = frame - lastActivityFrame;
 
   if (statusMsg && sinceActivity > 200) {
-    cx.fillStyle = 'rgba(0,0,0,0.6)';
-    const tw = Math.min(statusMsg.length*4+8, 100);
-    cx.fillRect(px-tw/2+3, py-14, tw, 9);
-    cx.fillStyle = '#FFFFFF';
-    cx.font = '5px monospace';
-    cx.textAlign = 'center';
-    cx.fillText(statusMsg.length>20?statusMsg.slice(0,20)+'…':statusMsg, px+3, py-7);
-    cx.textAlign = 'start';
+    drawPixelSpeechBubbleVS(cx, px+3, py-2, statusMsg);
   }
 
   if (charMode === 'idle') {
     const bounce = frame%40<20?0:-1;
-    drawCharPixels(cx, px, py+bounce, charDir);
+    drawCharPixels(cx, px, py+bounce, charDir, myCharacter);
     if (sinceActivity > 200) {
       const alpha = 0.3+0.2*Math.sin(frame*0.03);
       cx.globalAlpha = alpha;
@@ -1081,13 +1247,13 @@ function drawCharacter(cx) {
     }
   } else if (charMode === 'walk') {
     const bob = walkTimer%12<6?0:-1;
-    drawCharPixels(cx, px, py+bob, charDir);
+    drawCharPixels(cx, px, py+bob, charDir, myCharacter);
     if(walkTimer%8===0){
       cx.fillStyle='rgba(90,158,50,0.5)';
       cx.fillRect(px+2,py+12,2,1);
     }
   } else if (charMode === 'water') {
-    drawCharPixels(cx, px, py, charDir);
+    drawCharPixels(cx, px, py, charDir, myCharacter);
     const wf = 30-waterAnimFrame;
     cx.fillStyle='#60A5FA';
     for(let i=0;i<3;i++){
@@ -1098,19 +1264,296 @@ function drawCharacter(cx) {
   }
 }
 
-function drawCharPixels(cx, x, y, dir) {
-  cx.fillStyle='#5C3A1E';
-  cx.fillRect(x,y,6,3);
-  cx.fillStyle='#FFD5B8';
-  cx.fillRect(x+1,y+3,4,3);
+function drawCharPixels(cx, x, y, dir, appearance) {
+  const a = appearance || {type:'human',hairColor:'brown',skinTone:'light',clothesColor:'blue',eyeStyle:'dot'};
+  const clothes = (CHAR_CLOTHES_COLORS[a.clothesColor]||CHAR_CLOTHES_COLORS.blue);
+  // Body (shared)
+  cx.fillStyle=clothes.base; cx.fillRect(x,y+6,6,4);
+  cx.fillStyle='#5B7A9E'; cx.fillRect(x+1,y+10,2,2); cx.fillRect(x+3,y+10,2,2);
+  // Head
+  if (a.type==='human') {
+    const hair=(CHAR_HAIR_COLORS[a.hairColor]||CHAR_HAIR_COLORS.brown);
+    const skin=(CHAR_SKIN_TONES[a.skinTone]||CHAR_SKIN_TONES.light);
+    cx.fillStyle=hair.base; cx.fillRect(x,y,6,3);
+    cx.fillStyle=skin.base; cx.fillRect(x+1,y+3,4,3);
+    cx.fillStyle='#3E2723';
+    if(dir>0){cx.fillRect(x+2,y+4,1,1);cx.fillRect(x+4,y+4,1,1);}
+    else{cx.fillRect(x+1,y+4,1,1);cx.fillRect(x+3,y+4,1,1);}
+  } else {
+    const pal=ANIMAL_PALS[a.type]||ANIMAL_PALS.bear;
+    drawAnimalHeadVS(cx, x, y, a.type, pal, dir);
+  }
+}
+
+function drawAnimalHeadVS(cx, x, y, type, pal, dir) {
+  // Base head
+  cx.fillStyle=pal.base; cx.fillRect(x,y+1,6,5);
+  // Eyes
   cx.fillStyle='#3E2723';
-  if(dir>0){cx.fillRect(x+2,y+4,1,1);cx.fillRect(x+4,y+4,1,1);}
-  else{cx.fillRect(x+1,y+4,1,1);cx.fillRect(x+3,y+4,1,1);}
-  cx.fillStyle='#6C9BD2';
-  cx.fillRect(x,y+6,6,4);
-  cx.fillStyle='#5B7A9E';
-  cx.fillRect(x+1,y+10,2,2);
-  cx.fillRect(x+3,y+10,2,2);
+  if(dir>0){cx.fillRect(x+2,y+3,1,1);cx.fillRect(x+4,y+3,1,1);}
+  else{cx.fillRect(x+1,y+3,1,1);cx.fillRect(x+3,y+3,1,1);}
+  // Nose/snout
+  cx.fillStyle=pal.accent||pal.base;
+  cx.fillRect(x+2,y+4,2,1);
+  cx.fillStyle=pal.nose; cx.fillRect(x+3,y+4,1,1);
+  // Ears by type
+  cx.fillStyle=pal.base;
+  if(type==='bear'||type==='tiger'){cx.fillRect(x,y,2,2);cx.fillRect(x+4,y,2,2);}
+  else if(type==='rabbit'){cx.fillRect(x+1,y-2,1,3);cx.fillRect(x+4,y-2,1,3);cx.fillStyle=pal.accent;cx.fillRect(x+1,y-1,1,2);cx.fillRect(x+4,y-1,1,2);}
+  else if(type==='wolf'||type==='husky'){cx.fillRect(x,y-1,2,2);cx.fillRect(x+4,y-1,2,2);}
+  else if(type==='frog'){cx.fillStyle=pal.accent;cx.fillRect(x+1,y,1,1);cx.fillRect(x+4,y,1,1);}
+  else if(type==='bichon'){cx.fillRect(x-1,y,2,3);cx.fillRect(x+5,y,2,3);}
+  else if(type==='corgi'){cx.fillRect(x,y-1,2,3);cx.fillRect(x+4,y-1,2,3);cx.fillStyle=pal.accent;cx.fillRect(x+1,y+2,4,3);}
+  // Tiger stripes
+  if(type==='tiger'){cx.fillStyle=pal.accent;cx.fillRect(x,y+2,1,1);cx.fillRect(x+5,y+2,1,1);cx.fillRect(x+1,y+1,1,1);cx.fillRect(x+4,y+1,1,1);}
+  // Husky face mask
+  if(type==='husky'){cx.fillStyle=pal.accent;cx.fillRect(x+2,y+2,2,4);}
+}
+
+function drawGhostPixels(cx, x, y, clothesColor, appearance) {
+  // Use appearance if available, else fallback to color-only mode
+  if (appearance && appearance.type && appearance.type !== 'human') {
+    const pal = ANIMAL_PALS[appearance.type] || ANIMAL_PALS.bear;
+    cx.fillStyle=pal.base; cx.fillRect(x,y,6,3);
+    cx.fillStyle=pal.base; cx.fillRect(x+1,y+3,4,3);
+    cx.fillStyle='#3E2723'; cx.fillRect(x+2,y+4,1,1); cx.fillRect(x+4,y+4,1,1);
+  } else {
+    const hair = appearance ? (CHAR_HAIR_COLORS[appearance.hairColor]||CHAR_HAIR_COLORS.brown) : {base:'#7A5230'};
+    cx.fillStyle=hair.base; cx.fillRect(x,y,6,3);
+    const skin = appearance ? (CHAR_SKIN_TONES[appearance.skinTone]||CHAR_SKIN_TONES.light) : {base:'#FFD5B8'};
+    cx.fillStyle=skin.base; cx.fillRect(x+1,y+3,4,3);
+    cx.fillStyle='#3E2723'; cx.fillRect(x+2,y+4,1,1); cx.fillRect(x+4,y+4,1,1);
+  }
+  const cc = appearance ? (CHAR_CLOTHES_COLORS[appearance.clothesColor]||CHAR_CLOTHES_COLORS.blue).base : clothesColor;
+  cx.fillStyle=cc; cx.fillRect(x,y+6,6,4);
+  cx.fillStyle='#5B7A9E'; cx.fillRect(x+1,y+10,2,2); cx.fillRect(x+3,y+10,2,2);
+}
+
+function updateGhosts() {
+  for (const [,g] of ghosts) {
+    if (g.mode === 'walk') {
+      const dx=g.target.x-g.pos.x, dy=g.target.y-g.pos.y;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      if (dist < 1) { g.pos.x=g.target.x; g.pos.y=g.target.y; g.mode='idle'; g.idleTimer=0; }
+      else {
+        g.pos.x+=(dx/dist)*0.35; g.pos.y+=(dy/dist)*0.35;
+        if(dx>0.3) g.facing='right'; else if(dx<-0.3) g.facing='left';
+      }
+    } else {
+      g.idleTimer++;
+      if (g.idleTimer > 100+Math.abs(g.pos.x*7)%120) {
+        g.target={x:8+Math.abs(Math.sin(frame*0.01+g.pos.x)*0.5+0.5)*236, y:56+Math.abs(Math.cos(frame*0.01+g.pos.y)*0.5+0.5)*120};
+        g.mode='walk';
+      }
+    }
+  }
+}
+
+function drawGhosts(cx) {
+  for (const [id,g] of ghosts) {
+    const px=Math.round(g.pos.x), py=Math.round(g.pos.y);
+    const bounce = g.mode==='walk' ? (frame%10<5?-1:0) : (frame%50<25?0:-1);
+    const isTracked = trackedGhostId === id;
+    cx.globalAlpha = isTracked ? Math.min(g.opacity*1.5, 0.9) : g.opacity;
+    if (g.facing==='left') {
+      cx.save(); cx.translate(px+6, py+bounce); cx.scale(-1,1);
+      drawGhostPixels(cx, 0, 0, g.color, g.character); cx.restore();
+    } else { drawGhostPixels(cx, px, py+bounce, g.color, g.character); }
+    if (isTracked) {
+      cx.globalAlpha=0.9;
+      // 닉네임은 하단 패널에 표시, 여기서는 심플하게
+      cx.fillStyle='rgba(0,0,0,0.6)';
+      const tw=Math.min(g.nickname.length*3+6,50);
+      cx.fillRect(px-tw/2+3,py-8,tw,6);
+      cx.fillStyle='#FFFFFF'; cx.font='4px monospace'; cx.textAlign='center';
+      cx.fillText(g.nickname.slice(0,12),px+3,py-3); cx.textAlign='start';
+    }
+    if (g.watered) {
+      cx.globalAlpha=g.opacity; cx.fillStyle='#64B5F6';
+      cx.fillRect(px+7,py-3,1,2); cx.fillRect(px+6,py-1,3,1);
+    }
+    cx.globalAlpha=1;
+  }
+}
+
+function drawMiniPortraitVS(cx, x, y, color, isOwner, appearance) {
+  // 6×8px mini character
+  const clothes = appearance ? (CHAR_CLOTHES_COLORS[appearance.clothesColor]||CHAR_CLOTHES_COLORS.blue).base : color;
+  if (appearance && appearance.type && appearance.type !== 'human') {
+    const pal = ANIMAL_PALS[appearance.type] || ANIMAL_PALS.bear;
+    cx.fillStyle=pal.base; cx.fillRect(x+1,y,4,2);
+    cx.fillStyle=pal.base; cx.fillRect(x+1,y+2,4,2);
+    cx.fillStyle='#3E2723'; cx.fillRect(x+2,y+3,1,1); cx.fillRect(x+3,y+3,1,1);
+  } else {
+    const hair = appearance ? (CHAR_HAIR_COLORS[appearance.hairColor]||CHAR_HAIR_COLORS.brown) : {base: isOwner ? '#5C3A1E' : '#7A5230'};
+    cx.fillStyle=hair.base; cx.fillRect(x+1,y,4,2);
+    const skin = appearance ? (CHAR_SKIN_TONES[appearance.skinTone]||CHAR_SKIN_TONES.light) : {base:'#FFD5B8'};
+    cx.fillStyle=skin.base; cx.fillRect(x+1,y+2,4,2);
+    cx.fillStyle='#3E2723'; cx.fillRect(x+2,y+3,1,1); cx.fillRect(x+3,y+3,1,1);
+  }
+  cx.fillStyle=clothes; cx.fillRect(x,y+4,6,3);
+  cx.fillStyle='#5B7A9E'; cx.fillRect(x+1,y+7,2,1); cx.fillRect(x+3,y+7,2,1);
+}
+
+let overflowHitArea = null;
+
+function drawUserIconSidebar(cx) {
+  const iconSize = 10;
+  const gap = 2;
+  const maxVisible = 4;
+  const sideX = 2;
+  let y = 3;
+
+  userListHitAreas = [];
+  overflowHitArea = null;
+
+  // ME icon
+  const meTracked = viewMode === 'first' && !trackedGhostId;
+  // Border
+  cx.fillStyle = meTracked ? '#fbbf24' : '#9ca3af';
+  cx.fillRect(sideX, y, iconSize, iconSize);
+  // Inner bg
+  cx.fillStyle = 'rgba(0,0,0,0.5)';
+  cx.fillRect(sideX+1, y+1, iconSize-2, iconSize-2);
+  drawMiniPortraitVS(cx, sideX+2, y+1, '#6C9BD2', true, myCharacter);
+  userListHitAreas.push({id:'__me__', x:sideX, y, w:iconSize, h:iconSize});
+  y += iconSize + gap;
+
+  // Ghost icons
+  const entries = Array.from(ghosts.entries());
+  const visCount = Math.min(entries.length, maxVisible);
+  for (let i = 0; i < visCount; i++) {
+    const [id, g] = entries[i];
+    const isT = trackedGhostId === id;
+    cx.fillStyle = isT ? '#fbbf24' : '#555';
+    cx.fillRect(sideX, y, iconSize, iconSize);
+    cx.fillStyle = 'rgba(0,0,0,0.5)';
+    cx.fillRect(sideX+1, y+1, iconSize-2, iconSize-2);
+    drawMiniPortraitVS(cx, sideX+2, y+1, g.color, false, g.character);
+    if (g.watered) {
+      cx.fillStyle = '#64B5F6';
+      cx.fillRect(sideX+iconSize-3, y+1, 2, 2);
+    }
+    userListHitAreas.push({id, x:sideX, y, w:iconSize, h:iconSize});
+    y += iconSize + gap;
+  }
+
+  // Overflow "+N"
+  if (entries.length > maxVisible) {
+    const remaining = entries.length - maxVisible;
+    cx.fillStyle = 'rgba(0,0,0,0.5)';
+    cx.fillRect(sideX, y, iconSize, iconSize);
+    cx.fillStyle = 'rgba(255,255,255,0.1)';
+    cx.fillRect(sideX, y, iconSize, iconSize);
+    cx.fillStyle = '#9ca3af';
+    cx.font = '4px monospace';
+    cx.textAlign = 'center';
+    cx.fillText('+'+remaining, sideX + iconSize/2, y + 7);
+    cx.textAlign = 'start';
+    overflowHitArea = {x:sideX, y, w:iconSize, h:iconSize, remaining};
+    y += iconSize + gap;
+  }
+}
+
+function drawBottomInfoPanelVS(cx) {
+  if (viewMode !== 'first') return;
+
+  let nickname = '';
+  let level = 0;
+
+  if (!trackedGhostId) {
+    // own info — we don't have full profile data in VSCode, just show basics
+    return; // skip for own character in VSCode (info is shown in HTML)
+  } else {
+    const ghost = ghosts.get(trackedGhostId);
+    if (ghost) {
+      nickname = ghost.nickname;
+    }
+  }
+
+  if (!nickname) return;
+
+  const panelW = 100;
+  const panelH = 12;
+  const panelX = (256 - panelW) / 2;
+  const panelY = 192 - panelH - 4;
+
+  cx.fillStyle = 'rgba(0,0,0,0.6)';
+  cx.fillRect(panelX, panelY, panelW, panelH);
+  cx.fillStyle = 'rgba(255,255,255,0.15)';
+  cx.fillRect(panelX, panelY, panelW, 1);
+  cx.fillRect(panelX, panelY+panelH-1, panelW, 1);
+  cx.fillRect(panelX, panelY, 1, panelH);
+  cx.fillRect(panelX+panelW-1, panelY, 1, panelH);
+
+  cx.font = '4px monospace';
+  cx.fillStyle = '#FFFFFF';
+  const displayName = nickname.length > 16 ? nickname.slice(0,15)+'…' : nickname;
+  cx.fillText(displayName, panelX+3, panelY+8);
+}
+
+function drawPixelSpeechBubbleVS(cx, x, y, text) {
+  const maxChars = 24;
+  const displayText = text.length > maxChars ? text.slice(0, maxChars-1)+'…' : text;
+  cx.font = '4px monospace';
+  const textW = Math.min(cx.measureText(displayText).width, 80);
+  const padX = 4, padY = 3;
+  const bubbleW = Math.ceil(textW) + padX*2;
+  const bubbleH = 8 + padY;
+  const bx = Math.round(x - bubbleW/2);
+  const by = y - bubbleH - 4;
+
+  const borderColor = '#5B4A3A';
+  const bgColor = '#FFFBE6';
+
+  // Background (rounded with stepped corners)
+  cx.fillStyle = bgColor;
+  cx.fillRect(bx+2, by, bubbleW-4, bubbleH);
+  cx.fillRect(bx+1, by+1, bubbleW-2, bubbleH-2);
+  cx.fillRect(bx, by+2, bubbleW, bubbleH-4);
+
+  // Border
+  cx.fillStyle = borderColor;
+  cx.fillRect(bx+2, by-1, bubbleW-4, 1);
+  cx.fillRect(bx+2, by+bubbleH, bubbleW-4, 1);
+  cx.fillRect(bx-1, by+2, 1, bubbleH-4);
+  cx.fillRect(bx+bubbleW, by+2, 1, bubbleH-4);
+  // Stepped corners
+  cx.fillRect(bx+1,by,1,1); cx.fillRect(bx,by+1,1,1);
+  cx.fillRect(bx+bubbleW-2,by,1,1); cx.fillRect(bx+bubbleW-1,by+1,1,1);
+  cx.fillRect(bx+1,by+bubbleH-1,1,1); cx.fillRect(bx,by+bubbleH-2,1,1);
+  cx.fillRect(bx+bubbleW-2,by+bubbleH-1,1,1); cx.fillRect(bx+bubbleW-1,by+bubbleH-2,1,1);
+
+  // Tail
+  const tailX = Math.round(x);
+  const tailY = by + bubbleH + 1;
+  cx.fillStyle = bgColor;
+  cx.fillRect(tailX-1, tailY, 3, 1);
+  cx.fillRect(tailX, tailY+1, 1, 1);
+  cx.fillStyle = borderColor;
+  cx.fillRect(tailX-2, tailY, 1, 1);
+  cx.fillRect(tailX+2, tailY, 1, 1);
+  cx.fillRect(tailX-1, tailY+1, 1, 1);
+  cx.fillRect(tailX+1, tailY+1, 1, 1);
+  cx.fillRect(tailX, tailY+2, 1, 1);
+
+  // Text
+  cx.fillStyle = '#3E2723';
+  cx.font = '4px monospace';
+  cx.fillText(displayText, bx+padX, by+padY+4);
+}
+
+function hitTestUserListVS(sx,sy,cvs) {
+  const rect=cvs.getBoundingClientRect();
+  const cx=sx*256/rect.width, cy=sy*192/rect.height;
+  for(const a of userListHitAreas) {
+    if(cx>=a.x&&cx<=a.x+a.w&&cy>=a.y&&cy<=a.y+a.h) return {type:'user',id:a.id};
+  }
+  if(overflowHitArea){
+    const o=overflowHitArea;
+    if(cx>=o.x&&cx<=o.x+o.w&&cy>=o.y&&cy<=o.y+o.h) return {type:'overflow'};
+  }
+  return null;
 }
 
 function updateUI(data) {
@@ -1130,8 +1573,36 @@ function updateUI(data) {
   document.getElementById('streak').textContent=data.streakDays+dl;
   farmState=data.grid;
   statusMsg=data.statusMessage;
+  statusLink=data.statusLink;
   myGithubId=data.githubId;
+  myCharacter=data.character||null;
   if (data.bookmarkIds) bookmarkIds = data.bookmarkIds;
+
+  // 방문자 → 고스트 동기화
+  if (data.visitors && data.visitors.length > 0) {
+    const activeIds = new Set();
+    for (const fp of data.visitors) {
+      const ha = (Date.now()-new Date(fp.visited_at).getTime())/(1000*60*60);
+      if (ha > 24) continue;
+      const id = fp.github_id;
+      activeIds.add(id);
+      if (!ghosts.has(id)) {
+        // 결정론적 초기 위치
+        let hash=0; const s=id+(data.githubId||'');
+        for(let i=0;i<s.length;i++) hash=((hash<<5)-hash+s.charCodeAt(i))|0;
+        const ah=Math.abs(hash);
+        const side=ah%2;
+        const gx=side===0?(ah>>1)%56:(194+2+((ah>>1)%56));
+        const gy=56+((ah>>8)%130);
+        ghosts.set(id, {
+          nickname:fp.nickname, pos:{x:gx,y:gy}, target:{x:gx,y:gy},
+          facing:ah%2===0?'right':'left', mode:'idle', idleTimer:Math.floor(Math.random()*80),
+          opacity:Math.max(0.15,1-ha/24)*0.6, watered:fp.watered||false, color:ghostColor(id)
+        });
+      }
+    }
+    for(const id of ghosts.keys()) { if(!activeIds.has(id)){ghosts.delete(id);if(trackedGhostId===id)trackedGhostId=null;} }
+  }
 
   const sd=document.getElementById('statusDisplay');
   if(data.statusMessage){
@@ -1160,13 +1631,17 @@ function toggleStatusEdit(){
   if(editingStatus){
     const inp=document.getElementById('statusInput');
     inp.value=statusMsg||'';
+    const linkInp=document.getElementById('linkInput');
+    linkInp.value=statusLink||'';
     inp.focus();
   }
 }
 function saveStatus(){
   const inp=document.getElementById('statusInput');
+  const linkInp=document.getElementById('linkInput');
   const text=inp.value.trim();
-  vscode.postMessage({type:'setStatus',text});
+  const link=linkInp.value.trim();
+  vscode.postMessage({type:'setStatus',text,link});
   editingStatus=false;
   document.getElementById('statusEdit').style.display='none';
 }
@@ -1273,15 +1748,147 @@ setInterval(()=>{growFlashFrames=growFlashFrames.filter(f=>frame-f.frame<20);},1
 // Render loop
 setInterval(()=>{
   if(initialized && currentTab === 'farm' && ctx && farmState){
-    renderFarm(canvas,ctx,farmState,false);
+    renderFarm(canvas,ctx,farmState,false,farmCam);
   } else if(!initialized && demoCtx){
-    renderFarm(demoCanvas,demoCtx,demoCrops,true);
+    renderFarm(demoCanvas,demoCtx,demoCrops,true,null);
   }
   // Visit canvas rendering
   if(visitingId && visitCtx && visitGrid){
-    renderFarm(visitCanvas,visitCtx,visitGrid,true);
+    renderFarm(visitCanvas,visitCtx,visitGrid,true,visitCam);
   }
 },80);
+
+// ── Canvas interaction: drag pan + click-to-move + pinch zoom + double-click reset ──
+function setupCanvasInteraction(cvs, isOwn, cam) {
+  if (!cvs || !cam) return;
+  let dragState = null;
+  let pinchState = null;
+  const DRAG_THRESH = 3;
+
+  cvs.addEventListener('pointerdown', (e) => {
+    if (pinchState) return;
+    dragState = { startX: e.clientX, startY: e.clientY, camX: cam.tx, camY: cam.ty, moved: false };
+    cvs.setPointerCapture(e.pointerId);
+  });
+
+  cvs.addEventListener('pointermove', (e) => {
+    if (!dragState) return;
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
+    if (Math.abs(dx) > DRAG_THRESH || Math.abs(dy) > DRAG_THRESH) dragState.moved = true;
+    if (dragState.moved) {
+      // 1인칭 모드에서 드래그 시 3인칭으로 전환
+      if (isOwn && viewMode === 'first') {
+        viewMode = 'third';
+        const btn = document.getElementById('viewModeBtn');
+        if (btn) btn.textContent = '👁';
+      }
+      const rect = cvs.getBoundingClientRect();
+      const scX = 256 / rect.width, scY = 192 / rect.height;
+      cam.tx = dragState.camX + dx * scX;
+      cam.ty = dragState.camY + dy * scY;
+      clampCam(cam);
+    }
+  });
+
+  cvs.addEventListener('pointerup', (e) => {
+    if (!dragState) return;
+    if (!dragState.moved) {
+      const rect = cvs.getBoundingClientRect();
+      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+      // 유저 아이콘 사이드바 클릭 체크
+      const hit = hitTestUserListVS(sx, sy, cvs);
+      if (hit) {
+        if (hit.type === 'user' && hit.id) {
+          if (hit.id === '__me__') { trackedGhostId = null; viewMode = 'first'; }
+          else if (ghosts.has(hit.id)) { trackedGhostId = hit.id; viewMode = 'first'; }
+          const btn = document.getElementById('viewModeBtn');
+          if (btn) btn.textContent = '🗺';
+        }
+        dragState = null; return;
+      }
+      // 캐릭터 이동
+      if (isOwn) {
+        const w = screenToWorldVS(sx, sy, cvs, cam);
+        charTargetX = Math.max(0, Math.min(240, w.x - 3));
+        charTargetY = Math.max(48, Math.min(180, w.y - 6));
+        charMode = 'walk'; walkTimer = 0;
+      }
+    }
+    dragState = null;
+  });
+
+  cvs.addEventListener('dblclick', () => {
+    cam.tx = 0; cam.ty = 0; cam.tz = 1.0;
+  });
+
+  // Pinch zoom
+  const getTouchDist = (t1, t2) => Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+  cvs.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      dragState = null;
+      const d = getTouchDist(e.touches[0], e.touches[1]);
+      if (d < 10) return; // zero-distance guard
+      pinchState = { dist: d, zoom: cam.tz };
+    }
+  }, { passive: false });
+
+  cvs.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && pinchState) {
+      e.preventDefault();
+      const dist = getTouchDist(e.touches[0], e.touches[1]);
+      const ratio = dist / pinchState.dist;
+      const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const rect = cvs.getBoundingClientRect();
+      const delta = pinchState.zoom * ratio - cam.tz;
+      zoomAtPointVS(cx - rect.left, cy - rect.top, delta, cvs, cam);
+    }
+  }, { passive: false });
+
+  cvs.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) pinchState = null;
+  });
+
+  // Mouse wheel zoom
+  cvs.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = cvs.getBoundingClientRect();
+    const delta = e.deltaY > 0 ? -0.25 : 0.25;
+    zoomAtPointVS(e.clientX - rect.left, e.clientY - rect.top, delta, cvs, cam);
+  }, { passive: false });
+}
+
+function toggleViewMode() {
+  if (viewMode === 'third') {
+    viewMode = 'first';
+    trackedGhostId = null;
+    document.getElementById('viewModeBtn').textContent = '🗺';
+  } else {
+    viewMode = 'third';
+    trackedGhostId = null;
+    farmCam.tx = 0; farmCam.ty = 0; farmCam.tz = 1.0;
+    document.getElementById('viewModeBtn').textContent = '👁';
+  }
+}
+
+if (canvas) setupCanvasInteraction(canvas, true, farmCam);
+if (visitCanvas) setupCanvasInteraction(visitCanvas, false, visitCam);
+
+// 작은 화면 자동 줌 (사이드바 폭 < 400px)
+function autoZoomSmallScreen(cam) {
+  const w = document.documentElement.clientWidth || 400;
+  if (w >= 400) return;
+  const zoom = 1.5;
+  const gx = 64 + 2*32, gy = 56 + 2*24;
+  cam.x = cam.tx = 128 - gx * zoom;
+  cam.y = cam.ty = 96 - gy * zoom;
+  cam.zoom = cam.tz = zoom;
+  clampCam(cam);
+  cam.x = cam.tx; cam.y = cam.ty; cam.zoom = cam.tz;
+}
+autoZoomSmallScreen(farmCam);
 
 vscode.postMessage({type:'ready'});
 </script>

@@ -22,7 +22,7 @@ function extractUserId(request: NextRequest, bodyGithubId?: string): string | nu
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { github_id, nickname, avatar_url, level, total_harvests, unique_items, streak_days, today_input_chars, today_harvests, today_water_given, inventory, status_message, farm } = body;
+    const { github_id, nickname, avatar_url, level, total_harvests, unique_items, streak_days, today_input_chars, today_harvests, today_water_given, inventory, status_message, farm, character } = body;
 
     const userId = extractUserId(request, github_id);
     if (!userId) {
@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
       } : null,
       farm_snapshot: farm || { level: 1, grid: new Array(GRID_SIZE).fill(null), total_harvests: 0 },
       last_active: new Date().toISOString(),
+      character: character && typeof character === 'object' ? character : undefined,
     };
 
     await redis.set(keys.user(userId), profile);

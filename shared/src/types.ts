@@ -27,12 +27,30 @@ export interface InventoryItem {
   obtained_at: string;
 }
 
+// ── 캐릭터 커스터마이징 ──
+export type CharacterType = 'human' | 'bear' | 'rabbit' | 'tiger' | 'wolf' | 'frog' | 'husky' | 'bichon' | 'corgi';
+export type HairStyle = 'short' | 'long' | 'curly' | 'ponytail' | 'bun' | 'spiky' | 'bob' | 'buzz';
+export type SkinTone = 'light' | 'medium' | 'dark' | 'pale';
+export type EyeStyle = 'dot' | 'round' | 'line' | 'star' | 'closed';
+export type Accessory = 'none' | 'glasses' | 'sunglasses' | 'eyepatch' | 'bandaid';
+
+export interface CharacterAppearance {
+  type: CharacterType;
+  hairStyle?: HairStyle;     // human only
+  hairColor?: string;        // hair palette ID
+  skinTone?: SkinTone;       // human only
+  eyeStyle?: EyeStyle;
+  accessory?: Accessory;
+  clothesColor?: string;     // clothes palette ID
+}
+
 // ── 유저 ──
 export interface UserProfile {
   github_id: string;
   nickname: string;
   avatar_url: string;
   created_at: string;
+  character?: CharacterAppearance;
 }
 
 export interface StatusMessage {
@@ -84,6 +102,7 @@ export interface PublicProfile {
   status_message: StatusMessage | null;
   farm_snapshot: Farm;
   last_active: string;
+  character?: CharacterAppearance;
 }
 
 // ── 소셜: 발자국 ──

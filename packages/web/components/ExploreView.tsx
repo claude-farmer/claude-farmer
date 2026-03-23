@@ -74,7 +74,7 @@ export default function ExploreView({ bookmarks, currentUser, onVisit }: Explore
   );
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-3 p-3">
       <h2 className="text-lg font-bold">🌍 {t.exploreTitle}</h2>
 
       {/* Bookmarks — always on top for quick access */}

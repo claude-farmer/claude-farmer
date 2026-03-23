@@ -20,6 +20,7 @@ export async function syncToServer(state: LocalState): Promise<boolean> {
         today_water_given: state.activity.today_water_given,
         inventory: state.inventory,
         status_message: state.status_message,
+        character: state.user.character,
         farm: state.farm,
       }),
     });

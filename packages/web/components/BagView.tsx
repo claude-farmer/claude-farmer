@@ -33,7 +33,7 @@ export default function BagView({ inventory }: BagViewProps) {
   }, [selectedItem]);
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-3 p-3">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">📖 {t.bagTitle}</h2>
         <span className="text-sm opacity-60">{uniqueCount}/{TOTAL_ITEMS}</span>
@@ -71,7 +71,7 @@ export default function BagView({ inventory }: BagViewProps) {
                   <button
                     key={item.id}
                     onClick={() => isOwned ? setSelectedItem(item.id) : undefined}
-                    className={`w-14 h-14 rounded-lg border flex items-center justify-center text-xs transition-all relative ${
+                    className={`w-12 h-12 rounded-lg border flex items-center justify-center text-xs transition-all relative ${
                       isOwned
                         ? 'bg-[var(--card)] border-[var(--border)] hover:border-[var(--accent)] cursor-pointer'
                         : 'bg-[var(--bg)] border-[var(--border)] opacity-30 cursor-default'
@@ -115,7 +115,7 @@ export default function BagView({ inventory }: BagViewProps) {
             onClick={() => setSelectedItem(null)}
           >
             <div
-              className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 max-w-xs w-full"
+              className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 max-w-xs w-full"
               onClick={e => e.stopPropagation()}
             >
               <div className="text-center">

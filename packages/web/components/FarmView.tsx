@@ -2,8 +2,9 @@
 
 import { useRef, useEffect, useState } from 'react';
 import FarmCanvas, { type FarmCanvasHandle } from './FarmCanvas';
+import CharacterEditor from './CharacterEditor';
 import { TOTAL_ITEMS, getTimeOfDay, getFarmerTitle } from '@claude-farmer/shared';
-import type { LocalState, Footprint, FarmNotifications } from '@claude-farmer/shared';
+import type { LocalState, Footprint, FarmNotifications, CharacterAppearance } from '@claude-farmer/shared';
 import { useLocale } from '@/lib/locale-context';
 
 interface FarmViewProps {
@@ -12,15 +13,18 @@ interface FarmViewProps {
   notifications?: FarmNotifications | null;
   serverUniqueItems?: number;
   isLoggedIn?: boolean;
-  onStatusUpdate?: (text: string) => void;
+  onStatusUpdate?: (text: string, link?: string) => void;
+  onCharacterUpdate?: (character: CharacterAppearance) => void;
 }
 
-export default function FarmView({ state, footprints, notifications, serverUniqueItems, isLoggedIn, onStatusUpdate }: FarmViewProps) {
+export default function FarmView({ state, footprints, notifications, serverUniqueItems, isLoggedIn, onStatusUpdate, onCharacterUpdate }: FarmViewProps) {
   const { t, locale } = useLocale();
   const canvasRef = useRef<FarmCanvasHandle>(null);
   const prevWaterCountRef = useRef<number | null>(null);
   const [editingStatus, setEditingStatus] = useState(false);
   const [statusDraft, setStatusDraft] = useState('');
+  const [linkDraft, setLinkDraft] = useState('');
+  const [showCharEditor, setShowCharEditor] = useState(false);
   const statusInputRef = useRef<HTMLInputElement>(null);
   const { farm, user, status_message, inventory, activity } = state;
 
@@ -56,10 +60,19 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
   const emojiMap = { morning: '☀️', afternoon: '☀️', evening: '🌅', night: '🌙' };
 
   return (
-    <div className="flex flex-col gap-3 p-4">
+    <div className="flex flex-col gap-2 p-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-lg">🌱</span>
+          {isLoggedIn && (
+            <button
+              onClick={() => setShowCharEditor(true)}
+              className="text-lg hover:scale-110 transition-transform"
+              title={t.charEditorTitle}
+            >
+              🌱
+            </button>
+          )}
+          {!isLoggedIn && <span className="text-lg">🌱</span>}
           <span className="font-bold">{user.nickname}</span>
           <span className="text-sm text-[var(--text)] opacity-50">Lv.{farm.level}</span>
         </div>
@@ -69,11 +82,23 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
       </div>
 
       <div className="rounded-lg overflow-hidden border border-[var(--border)]">
-        <FarmCanvas ref={canvasRef} grid={farm.grid} footprints={footprints} farmOwnerId={state.user.github_id} />
+        <FarmCanvas
+          ref={canvasRef}
+          grid={farm.grid}
+          footprints={footprints}
+          farmOwnerId={state.user.github_id}
+          ownerNickname={user.nickname}
+          ownerLevel={farm.level}
+          ownerStatusText={status_message?.text}
+          ownerStatusLink={status_message?.link}
+          ownerTotalHarvests={farm.total_harvests}
+          ownerUniqueItems={uniqueItems}
+          ownerCharacter={user.character}
+        />
       </div>
 
       {notifications && notifications.visitor_count > 0 && (
-        <div className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)] text-sm">
+        <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)] text-xs">
           <span className="opacity-50">👣</span>
           <span className="ml-2">
             {notifications.visitor_count}{t.times} {t.times === '' ? 'visitor(s)' : '명 방문'}
@@ -87,62 +112,79 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
       )}
 
       <div className="grid grid-cols-2 gap-2 text-sm">
-        <div className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
+        <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)]">
           <span className="opacity-50">📦 {t.codex}</span>
           <span className="ml-2 font-bold">{uniqueItems}/{TOTAL_ITEMS}</span>
           <span className="text-xs opacity-40 ml-1">({Math.round(uniqueItems / TOTAL_ITEMS * 100)}%)</span>
         </div>
-        <div className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
+        <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)]">
           <span className="opacity-50">🪙 {t.harvests}</span>
           <span className="ml-2 font-bold">{farm.total_harvests}{t.times}</span>
         </div>
-        <div className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
+        <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)]">
           <span className="opacity-50">💧 {t.waterReceived}</span>
           <span className="ml-2 font-bold">{waterReceivedCount}{t.times}</span>
         </div>
-        <div className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
+        <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)]">
           <span className="opacity-50">🔥 {t.streak}</span>
           <span className="ml-2 font-bold">{activity.streak_days}{t.days}</span>
         </div>
       </div>
 
-      <div className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
+      <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)]">
         {editingStatus ? (
-          <div className="flex items-center gap-2">
-            <span>💬</span>
-            <input
-              ref={statusInputRef}
-              type="text"
-              value={statusDraft}
-              onChange={e => setStatusDraft(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  onStatusUpdate?.(statusDraft);
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span>💬</span>
+              <input
+                ref={statusInputRef}
+                type="text"
+                value={statusDraft}
+                onChange={e => setStatusDraft(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    const link = linkDraft.trim() && /^https?:\/\//i.test(linkDraft.trim()) ? linkDraft.trim() : undefined;
+                    onStatusUpdate?.(statusDraft, link);
+                    setEditingStatus(false);
+                  } else if (e.key === 'Escape') {
+                    setEditingStatus(false);
+                  }
+                }}
+                maxLength={200}
+                placeholder={t.setBubble}
+                className="flex-1 bg-transparent border-b border-[var(--border)] outline-none text-sm px-1 py-0.5"
+                autoFocus
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span>🔗</span>
+              <input
+                type="url"
+                value={linkDraft}
+                onChange={e => setLinkDraft(e.target.value)}
+                maxLength={500}
+                placeholder="https://..."
+                className="flex-1 bg-transparent border-b border-[var(--border)] outline-none text-xs px-1 py-0.5 opacity-70"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setEditingStatus(false)}
+                className="text-xs opacity-40 hover:opacity-70 px-2 py-1"
+              >
+                ✕
+              </button>
+              <button
+                onClick={() => {
+                  const link = linkDraft.trim() && /^https?:\/\//i.test(linkDraft.trim()) ? linkDraft.trim() : undefined;
+                  onStatusUpdate?.(statusDraft, link);
                   setEditingStatus(false);
-                } else if (e.key === 'Escape') {
-                  setEditingStatus(false);
-                }
-              }}
-              maxLength={200}
-              placeholder={t.setBubble}
-              className="flex-1 bg-transparent border-b border-[var(--border)] outline-none text-sm px-1 py-0.5"
-              autoFocus
-            />
-            <button
-              onClick={() => {
-                onStatusUpdate?.(statusDraft);
-                setEditingStatus(false);
-              }}
-              className="text-xs bg-[var(--accent)] text-black px-2 py-1 rounded font-bold hover:opacity-90"
-            >
-              OK
-            </button>
-            <button
-              onClick={() => setEditingStatus(false)}
-              className="text-xs opacity-40 hover:opacity-70 px-1"
-            >
-              ✕
-            </button>
+                }}
+                className="text-xs bg-[var(--accent)] text-black px-3 py-1 rounded font-bold hover:opacity-90"
+              >
+                OK
+              </button>
+            </div>
           </div>
         ) : (
           <div
@@ -150,6 +192,7 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
             onClick={() => {
               if (!isLoggedIn) return;
               setStatusDraft(status_message?.text ?? '');
+              setLinkDraft(status_message?.link ?? '');
               setEditingStatus(true);
             }}
           >
@@ -173,6 +216,17 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
           </a>
         )}
       </div>
+
+      {showCharEditor && (
+        <CharacterEditor
+          current={user.character}
+          onSave={(char) => {
+            onCharacterUpdate?.(char);
+            setShowCharEditor(false);
+          }}
+          onCancel={() => setShowCharEditor(false)}
+        />
+      )}
     </div>
   );
 }

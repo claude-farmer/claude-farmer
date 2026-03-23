@@ -1,4 +1,4 @@
-import type { PublicProfile, FarmNotifications, Footprint } from '@claude-farmer/shared';
+import type { PublicProfile, FarmNotifications, Footprint, CharacterAppearance } from '@claude-farmer/shared';
 
 const BASE = '';
 
@@ -126,12 +126,25 @@ export async function toggleBookmark(targetId: string, action: 'add' | 'remove')
   }
 }
 
-export async function updateStatus(statusMessage: { text: string; updated_at: string } | null): Promise<boolean> {
+export async function updateStatus(statusMessage: { text: string; link?: string; updated_at: string } | null): Promise<boolean> {
   try {
     const res = await fetch(`${BASE}/api/farm/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status_message: statusMessage }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function updateCharacter(character: CharacterAppearance): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ character }),
     });
     return res.ok;
   } catch {

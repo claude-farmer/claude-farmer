@@ -1,4 +1,4 @@
-import type { CropType, Rarity } from './types.js';
+import type { CropType, Rarity, CharacterAppearance } from './types.js';
 
 // ── 농장 설정 ──
 export const GRID_SIZE = 16; // 4×4
@@ -143,6 +143,60 @@ export function getNextEvolutionThreshold(duplicateCount: number): number | null
   }
   return null; // maxed out
 }
+
+// ── 캐릭터 커스터마이징 ──
+
+export const DEFAULT_CHARACTER_APPEARANCE: CharacterAppearance = {
+  type: 'human',
+  hairStyle: 'short',
+  hairColor: 'brown',
+  skinTone: 'light',
+  eyeStyle: 'dot',
+  accessory: 'none',
+  clothesColor: 'blue',
+};
+
+export const CHARACTER_HAIR_COLORS: Record<string, { base: string; highlight: string }> = {
+  brown:  { base: '#5C3A1E', highlight: '#7A5230' },
+  black:  { base: '#2C1810', highlight: '#3E2723' },
+  blonde: { base: '#D4A543', highlight: '#E8C468' },
+  red:    { base: '#A0522D', highlight: '#CD853F' },
+  pink:   { base: '#E8A0BF', highlight: '#F0C0D0' },
+  blue:   { base: '#4A6FA5', highlight: '#6B8FBF' },
+  white:  { base: '#D0D0D0', highlight: '#EEEEEE' },
+  green:  { base: '#5A9E5A', highlight: '#7BC77B' },
+};
+
+export const CHARACTER_SKIN_TONES: Record<string, { base: string; shadow: string }> = {
+  light:  { base: '#FFD5B8', shadow: '#E8B796' },
+  medium: { base: '#D4A574', shadow: '#B8886A' },
+  dark:   { base: '#8B6544', shadow: '#6B4E30' },
+  pale:   { base: '#FFF0E0', shadow: '#F0D8C0' },
+};
+
+export const CHARACTER_CLOTHES_COLORS: Record<string, { base: string; shadow: string }> = {
+  blue:   { base: '#6C9BD2', shadow: '#4A7FB5' },
+  red:    { base: '#E57373', shadow: '#C05050' },
+  green:  { base: '#81C784', shadow: '#5A9E5A' },
+  purple: { base: '#BA68C8', shadow: '#9040A0' },
+  orange: { base: '#FFB74D', shadow: '#E09530' },
+  pink:   { base: '#F06292', shadow: '#D04070' },
+  teal:   { base: '#4DB6AC', shadow: '#309088' },
+  yellow: { base: '#FFD54F', shadow: '#E0B830' },
+};
+
+export const ANIMAL_PALETTES: Record<string, { base: string; shadow: string; accent: string; nose: string }> = {
+  bear:   { base: '#8B6544', shadow: '#6B4E30', accent: '#D4A574', nose: '#2C1810' },
+  rabbit: { base: '#F5E6D3', shadow: '#E0CDB8', accent: '#FFB6C1', nose: '#FF9A9E' },
+  tiger:  { base: '#E8A040', shadow: '#C08030', accent: '#2C1810', nose: '#2C1810' },
+  wolf:   { base: '#8899AA', shadow: '#667788', accent: '#C0C8D0', nose: '#2C1810' },
+  frog:   { base: '#5A9E32', shadow: '#488028', accent: '#7BC74D', nose: '#488028' },
+  husky:  { base: '#7A8899', shadow: '#5A6877', accent: '#FFFFFF', nose: '#2C1810' },
+  bichon: { base: '#FAFAFA', shadow: '#E8E0D8', accent: '#F0E8E0', nose: '#2C1810' },
+  corgi:  { base: '#D4A040', shadow: '#B08030', accent: '#FAFAFA', nose: '#2C1810' },
+};
+
+export const CHARACTER_TYPES = ['human', 'bear', 'rabbit', 'tiger', 'wolf', 'frog', 'husky', 'bichon', 'corgi'] as const;
 
 // ── 레벨 ──
 export function calculateLevel(totalHarvests: number): number {

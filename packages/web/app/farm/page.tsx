@@ -6,11 +6,11 @@ import FarmView from '@/components/FarmView';
 import BagView from '@/components/BagView';
 import ExploreView from '@/components/ExploreView';
 import FarmVisitView from '@/components/FarmVisitView';
-import { fetchSession, fetchFarm, logout, fetchBookmarks, toggleBookmark, updateStatus } from '@/lib/api';
+import { fetchSession, fetchFarm, logout, fetchBookmarks, toggleBookmark, updateStatus, updateCharacter } from '@/lib/api';
 import { MOCK_STATE, MOCK_NEIGHBORS } from '@/lib/mock-data';
 import { useLocale } from '@/lib/locale-context';
 import usePolling from '@/hooks/usePolling';
-import type { LocalState, PublicProfile, FarmNotifications, Footprint } from '@claude-farmer/shared';
+import type { LocalState, PublicProfile, FarmNotifications, Footprint, CharacterAppearance } from '@claude-farmer/shared';
 
 export default function FarmApp() {
   const { t } = useLocale();
@@ -64,6 +64,7 @@ export default function FarmApp() {
               nickname: profile.nickname,
               avatar_url: profile.avatar_url,
               created_at: profile.last_active,
+              character: profile.character,
             },
             farm: profile.farm_snapshot,
             inventory: profile.inventory ?? [],
@@ -105,13 +106,19 @@ export default function FarmApp() {
     setBookmarks(bm);
   };
 
-  const handleStatusUpdate = async (text: string) => {
+  const handleStatusUpdate = async (text: string, link?: string) => {
     if (!user) return;
     const newStatus = text.trim()
-      ? { text: text.trim().slice(0, 200), updated_at: new Date().toISOString() }
+      ? { text: text.trim().slice(0, 200), link: link?.slice(0, 500), updated_at: new Date().toISOString() }
       : null;
     setState(prev => ({ ...prev, status_message: newStatus }));
     await updateStatus(newStatus);
+  };
+
+  const handleCharacterUpdate = async (character: CharacterAppearance) => {
+    if (!user) return;
+    setState(prev => ({ ...prev, user: { ...prev.user, character } }));
+    await updateCharacter(character);
   };
 
   const handleLogout = async () => {
@@ -177,6 +184,7 @@ export default function FarmApp() {
                 serverUniqueItems={serverUniqueItems}
                 isLoggedIn={!!user}
                 onStatusUpdate={handleStatusUpdate}
+                onCharacterUpdate={handleCharacterUpdate}
               />
             )}
             {tab === 'bag' && <BagView inventory={state.inventory} />}

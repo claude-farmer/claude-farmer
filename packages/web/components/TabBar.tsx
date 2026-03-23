@@ -22,13 +22,13 @@ export default function TabBar({ active, onChange }: TabBarProps) {
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
-          className={`flex-1 py-3 text-center text-sm transition-colors ${
+          className={`flex-1 py-2 text-center text-sm transition-colors ${
             active === tab.id
               ? 'text-[var(--accent)]'
               : 'text-[var(--text)] opacity-50 hover:opacity-75'
           }`}
         >
-          <div className="text-lg">{tab.icon}</div>
+          <div className="text-base">{tab.icon}</div>
           <div>{tab.label}</div>
         </button>
       ))}

@@ -81,7 +81,7 @@ export default function FarmVisitView({
 
   if (!profile) {
     return (
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-3 p-3">
         <button onClick={onBack} className="text-sm opacity-60 self-start">
           ← {t.visitBack}
         </button>
@@ -91,7 +91,7 @@ export default function FarmVisitView({
   }
 
   return (
-    <div className="flex flex-col gap-3 p-4">
+    <div className="flex flex-col gap-2 p-3">
       <div className="flex items-center justify-between">
         <button onClick={onBack} className="text-sm opacity-60">
           ← {t.visitBack}
@@ -108,6 +108,14 @@ export default function FarmVisitView({
           grid={profile.farm_snapshot.grid}
           footprints={footprints}
           farmOwnerId={targetId}
+          clickToMove={false}
+          ownerNickname={profile.nickname}
+          ownerLevel={profile.level}
+          ownerStatusText={profile.status_message?.text}
+          ownerStatusLink={profile.status_message?.link}
+          ownerTotalHarvests={profile.total_harvests}
+          ownerUniqueItems={profile.unique_items}
+          ownerCharacter={profile.character}
         />
       </div>
 

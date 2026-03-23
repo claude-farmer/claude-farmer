@@ -103,6 +103,22 @@ const dict = {
     tabFarm: 'Farm',
     tabBag: 'Codex',
     tabExplore: 'Explore',
+
+    // Promo link
+    promoLinkPlaceholder: 'https://...',
+    allVisitors: 'Visitors',
+
+    // Character editor
+    charEditorTitle: 'Customize Character',
+    charType: 'Type',
+    charHairStyle: 'Hair',
+    charHairColor: 'Hair Color',
+    charSkinTone: 'Skin',
+    charEyeStyle: 'Eyes',
+    charAccessory: 'Accessory',
+    charClothes: 'Clothes',
+    charSave: 'Save',
+    charCancel: 'Cancel',
   },
   ko: {
     heroTagline: 'Your code grows a farm.',
@@ -185,6 +201,22 @@ const dict = {
     tabFarm: '농장',
     tabBag: '도감',
     tabExplore: '탐험',
+
+    // Promo link
+    promoLinkPlaceholder: 'https://...',
+    allVisitors: '방문자',
+
+    // Character editor
+    charEditorTitle: '캐릭터 꾸미기',
+    charType: '유형',
+    charHairStyle: '헤어',
+    charHairColor: '머리 색',
+    charSkinTone: '피부',
+    charEyeStyle: '눈',
+    charAccessory: '악세서리',
+    charClothes: '의상',
+    charSave: '저장',
+    charCancel: '취소',
   },
 } as const;
 
