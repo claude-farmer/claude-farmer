@@ -760,6 +760,13 @@ export class FarmRenderer {
           color: FarmRenderer.ghostColor(id),
           character: this.currentState?.visitorProfiles?.get(id)?.character,
         });
+      } else {
+        // 기존 고스트: character 업데이트 (프로필 데이터가 나중에 로드될 수 있음)
+        const ghost = this.ghosts.get(id)!;
+        const newChar = this.currentState?.visitorProfiles?.get(id)?.character;
+        if (newChar && !ghost.character) {
+          ghost.character = newChar;
+        }
       }
     }
 
@@ -817,6 +824,7 @@ export class FarmRenderer {
         : (this.frame % 50 < 25 ? 0 : -1);
 
       const isTracked = this.trackedGhostId === id;
+      ctx.save();
       ctx.globalAlpha = isTracked ? Math.min(ghost.opacity * 1.5, 0.9) : ghost.opacity;
 
       // 의상 색 오버레이로 캐릭터 구분
@@ -840,7 +848,6 @@ export class FarmRenderer {
         ctx.font = '4px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(ghost.nickname.slice(0, 12), px + 3, py - 3);
-        ctx.textAlign = 'start';
       }
 
       // 추적 중인 고스트의 상태 메시지 말풍선
@@ -859,7 +866,7 @@ export class FarmRenderer {
         ctx.fillRect(px + 6, py - 1, 3, 1);
       }
 
-      ctx.globalAlpha = 1;
+      ctx.restore();
     }
   }
 

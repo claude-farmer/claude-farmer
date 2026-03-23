@@ -82,7 +82,7 @@ export default function CharacterEditor({ current, onSave, onCancel }: Character
     const scale = 4;
     const ox = (canvas.width - 16 * scale) / 2;
     const oy = (canvas.height - 16 * scale) / 2;
-    drawSprite(ctx, sprite, ox / scale, oy / scale, scale);
+    drawSprite(ctx, sprite, ox, oy, scale);
   }, [appearance]);
 
   const isHuman = appearance.type === 'human';
@@ -115,7 +115,10 @@ export default function CharacterEditor({ current, onSave, onCancel }: Character
               {CHARACTER_TYPES.map(type => (
                 <button
                   key={type}
-                  onClick={() => update({ type })}
+                  onClick={() => type !== 'human'
+                    ? update({ type, hairStyle: undefined, hairColor: undefined, skinTone: undefined })
+                    : update({ type })
+                  }
                   className={`px-2 py-1 rounded text-xs border transition-colors ${
                     appearance.type === type
                       ? 'bg-[var(--accent)] text-black border-[var(--accent)]'

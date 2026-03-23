@@ -475,7 +475,7 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
       const uniqueItems = new Set(this.state.inventory.map(i => i.id)).size;
 
       // 방문자 데이터 가져오기 (고스트 캐릭터용)
-      let visitors: { github_id: string; nickname: string; visited_at: string; watered?: boolean }[] = [];
+      let visitors: { github_id: string; nickname: string; visited_at: string; watered?: boolean; character?: unknown }[] = [];
       try {
         const res = await fetch(`https://claudefarmer.com/api/farm/${this.state.user.github_id}`);
         if (res.ok) {
@@ -1311,15 +1311,28 @@ function drawAnimalHeadVS(cx, x, y, type, pal, dir) {
 }
 
 function drawGhostPixels(cx, x, y, clothesColor, appearance) {
-  // Use appearance if available, else fallback to color-only mode
   if (appearance && appearance.type && appearance.type !== 'human') {
     const pal = ANIMAL_PALS[appearance.type] || ANIMAL_PALS.bear;
-    cx.fillStyle=pal.base; cx.fillRect(x,y,6,3);
-    cx.fillStyle=pal.base; cx.fillRect(x+1,y+3,4,3);
-    cx.fillStyle='#3E2723'; cx.fillRect(x+2,y+4,1,1); cx.fillRect(x+4,y+4,1,1);
+    const t = appearance.type;
+    // 귀 (종별)
+    cx.fillStyle=pal.base;
+    if(t==='rabbit'){cx.fillRect(x+1,y,1,2);cx.fillRect(x+4,y,1,2);}
+    else if(t==='frog'){cx.fillStyle=pal.accent;cx.fillRect(x+1,y,1,1);cx.fillRect(x+4,y,1,1);}
+    else if(t==='bichon'){cx.fillRect(x,y,6,1);}
+    else{cx.fillRect(x,y,2,1);cx.fillRect(x+4,y,2,1);}
+    // 머리
+    cx.fillStyle=pal.base; cx.fillRect(x,y+1,6,2);
+    cx.fillRect(x+1,y+3,4,2);
+    // 눈
+    cx.fillStyle='#3E2723'; cx.fillRect(x+2,y+3,1,1); cx.fillRect(x+4,y+3,1,1);
+    // 코
+    cx.fillStyle=pal.nose; cx.fillRect(x+3,y+4,1,1);
+    // 허스키/코기 흰 하반
+    if(t==='husky'||t==='corgi'){cx.fillStyle=pal.accent;cx.fillRect(x+1,y+5,4,1);}
   } else {
     const hair = appearance ? (CHAR_HAIR_COLORS[appearance.hairColor]||CHAR_HAIR_COLORS.brown) : {base:'#7A5230'};
     cx.fillStyle=hair.base; cx.fillRect(x,y,6,3);
+    cx.fillStyle=hair.highlight||hair.base; cx.fillRect(x+2,y,1,1);
     const skin = appearance ? (CHAR_SKIN_TONES[appearance.skinTone]||CHAR_SKIN_TONES.light) : {base:'#FFD5B8'};
     cx.fillStyle=skin.base; cx.fillRect(x+1,y+3,4,3);
     cx.fillStyle='#3E2723'; cx.fillRect(x+2,y+4,1,1); cx.fillRect(x+4,y+4,1,1);
@@ -1381,8 +1394,14 @@ function drawMiniPortraitVS(cx, x, y, color, isOwner, appearance) {
   const clothes = appearance ? (CHAR_CLOTHES_COLORS[appearance.clothesColor]||CHAR_CLOTHES_COLORS.blue).base : color;
   if (appearance && appearance.type && appearance.type !== 'human') {
     const pal = ANIMAL_PALS[appearance.type] || ANIMAL_PALS.bear;
-    cx.fillStyle=pal.base; cx.fillRect(x+1,y,4,2);
-    cx.fillStyle=pal.base; cx.fillRect(x+1,y+2,4,2);
+    const t = appearance.type;
+    // 귀 실루엣 (종 구분)
+    cx.fillStyle=pal.base;
+    if(t==='rabbit'){cx.fillRect(x+1,y,1,1);cx.fillRect(x+4,y,1,1);}
+    else if(t==='bichon'){cx.fillRect(x,y,6,1);}
+    else if(t==='corgi'){cx.fillRect(x,y,2,1);cx.fillRect(x+4,y,2,1);}
+    else if(t!=='frog'){cx.fillRect(x+1,y,1,1);cx.fillRect(x+4,y,1,1);}
+    cx.fillStyle=pal.base; cx.fillRect(x+1,y+1,4,3);
     cx.fillStyle='#3E2723'; cx.fillRect(x+2,y+3,1,1); cx.fillRect(x+3,y+3,1,1);
   } else {
     const hair = appearance ? (CHAR_HAIR_COLORS[appearance.hairColor]||CHAR_HAIR_COLORS.brown) : {base: isOwner ? '#5C3A1E' : '#7A5230'};
@@ -1597,7 +1616,8 @@ function updateUI(data) {
         ghosts.set(id, {
           nickname:fp.nickname, pos:{x:gx,y:gy}, target:{x:gx,y:gy},
           facing:ah%2===0?'right':'left', mode:'idle', idleTimer:Math.floor(Math.random()*80),
-          opacity:Math.max(0.15,1-ha/24)*0.6, watered:fp.watered||false, color:ghostColor(id)
+          opacity:Math.max(0.15,1-ha/24)*0.6, watered:fp.watered||false, color:ghostColor(id),
+          character:fp.character||null
         });
       }
     }

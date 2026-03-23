@@ -12,7 +12,8 @@ import {
 } from '@claude-farmer/shared';
 import type { SpriteData } from './sprites';
 
-// ── 스프라이트 캐시 ──
+// ── 스프라이트 캐시 (최대 100개) ──
+const MAX_CACHE_SIZE = 100;
 const spriteCache = new Map<string, SpriteData>();
 
 function cacheKey(a: CharacterAppearance): string {
@@ -41,6 +42,11 @@ export function composeCharacterSprite(appearance?: CharacterAppearance): Sprite
     drawAnimalHead(grid, a.type, a.eyeStyle);
   }
 
+  // 캐시 크기 제한: 오래된 항목 제거
+  if (spriteCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = spriteCache.keys().next().value;
+    if (firstKey !== undefined) spriteCache.delete(firstKey);
+  }
   spriteCache.set(key, grid);
   return grid;
 }
@@ -158,7 +164,7 @@ function drawHumanHead(grid: SpriteData, a: CharacterAppearance) {
   }
 }
 
-function drawEyes(grid: SpriteData, style: string, color: string) {
+function drawEyes(grid: SpriteData, style: NonNullable<CharacterAppearance['eyeStyle']>, color: string) {
   switch (style) {
     case 'dot':
       set(grid, 4, 6, color); set(grid, 4, 8, color);
@@ -168,21 +174,23 @@ function drawEyes(grid: SpriteData, style: string, color: string) {
       set(grid, 4, 8, color); set(grid, 5, 8, color);
       break;
     case 'line':
+      // 가로선 눈 (─ ─)
       set(grid, 4, 6, color); set(grid, 4, 7, color);
-      set(grid, 4, 8, color); set(grid, 4, 9, color);
+      set(grid, 4, 9, color); set(grid, 4, 10, color);
       break;
     case 'star':
       set(grid, 4, 6, color); set(grid, 4, 8, color);
       set(grid, 3, 6, '#FFFFFF'); set(grid, 3, 8, '#FFFFFF'); // sparkle
       break;
     case 'closed':
-      set(grid, 4, 6, color); set(grid, 4, 7, color);
-      set(grid, 4, 8, color); set(grid, 4, 9, color);
+      // 아래로 휜 눈 (◡ ◡)
+      set(grid, 5, 6, color); set(grid, 4, 7, color);
+      set(grid, 5, 8, color); set(grid, 4, 9, color);
       break;
   }
 }
 
-function drawAccessory(grid: SpriteData, acc: string) {
+function drawAccessory(grid: SpriteData, acc: NonNullable<CharacterAppearance['accessory']>) {
   switch (acc) {
     case 'glasses':
       // 둥근 안경 프레임
@@ -205,7 +213,7 @@ function drawAccessory(grid: SpriteData, acc: string) {
 }
 
 // ── 동물 머리 (rows 0-7) ──
-function drawAnimalHead(grid: SpriteData, type: string, eyeStyle?: string) {
+function drawAnimalHead(grid: SpriteData, type: Exclude<CharacterAppearance['type'], 'human'>, eyeStyle?: CharacterAppearance['eyeStyle']) {
   const pal = ANIMAL_PALETTES[type] ?? ANIMAL_PALETTES.bear;
   const eyes = '#3E2723';
 
@@ -232,10 +240,7 @@ function drawAnimalHead(grid: SpriteData, type: string, eyeStyle?: string) {
     case 'rabbit':
       // 긴 귀
       set(grid, 0, 5, pal.base); set(grid, 0, 9, pal.base);
-      set(grid, 0, 5, pal.base); set(grid, 0, 9, pal.base);
-      set(grid, 1, 5, pal.base); set(grid, 1, 9, pal.base);
-      // 귀 안쪽 핑크
-      set(grid, 1, 5, pal.accent); set(grid, 1, 9, pal.accent);
+      set(grid, 1, 5, pal.accent); set(grid, 1, 9, pal.accent); // 귀 안쪽 핑크
       // 머리
       fillRow(grid, 2, 4, 11, pal.base);
       fillRow(grid, 3, 4, 11, pal.base);

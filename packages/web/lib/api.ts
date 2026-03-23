@@ -141,7 +141,7 @@ export async function updateStatus(statusMessage: { text: string; link?: string;
 
 export async function updateCharacter(character: CharacterAppearance): Promise<boolean> {
   try {
-    const res = await fetch(`${BASE}/api/farm/sync`, {
+    const res = await fetch(`${BASE}/api/farm/character`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ character }),

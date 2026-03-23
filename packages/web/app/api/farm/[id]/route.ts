@@ -17,7 +17,7 @@ export async function GET(
 
     // 발자국 데이터 조회 (24시간 이내)
     const rawFootprints = await redis.hgetall<Record<string, string>>(keys.footprints(id));
-    const footprints: Footprint[] = [];
+    const footprints: (Footprint & { character?: PublicProfile['character'] })[] = [];
     if (rawFootprints) {
       for (const value of Object.values(rawFootprints)) {
         try {
@@ -25,6 +25,20 @@ export async function GET(
           footprints.push(fp);
         } catch {
           // skip malformed entries
+        }
+      }
+    }
+
+    // 방문자 캐릭터 정보 enrichment (최대 20명)
+    const visitorIds = footprints.slice(0, 20).map(fp => fp.github_id);
+    if (visitorIds.length > 0) {
+      const visitorProfiles = await Promise.all(
+        visitorIds.map(vid => redis.get<PublicProfile>(keys.user(vid)).catch(() => null))
+      );
+      for (let i = 0; i < visitorIds.length; i++) {
+        const vp = visitorProfiles[i];
+        if (vp?.character) {
+          footprints[i].character = vp.character;
         }
       }
     }
