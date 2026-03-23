@@ -1,4 +1,4 @@
-import type { GachaItem, Rarity } from './types.js';
+import type { GachaItem, InventoryItem, Rarity } from './types.js';
 import { RARITY_WEIGHTS, BOOST_RARITY_WEIGHTS } from './constants.js';
 
 // ── 가챠 아이템 전체 목록 ──
@@ -49,9 +49,34 @@ function rollRarity(boost = false): Rarity {
   return 'common';
 }
 
-export function rollGacha(boost = false): GachaItem {
+function pickItemFromPool(pool: GachaItem[], ownedItemIds?: Set<string>): GachaItem {
+  if (!ownedItemIds || ownedItemIds.size === 0) {
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  const collectionRatio = ownedItemIds.size / GACHA_ITEMS.length;
+  const duplicateBias = Math.pow(collectionRatio, 1.5);
+
+  const owned = pool.filter(item => ownedItemIds.has(item.id));
+  const unowned = pool.filter(item => !ownedItemIds.has(item.id));
+
+  if (unowned.length === 0) return owned[Math.floor(Math.random() * owned.length)];
+  if (owned.length === 0) return unowned[Math.floor(Math.random() * unowned.length)];
+
+  const selectedPool = Math.random() < duplicateBias ? owned : unowned;
+  return selectedPool[Math.floor(Math.random() * selectedPool.length)];
+}
+
+export function rollGacha(boost = false, ownedItemIds?: Set<string>): GachaItem {
   const rarity = rollRarity(boost);
   const pool = GACHA_ITEMS.filter(item => item.rarity === rarity);
-  const idx = Math.floor(Math.random() * pool.length);
-  return pool[idx];
+  return pickItemFromPool(pool, ownedItemIds);
+}
+
+export function getItemCounts(inventory: InventoryItem[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const item of inventory) {
+    counts.set(item.id, (counts.get(item.id) || 0) + 1);
+  }
+  return counts;
 }

@@ -99,6 +99,11 @@ const dict = {
     timeHoursAgo: "{n}h ago",
     timeYesterday: "yesterday",
 
+    // ── Evolution ──
+    bagDuplicates: "×{count}",
+    bagMaxEvolution: "MAX",
+    bagNextEvolution: "{needed} more to next ★",
+
     // ── VSCode Extension ──
     vscodeWelcome: "Welcome! Your farm has been created",
     vscodeHarvest: "Harvest",
@@ -251,6 +256,11 @@ const dict = {
     vscodeNewSeed: "새 씨앗을 심었어요!",
     vscodeHarvestDone: "수확!",
     vscodeGot: "획득",
+
+    // ── Evolution ──
+    bagDuplicates: "×{count}",
+    bagMaxEvolution: "MAX",
+    bagNextEvolution: "다음 ★까지 {needed}개",
 
     // ── VSCode Explore ──
     vscodeTabFarm: "농장",

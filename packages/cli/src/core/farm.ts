@@ -94,7 +94,8 @@ export function harvestSlot(state: LocalState, slotIndex: number): HarvestResult
   const slot = state.farm.grid[slotIndex];
   if (!slot) return null;
 
-  const item = rollGacha(isBoostTime());
+  const ownedIds = new Set(state.inventory.map(i => i.id));
+  const item = rollGacha(isBoostTime(), ownedIds);
   const reward: InventoryItem = {
     id: item.id,
     name: item.name,

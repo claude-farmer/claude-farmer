@@ -27,8 +27,8 @@ claude-farmer/
 ├── shared/              → @claude-farmer/shared (types, constants, gacha, i18n)
 │   └── src/
 │       ├── types.ts     → All type definitions (CropSlot, GachaItem, LocalState, etc.)
-│       ├── constants.ts → Config values (GRID_SIZE, RARITY_WEIGHTS, level calc, farmer titles)
-│       ├── gacha.ts     → 24 gacha items + rollGacha() function
+│       ├── constants.ts → Config values (GRID_SIZE, RARITY_WEIGHTS, level calc, farmer titles, evolution tiers)
+│       ├── gacha.ts     → 24 gacha items + rollGacha() with diminishing returns + getItemCounts()
 │       └── i18n.ts      → Translation dict (en/ko), detectLocale(), t() helper
 ├── packages/
 │   ├── cli/             → claude-farmer (npm package, global install)
@@ -94,6 +94,34 @@ cd packages/vscode && npm run dev
 3. 1 conversation turn = all crops grow 1 stage (seed → sprout → growing → harvestable)
 4. Auto-harvest ready crops → gacha drop (Common 60%, Rare 28%, Epic 10%, Legendary 2%)
 5. Items auto-registered in codex (24 items total)
+
+## Gacha Diminishing Returns
+
+As collection progress increases, the chance of getting a duplicate item rises exponentially:
+
+- Formula: `duplicateBias = collectionRatio ^ 1.5`
+- 0% collected: 0% bias (normal odds)
+- 50% collected: ~35% chance of duplicate
+- 75% collected: ~65% chance of duplicate
+- 90% collected: ~85% chance of duplicate
+- `rollGacha(boost, ownedItemIds?)` in `shared/src/gacha.ts`
+
+## Item Evolution (★ System)
+
+Collecting duplicates of the same item triggers automatic evolution tiers:
+
+| Copies | Grade | Display |
+| ------ | ----- | ------- |
+| 1 | Base | (no star) |
+| 3 | ★ | Bronze star |
+| 7 | ★★ | Silver stars |
+| 15 | ★★★ | Gold stars |
+
+- Computed on-the-fly from `inventory` array — no stored evolution state
+- Helpers: `getEvolutionTier()`, `getNextEvolutionThreshold()` in `shared/src/constants.ts`
+- `getItemCounts()` in `shared/src/gacha.ts` counts duplicates per item ID
+- Web codex: star badge + count on tiles, progress bar + next threshold in modal
+- CLI codex: `[ItemName ★ ×5]` format
 
 ## Auth Flows
 

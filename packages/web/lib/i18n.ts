@@ -66,6 +66,11 @@ const dict = {
     bagTitle: 'Codex',
     itemNotObtained: 'Not yet obtained',
 
+    // Evolution
+    bagDuplicates: '×{count}',
+    bagMaxEvolution: 'MAX',
+    bagNextEvolution: '{needed} more to next ★',
+
     // Explore view
     exploreTitle: 'Explore',
     myNeighbors: 'Neighbors (Bookmarks)',
@@ -147,6 +152,11 @@ const dict = {
 
     bagTitle: '도감',
     itemNotObtained: '아직 획득하지 못했어요',
+
+    // Evolution
+    bagDuplicates: '×{count}',
+    bagMaxEvolution: 'MAX',
+    bagNextEvolution: '다음 ★까지 {needed}개',
 
     exploreTitle: '탐험',
     myNeighbors: '내 이웃 (북마크)',

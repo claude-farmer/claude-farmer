@@ -120,6 +120,30 @@ export function getFarmerTitle(inputChars: number): FarmerTitle {
   return FARMER_TITLES[FARMER_TITLES.length - 1].title;
 }
 
+// ── 아이템 진화 ──
+export const EVOLUTION_TIERS = [
+  { stars: 0, label: '', threshold: 1 },
+  { stars: 1, label: '★', threshold: 3 },
+  { stars: 2, label: '★★', threshold: 7 },
+  { stars: 3, label: '★★★', threshold: 15 },
+] as const;
+
+export function getEvolutionTier(duplicateCount: number): { stars: number; label: string } {
+  for (let i = EVOLUTION_TIERS.length - 1; i >= 0; i--) {
+    if (duplicateCount >= EVOLUTION_TIERS[i].threshold) {
+      return { stars: EVOLUTION_TIERS[i].stars, label: EVOLUTION_TIERS[i].label };
+    }
+  }
+  return { stars: 0, label: '' };
+}
+
+export function getNextEvolutionThreshold(duplicateCount: number): number | null {
+  for (const tier of EVOLUTION_TIERS) {
+    if (duplicateCount < tier.threshold) return tier.threshold;
+  }
+  return null; // maxed out
+}
+
 // ── 레벨 ──
 export function calculateLevel(totalHarvests: number): number {
   if (totalHarvests < 5) return 1;

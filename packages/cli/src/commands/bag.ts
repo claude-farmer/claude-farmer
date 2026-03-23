@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import type { Rarity } from '@claude-farmer/shared';
-import { RARITY_LABEL, GACHA_ITEMS, TOTAL_ITEMS, t } from '@claude-farmer/shared';
+import { RARITY_LABEL, GACHA_ITEMS, TOTAL_ITEMS, t, getEvolutionTier, getItemCounts } from '@claude-farmer/shared';
 import { stateExists, loadState } from '../core/state.js';
 import { getLocale } from '../core/config.js';
 
@@ -22,6 +22,7 @@ export async function bagCommand(): Promise<void> {
   const state = await loadState();
   const ownedIds = new Set(state.inventory.map(i => i.id));
   const uniqueCount = ownedIds.size;
+  const itemCounts = getItemCounts(state.inventory);
 
   console.log('');
   console.log(chalk.bold(`📖 ${t(locale, 'bagTitle')}  ${uniqueCount}/${TOTAL_ITEMS} ${t(locale, 'bagCollected')}`));
@@ -40,7 +41,11 @@ export async function bagCommand(): Promise<void> {
 
     const items = pool.map(item => {
       if (ownedIds.has(item.id)) {
-        return colorFn(`[${item.name}]`);
+        const count = itemCounts.get(item.id) || 0;
+        const tier = getEvolutionTier(count);
+        const starStr = tier.label ? ` ${tier.label}` : '';
+        const countStr = count > 1 ? ` ×${count}` : '';
+        return colorFn(`[${item.name}${starStr}${countStr}]`);
       }
       return chalk.dim('[??]');
     });

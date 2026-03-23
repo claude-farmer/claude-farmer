@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { LocalState, CropType, GrowthStage, InventoryItem } from '@claude-farmer/shared';
-import { CROPS, MAX_GROWTH_STAGE, CROP_EMOJI, GRID_SIZE, GRID_COLS, calculateLevel } from '@claude-farmer/shared';
+import { CROPS, MAX_GROWTH_STAGE, CROP_EMOJI, GRID_SIZE, GRID_COLS, calculateLevel, isBoostTime } from '@claude-farmer/shared';
 import { rollGacha, TOTAL_ITEMS } from '@claude-farmer/shared';
 import { type Locale, detectLocale, getDict } from '@claude-farmer/shared';
 
@@ -158,7 +158,8 @@ function growCrops(state: LocalState): number {
 function harvestSlot(state: LocalState, idx: number): InventoryItem | null {
   const slot = state.farm.grid[idx];
   if (!slot) return null;
-  const item = rollGacha();
+  const ownedIds = new Set(state.inventory.map(i => i.id));
+  const item = rollGacha(isBoostTime(), ownedIds);
   const reward: InventoryItem = {
     id: item.id, name: item.name, rarity: item.rarity,
     obtained_at: new Date().toISOString(),
