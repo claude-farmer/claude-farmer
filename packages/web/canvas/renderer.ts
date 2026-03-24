@@ -157,6 +157,7 @@ export class FarmRenderer {
     canvas.width = BASE_W;
     canvas.height = BASE_H;
     this.ctx = canvas.getContext('2d')!;
+    this.ctx.imageSmoothingEnabled = false;
 
     // 별 위치 생성
     for (let i = 0; i < 25; i++) {
@@ -176,6 +177,7 @@ export class FarmRenderer {
     this.currentState = state;
 
     ctx.clearRect(0, 0, BASE_W, BASE_H);
+    ctx.imageSmoothingEnabled = false;
 
     // 고스트 캐릭터 동기화 + 업데이트
     if (state.footprints?.length) {
