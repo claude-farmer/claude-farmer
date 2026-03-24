@@ -116,6 +116,7 @@ export default function FarmVisitView({
           ownerTotalHarvests={profile.total_harvests}
           ownerUniqueItems={profile.unique_items}
           ownerCharacter={profile.character}
+          ownerAvatarUrl={profile.avatar_url}
         />
       </div>
 

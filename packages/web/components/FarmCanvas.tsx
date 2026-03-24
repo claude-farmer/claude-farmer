@@ -20,7 +20,8 @@ interface FarmCanvasProps {
   ownerTotalHarvests?: number;
   ownerUniqueItems?: number;
   ownerCharacter?: CharacterAppearance;
-  visitorProfiles?: Map<string, { nickname: string; level?: number; statusText?: string; statusLink?: string; totalHarvests?: number; character?: CharacterAppearance }>;
+  ownerAvatarUrl?: string;
+  visitorProfiles?: Map<string, { nickname: string; level?: number; statusText?: string; statusLink?: string; totalHarvests?: number; character?: CharacterAppearance; avatarUrl?: string }>;
   onVisitFarm?: (userId: string) => void;
 }
 
@@ -44,7 +45,7 @@ const DRAG_THRESHOLD = 3; // px before drag is detected
 const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCanvas(
   { grid, working = false, className, footprints, farmOwnerId, clickToMove = true,
     ownerNickname, ownerLevel, ownerStatusText, ownerStatusLink,
-    ownerTotalHarvests, ownerUniqueItems, ownerCharacter, visitorProfiles, onVisitFarm },
+    ownerTotalHarvests, ownerUniqueItems, ownerCharacter, ownerAvatarUrl, visitorProfiles, onVisitFarm },
   ref
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -53,6 +54,7 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [viewMode, setViewMode] = useState<'first' | 'third'>('third');
   const [showVisitorModal, setShowVisitorModal] = useState(false);
+  const [infoPanel, setInfoPanel] = useState<{ nickname: string; level: number; harvests: number; farmId?: string; statusLink?: string; avatarUrl?: string } | null>(null);
 
   // 드래그/핀치 상태
   const dragRef = useRef<{
@@ -74,7 +76,7 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
   stateRef.current = {
     grid, characterWorking: working, footprints, farmOwnerId,
     ownerNickname, ownerLevel, ownerStatusText, ownerStatusLink,
-    ownerTotalHarvests, ownerUniqueItems, ownerCharacter, visitorProfiles,
+    ownerTotalHarvests, ownerUniqueItems, ownerCharacter, ownerAvatarUrl, visitorProfiles,
   };
 
   useImperativeHandle(ref, () => ({
@@ -105,10 +107,15 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
     rendererRef.current.autoZoomForSmallScreen(containerWidth);
 
     // ~12fps for pixel art feel
+    let panelTick = 0;
     const interval = setInterval(() => {
       const renderer = rendererRef.current;
       if (!renderer) return;
       renderer.render(stateRef.current);
+      // 정보 패널 데이터 동기화 (~4fps, 매 3프레임)
+      if (++panelTick % 3 === 0) {
+        setInfoPanel(renderer.getInfoPanelData());
+      }
     }, 80);
 
     return () => {
@@ -424,6 +431,39 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
                 {ghost.watered && <span className="text-blue-400 text-xs ml-auto">💧</span>}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+      {/* 하단 정보 패널 (HTML 오버레이 — 선명한 텍스트) */}
+      {infoPanel && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/75 backdrop-blur-sm text-white rounded-lg px-3 py-2 flex items-center gap-2 min-w-[180px] max-w-[280px] border border-white/10 pointer-events-auto">
+          {infoPanel.avatarUrl && (
+            <img src={infoPanel.avatarUrl} alt="" className="w-6 h-6 rounded-full flex-shrink-0" />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-bold text-xs truncate">{infoPanel.nickname}</span>
+              <span className="text-[10px] text-gray-400 flex-shrink-0">Lv.{infoPanel.level}</span>
+            </div>
+            <div className="text-[10px] text-gray-300">🌾 {infoPanel.harvests}</div>
+          </div>
+          <div className="flex gap-1 flex-shrink-0">
+            {infoPanel.farmId && (
+              <button
+                onClick={() => onVisitFarm?.(infoPanel.farmId!)}
+                className="text-[10px] bg-teal-600 hover:bg-teal-500 text-white px-2 py-0.5 rounded font-bold transition-colors"
+              >
+                Farm
+              </button>
+            )}
+            {infoPanel.statusLink && (
+              <button
+                onClick={() => window.open(infoPanel.statusLink!, '_blank', 'noopener')}
+                className="text-[10px] bg-amber-500 hover:bg-amber-400 text-black px-2 py-0.5 rounded font-bold transition-colors"
+              >
+                Link
+              </button>
+            )}
           </div>
         </div>
       )}

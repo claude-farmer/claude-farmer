@@ -63,21 +63,23 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
     <div className="flex flex-col gap-2 p-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {isLoggedIn && (
-            <button
-              onClick={() => setShowCharEditor(true)}
-              className="text-lg hover:scale-110 transition-transform"
-              title={t.charEditorTitle}
-            >
-              🌱
-            </button>
-          )}
-          {!isLoggedIn && <span className="text-lg">🌱</span>}
+          <span className="text-lg">🌱</span>
           <span className="font-bold">{user.nickname}</span>
           <span className="text-sm text-[var(--text)] opacity-50">Lv.{farm.level}</span>
         </div>
-        <div className="text-sm opacity-75">
-          {farmerTitle.emoji} {locale === 'ko' ? farmerTitle.ko : farmerTitle.en}
+        <div className="flex items-center gap-2">
+          <span className="text-sm opacity-75">
+            {farmerTitle.emoji} {locale === 'ko' ? farmerTitle.ko : farmerTitle.en}
+          </span>
+          {isLoggedIn && (
+            <button
+              onClick={() => setShowCharEditor(true)}
+              className="text-xs px-2 py-0.5 rounded-full border border-[var(--border)] opacity-60 hover:opacity-100 hover:border-[var(--accent)] transition-all"
+              title={t.charEditorTitle}
+            >
+              ✏️ {locale === 'ko' ? '캐릭터' : 'Edit'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -94,6 +96,7 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
           ownerTotalHarvests={farm.total_harvests}
           ownerUniqueItems={uniqueItems}
           ownerCharacter={user.character}
+          ownerAvatarUrl={user.avatar_url}
         />
       </div>
 

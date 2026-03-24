@@ -145,7 +145,7 @@ export default function FarmApp() {
         {user ? (
           <>
             <div className="flex items-center gap-2 text-sm">
-              <img src={user.avatar_url} alt="" className="w-6 h-6 rounded-full" />
+              <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full border border-[var(--border)]" />
               <span className="font-bold">{user.nickname}</span>
             </div>
             <button onClick={handleLogout} className="text-xs opacity-40 hover:opacity-70">

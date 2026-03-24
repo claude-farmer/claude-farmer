@@ -27,7 +27,8 @@ export interface FarmRenderState {
   ownerTotalHarvests?: number;
   ownerUniqueItems?: number;
   ownerCharacter?: CharacterAppearance;
-  visitorProfiles?: Map<string, { nickname: string; level?: number; statusText?: string; statusLink?: string; totalHarvests?: number; character?: CharacterAppearance }>;
+  ownerAvatarUrl?: string;
+  visitorProfiles?: Map<string, { nickname: string; level?: number; statusText?: string; statusLink?: string; totalHarvests?: number; character?: CharacterAppearance; avatarUrl?: string }>;
 }
 
 interface WaterAnim {
@@ -114,6 +115,7 @@ export class FarmRenderer {
     watered: boolean;
     color: string; // 의상 색상 (유저별 다르게)
     character?: CharacterAppearance;
+    avatarUrl?: string;
   }> = new Map();
   private trackedGhostId: string | null = null; // null이면 내 캐릭터 추적
   // 아이콘 사이드바 히트 영역
@@ -125,11 +127,30 @@ export class FarmRenderer {
   private _showAllVisitorsRequested = false;
   // 현재 렌더 상태 (drawCharacter/drawGhosts에서 접근용)
   private currentState: FarmRenderState | null = null;
+  // 아바타 이미지 캐시
+  private avatarCache = new Map<string, HTMLImageElement | null>();
 
   private addParticle(p: Particle) {
     if (this.particles.length < FarmRenderer.MAX_PARTICLES) {
       this.particles.push(p);
     }
+  }
+
+  // 아바타 이미지 로드 (비동기, 캐시)
+  private getAvatar(url: string | undefined): HTMLImageElement | null {
+    if (!url) return null;
+    // 작은 사이즈 요청 (GitHub avatar ?s=32)
+    const smallUrl = url.includes('?') ? `${url}&s=32` : `${url}?s=32`;
+    const cached = this.avatarCache.get(smallUrl);
+    if (cached !== undefined) return cached;
+    // 로딩 중 표시를 위해 null 세팅
+    this.avatarCache.set(smallUrl, null);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => this.avatarCache.set(smallUrl, img);
+    img.onerror = () => this.avatarCache.set(smallUrl, null);
+    img.src = smallUrl;
+    return null;
   }
 
   constructor(private canvas: HTMLCanvasElement) {
@@ -211,7 +232,7 @@ export class FarmRenderer {
     this.drawScreenFlashes();
     this.drawLevelUpBanners();
     this.drawUserIconSidebar();
-    if (this.viewMode === 'first') this.drawBottomInfoPanel();
+    // 하단 정보 패널은 HTML 오버레이로 대체 (drawBottomInfoPanel 미사용)
 
     this.frame++;
   }
@@ -737,13 +758,18 @@ export class FarmRenderer {
   private syncGhosts(footprints: Footprint[], farmOwnerId: string) {
     const groundY = SKY_TILES * TILE;
     const activeIds = new Set<string>();
+    // footprint은 API에서 character, avatar_url로 enrichment됨
+    type EnrichedFP = Footprint & { character?: CharacterAppearance; avatar_url?: string };
 
-    for (const fp of footprints) {
+    for (const fp of footprints as EnrichedFP[]) {
       const hoursAgo = (Date.now() - new Date(fp.visited_at).getTime()) / (1000 * 60 * 60);
       if (hoursAgo > 24) continue;
 
       const id = fp.github_id;
       activeIds.add(id);
+      // visitorProfiles에서 또는 footprint에서 직접 character/avatar 가져오기
+      const profileChar = this.currentState?.visitorProfiles?.get(id)?.character ?? fp.character;
+      const profileAvatar = this.currentState?.visitorProfiles?.get(id)?.avatarUrl ?? fp.avatar_url;
 
       if (!this.ghosts.has(id)) {
         // 새 고스트: 결정론적 초기 위치
@@ -758,15 +784,14 @@ export class FarmRenderer {
           opacity: Math.max(0.15, 1 - hoursAgo / 24) * 0.6,
           watered: fp.watered ?? false,
           color: FarmRenderer.ghostColor(id),
-          character: this.currentState?.visitorProfiles?.get(id)?.character,
+          character: profileChar,
+          avatarUrl: profileAvatar,
         });
       } else {
-        // 기존 고스트: character 업데이트 (프로필 데이터가 나중에 로드될 수 있음)
+        // 기존 고스트: character/avatar 업데이트
         const ghost = this.ghosts.get(id)!;
-        const newChar = this.currentState?.visitorProfiles?.get(id)?.character;
-        if (newChar && !ghost.character) {
-          ghost.character = newChar;
-        }
+        if (profileChar && !ghost.character) ghost.character = profileChar;
+        if (profileAvatar && !ghost.avatarUrl) ghost.avatarUrl = profileAvatar;
       }
     }
 
@@ -842,12 +867,13 @@ export class FarmRenderer {
       if (isTracked) {
         ctx.globalAlpha = 0.9;
         ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        const tw = Math.min(ghost.nickname.length * 3 + 6, 50);
-        ctx.fillRect(px - tw / 2 + 3, py - 8, tw, 6);
+        ctx.font = '5px monospace';
+        const nameText = ghost.nickname.slice(0, 12);
+        const tw = Math.min(ctx.measureText(nameText).width + 6, 60);
+        ctx.fillRect(px - tw / 2 + 3, py - 10, tw, 8);
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = '4px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(ghost.nickname.slice(0, 12), px + 3, py - 3);
+        ctx.fillText(nameText, px + 3, py - 4);
       }
 
       // 추적 중인 고스트의 상태 메시지 말풍선
@@ -891,8 +917,13 @@ export class FarmRenderer {
     // 배경
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(sideX + 1, y + 1, iconSize - 2, iconSize - 2);
-    // 미니 캐릭터 (주인)
-    drawMiniCharacter(ctx, sideX + 2, y + 1, this.currentState?.ownerCharacter);
+    // 아바타 또는 미니 캐릭터 (주인)
+    const ownerAvatar = this.getAvatar(this.currentState?.ownerAvatarUrl);
+    if (ownerAvatar) {
+      ctx.drawImage(ownerAvatar, sideX + 1, y + 1, iconSize - 2, iconSize - 2);
+    } else {
+      drawMiniCharacter(ctx, sideX + 2, y + 1, this.currentState?.ownerCharacter);
+    }
     this.iconHitAreas.push({ id: '__me__', x: sideX, y, w: iconSize, h: iconSize });
     y += iconSize + gap;
 
@@ -910,8 +941,13 @@ export class FarmRenderer {
       // 배경
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.fillRect(sideX + 1, y + 1, iconSize - 2, iconSize - 2);
-      // 미니 캐릭터
-      drawMiniCharacter(ctx, sideX + 2, y + 1, ghost.character);
+      // 아바타 또는 미니 캐릭터
+      const visitorAvatar = this.getAvatar(ghost.avatarUrl ?? this.currentState?.visitorProfiles?.get(id)?.avatarUrl);
+      if (visitorAvatar) {
+        ctx.drawImage(visitorAvatar, sideX + 1, y + 1, iconSize - 2, iconSize - 2);
+      } else {
+        drawMiniCharacter(ctx, sideX + 2, y + 1, ghost.character);
+      }
       // 물 줬으면 파란 점
       if (ghost.watered) {
         ctx.fillStyle = '#64B5F6';
@@ -932,7 +968,7 @@ export class FarmRenderer {
       ctx.fillStyle = 'rgba(255,255,255,0.15)';
       ctx.fillRect(sideX, y, btnW, 1);
       ctx.fillStyle = '#9ca3af';
-      ctx.font = '4px monospace';
+      ctx.font = '5px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(`+${remaining}`, sideX + btnW / 2, y + 6);
       ctx.textAlign = 'start';
@@ -978,60 +1014,62 @@ export class FarmRenderer {
     if (!nickname) return;
 
     // 패널 크기 계산
-    const panelW = 120;
-    const panelH = farmId || statusLink ? 24 : 16;
+    const panelW = 150;
+    const panelH = farmId || statusLink ? 32 : 22;
     const panelX = (BASE_W - panelW) / 2;
     const panelY = BASE_H - panelH - 4;
 
     // 배경
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(panelX, panelY, panelW, panelH);
     // 픽셀 테두리
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
     ctx.fillRect(panelX, panelY, panelW, 1);
     ctx.fillRect(panelX, panelY + panelH - 1, panelW, 1);
     ctx.fillRect(panelX, panelY, 1, panelH);
     ctx.fillRect(panelX + panelW - 1, panelY, 1, panelH);
 
     // 1행: 닉네임 + Lv
-    ctx.font = '4px monospace';
+    ctx.font = 'bold 6px monospace';
     ctx.fillStyle = '#FFFFFF';
     const displayName = nickname.length > 14 ? nickname.slice(0, 13) + '…' : nickname;
-    ctx.fillText(displayName, panelX + 3, panelY + 7);
+    ctx.fillText(displayName, panelX + 4, panelY + 9);
+    ctx.font = '5px monospace';
     ctx.fillStyle = '#9ca3af';
-    ctx.fillText(`Lv.${level}`, panelX + panelW - 20, panelY + 7);
+    ctx.fillText(`Lv.${level}`, panelX + panelW - 28, panelY + 9);
 
     // 2행: 수확수
     ctx.fillStyle = '#e5e7eb';
-    ctx.fillText(`🌾${harvests}`, panelX + 3, panelY + 14);
+    ctx.font = '5px monospace';
+    ctx.fillText(`🌾${harvests}`, panelX + 4, panelY + 18);
 
     // 3행: 버튼 (방문자 추적 시만)
     if (farmId || statusLink) {
-      let btnX = panelX + 3;
-      const btnY = panelY + 16;
-      const btnH = 6;
+      let btnX = panelX + 4;
+      const btnY = panelY + 22;
+      const btnH = 8;
 
       if (farmId) {
-        const btnW = 24;
+        const btnW = 30;
         ctx.fillStyle = '#4DB6AC';
         ctx.fillRect(btnX, btnY, btnW, btnH);
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = '3px monospace';
-        ctx.fillText('Farm', btnX + 3, btnY + 5);
+        ctx.font = 'bold 5px monospace';
+        ctx.fillText('Farm', btnX + 4, btnY + 6);
         this.infoPanelButtons.push({
           type: 'farm', url: `/farm?visit=${farmId}`,
           x: btnX, y: btnY, w: btnW, h: btnH,
         });
-        btnX += btnW + 3;
+        btnX += btnW + 4;
       }
 
       if (statusLink) {
-        const btnW = 24;
+        const btnW = 30;
         ctx.fillStyle = '#fbbf24';
         ctx.fillRect(btnX, btnY, btnW, btnH);
         ctx.fillStyle = '#000000';
-        ctx.font = '3px monospace';
-        ctx.fillText('Link', btnX + 3, btnY + 5);
+        ctx.font = 'bold 5px monospace';
+        ctx.fillText('Link', btnX + 4, btnY + 6);
         this.infoPanelButtons.push({
           type: 'link', url: statusLink,
           x: btnX, y: btnY, w: btnW, h: btnH,
@@ -1047,12 +1085,12 @@ export class FarmRenderer {
     const displayText = text.length > maxChars ? text.slice(0, maxChars - 1) + '…' : text;
 
     // 텍스트 크기 계산
-    ctx.font = '4px monospace';
-    const textW = Math.min(ctx.measureText(displayText).width, 100);
-    const padX = 4;
+    ctx.font = '5px monospace';
+    const textW = Math.min(ctx.measureText(displayText).width, 120);
+    const padX = 5;
     const padY = 3;
     const bubbleW = Math.ceil(textW) + padX * 2;
-    const bubbleH = 8 + padY;
+    const bubbleH = 10 + padY;
     const bx = Math.round(x - bubbleW / 2);
     const by = y - bubbleH - 4;
 
@@ -1101,8 +1139,8 @@ export class FarmRenderer {
 
     // 텍스트
     ctx.fillStyle = '#3E2723';
-    ctx.font = '4px monospace';
-    ctx.fillText(displayText, bx + padX, by + padY + 4);
+    ctx.font = '5px monospace';
+    ctx.fillText(displayText, bx + padX, by + padY + 5);
   }
 
   // 유저 리스트 클릭 감지 (화면 좌표 기준, 줌 무관)
@@ -1171,6 +1209,37 @@ export class FarmRenderer {
 
   getTrackedGhostId(): string | null {
     return this.trackedGhostId;
+  }
+
+  // 하단 패널 데이터를 외부(HTML 오버레이)로 노출
+  getInfoPanelData(): { nickname: string; level: number; harvests: number; farmId?: string; statusLink?: string; avatarUrl?: string } | null {
+    if (this.viewMode !== 'first') return null;
+    const state = this.currentState;
+    if (!state) return null;
+
+    if (!this.trackedGhostId) {
+      const nickname = state.ownerNickname ?? '';
+      if (!nickname) return null;
+      return {
+        nickname,
+        level: state.ownerLevel ?? 1,
+        harvests: state.ownerTotalHarvests ?? 0,
+        statusLink: state.ownerStatusLink,
+        avatarUrl: state.ownerAvatarUrl,
+      };
+    } else {
+      const ghost = this.ghosts.get(this.trackedGhostId);
+      const profile = state.visitorProfiles?.get(this.trackedGhostId);
+      if (!ghost) return null;
+      return {
+        nickname: ghost.nickname,
+        level: profile?.level ?? 0,
+        harvests: profile?.totalHarvests ?? 0,
+        farmId: this.trackedGhostId,
+        statusLink: profile?.statusLink,
+        avatarUrl: ghost.avatarUrl ?? profile?.avatarUrl,
+      };
+    }
   }
 
   // ── 발자국 ──
