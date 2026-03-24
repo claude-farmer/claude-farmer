@@ -900,30 +900,42 @@ export class FarmRenderer {
   // ── 좌측 아이콘 사이드바 (HUD) ──
   private drawUserIconSidebar() {
     const ctx = this.ctx;
-    const iconSize = 10; // 10×10 (8×8 스프라이트 + 1px 테두리)
-    const gap = 2;
+    const iconSize = 15; // 15×15 원형 아이콘
+    const gap = 3;
     const maxVisible = 4; // 주인 제외 최대 방문자 수
-    const sideX = 2;
-    let y = 3;
+    const sideX = 3;
+    let y = 4;
+    const radius = iconSize / 2;
 
     this.iconHitAreas = [];
     this.overflowHitArea = null;
 
     // ── 주인 아이콘 (항상 첫 번째) ──
     const meTracked = this.viewMode === 'first' && !this.trackedGhostId;
-    // 테두리
+    const cx = sideX + radius;
+    const cy = y + radius;
+    // 원형 테두리
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fillStyle = meTracked ? '#fbbf24' : 'rgba(255,255,255,0.3)';
-    ctx.fillRect(sideX, y, iconSize, iconSize);
-    // 배경
+    ctx.fill();
+    // 원형 배경
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(sideX + 1, y + 1, iconSize - 2, iconSize - 2);
-    // 아바타 또는 미니 캐릭터 (주인)
+    ctx.fill();
+    // 원형 클리핑으로 아바타 그리기
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
+    ctx.clip();
     const ownerAvatar = this.getAvatar(this.currentState?.ownerAvatarUrl);
     if (ownerAvatar) {
       ctx.drawImage(ownerAvatar, sideX + 1, y + 1, iconSize - 2, iconSize - 2);
     } else {
-      drawMiniCharacter(ctx, sideX + 2, y + 1, this.currentState?.ownerCharacter);
+      drawMiniCharacter(ctx, sideX + 4, y + 3, this.currentState?.ownerCharacter);
     }
+    ctx.restore();
     this.iconHitAreas.push({ id: '__me__', x: sideX, y, w: iconSize, h: iconSize });
     y += iconSize + gap;
 
@@ -934,24 +946,37 @@ export class FarmRenderer {
     for (let i = 0; i < visibleCount; i++) {
       const [id, ghost] = ghosts[i];
       const isTracked = this.trackedGhostId === id;
+      const gcx = sideX + radius;
+      const gcy = y + radius;
 
-      // 테두리
+      ctx.save();
+      // 원형 테두리
+      ctx.beginPath();
+      ctx.arc(gcx, gcy, radius, 0, Math.PI * 2);
       ctx.fillStyle = isTracked ? '#fbbf24' : 'rgba(255,255,255,0.15)';
-      ctx.fillRect(sideX, y, iconSize, iconSize);
-      // 배경
+      ctx.fill();
+      // 원형 배경
+      ctx.beginPath();
+      ctx.arc(gcx, gcy, radius - 1, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
-      ctx.fillRect(sideX + 1, y + 1, iconSize - 2, iconSize - 2);
-      // 아바타 또는 미니 캐릭터
+      ctx.fill();
+      // 원형 클리핑으로 아바타 그리기
+      ctx.beginPath();
+      ctx.arc(gcx, gcy, radius - 1, 0, Math.PI * 2);
+      ctx.clip();
       const visitorAvatar = this.getAvatar(ghost.avatarUrl ?? this.currentState?.visitorProfiles?.get(id)?.avatarUrl);
       if (visitorAvatar) {
         ctx.drawImage(visitorAvatar, sideX + 1, y + 1, iconSize - 2, iconSize - 2);
       } else {
-        drawMiniCharacter(ctx, sideX + 2, y + 1, ghost.character);
+        drawMiniCharacter(ctx, sideX + 4, y + 3, ghost.character);
       }
+      ctx.restore();
       // 물 줬으면 파란 점
       if (ghost.watered) {
         ctx.fillStyle = '#64B5F6';
-        ctx.fillRect(sideX + iconSize - 3, y + 1, 2, 2);
+        ctx.beginPath();
+        ctx.arc(sideX + iconSize - 2, y + 2, 2, 0, Math.PI * 2);
+        ctx.fill();
       }
 
       this.iconHitAreas.push({ id, x: sideX, y, w: iconSize, h: iconSize });
@@ -962,7 +987,7 @@ export class FarmRenderer {
     const remaining = ghosts.length - visibleCount;
     if (remaining > 0) {
       const btnW = iconSize;
-      const btnH = 8;
+      const btnH = 10;
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.fillRect(sideX, y, btnW, btnH);
       ctx.fillStyle = 'rgba(255,255,255,0.15)';
@@ -1196,15 +1221,30 @@ export class FarmRenderer {
     }));
   }
 
-  // 고스트 추적 설정
-  trackUser(userId: string | null) {
+  // 고스트 추적 설정 (같은 유저 다시 클릭 시 해제 → 3인칭)
+  trackUser(userId: string | null): 'first' | 'third' {
     if (userId === '__me__' || userId === null) {
+      // 이미 내 캐릭터 추적 중이면 해제
+      if (this.viewMode === 'first' && !this.trackedGhostId) {
+        this.viewMode = 'third';
+        this.trackedGhostId = null;
+        this.targetCamera = { ...DEFAULT_CAMERA };
+        return 'third';
+      }
       this.trackedGhostId = null;
       this.viewMode = 'first';
     } else if (this.ghosts.has(userId)) {
+      // 이미 이 고스트를 추적 중이면 해제
+      if (this.trackedGhostId === userId) {
+        this.trackedGhostId = null;
+        this.viewMode = 'third';
+        this.targetCamera = { ...DEFAULT_CAMERA };
+        return 'third';
+      }
       this.trackedGhostId = userId;
       this.viewMode = 'first';
     }
+    return this.viewMode;
   }
 
   getTrackedGhostId(): string | null {

@@ -236,8 +236,8 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
       const hit = renderer.hitTestUserList(sx, sy, rect.width, rect.height);
       if (hit) {
         if (hit.type === 'user' && hit.id) {
-          renderer.trackUser(hit.id);
-          setViewMode('first');
+          const mode = renderer.trackUser(hit.id);
+          setViewMode(mode);
         } else if (hit.type === 'overflow') {
           setShowVisitorModal(true);
         }
@@ -382,16 +382,7 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
         onDoubleClick={handleDoubleClick}
         onMouseLeave={handleMouseLeave}
       />
-      {/* 시점 전환 버튼 */}
-      {clickToMove && (
-        <button
-          onClick={handleToggleView}
-          className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white text-base px-3 py-2 min-w-[40px] min-h-[40px] rounded-lg border border-white/20 transition-colors flex items-center justify-center"
-          title={viewMode === 'third' ? '1인칭 모드' : '3인칭 모드'}
-        >
-          {viewMode === 'third' ? '👁' : '🗺'}
-        </button>
-      )}
+      {/* 시점 전환: 사이드바 아바타 토글로 대체 */}
       {tooltip && (
         <div
           className="absolute pointer-events-none bg-black/80 text-white text-xs px-2 py-1 rounded max-w-[200px] truncate"
