@@ -268,9 +268,23 @@ FarmCanvas exposes these via `forwardRef`/`useImperativeHandle` so parent compon
 - Cute, cozy pixel art. Warm color palette.
 - Minimal social = status bubble + watering + bookmarks + ghost visits. Warm but low-pressure.
 
+## Documentation
+
+```text
+CLAUDE.md                       → LLM context (this file, must stay at root)
+README.md                       → Project overview & install guide (must stay at root)
+docs/
+├── PIXEL_ART_STYLE_GUIDE.md   → Visual consistency rules for sprites & canvas rendering
+├── CONTRIBUTING.md             → Contribution guidelines, PR process, code style
+├── INVARIANTS.md               → System invariants & assumptions that must not be broken
+└── SECURITY.md                 → Security policy & vulnerability reporting
+.private/
+└── claude-farmer-spec.md       → Internal design spec (not committed to public repo)
+```
+
 ## Deployment
 
 - **Web**: Vercel → claudefarmer.com
-- **CLI**: npm → `npm install -g claude-farmer` (v0.3.1)
-- **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.3.1)
+- **CLI**: npm → `npm install -g claude-farmer` (v0.3.2)
+- **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.3.2)
 - **CI/CD**: GitHub Actions (push to main → build + lint)
