@@ -355,22 +355,50 @@ export default function FarmThumbnail({
       if (f % 40 < 18) { ctx.globalAlpha = 0.5; ctx.fillRect(58, 10, 1, 1); }
       ctx.globalAlpha = 1;
 
-      // ── 지면 (티어별) ──
-      if (tier >= 3) {
-        ctx.fillStyle = '#4A8828'; // 풍성한 잔디
-      } else if (tier >= 2) {
-        ctx.fillStyle = '#5A9E32'; // 기본 잔디
-      } else {
-        ctx.fillStyle = '#8B6914'; // 흙
-      }
-      ctx.fillRect(0, 24, SIZE, SIZE - 24);
+      // ── 실루엣 스카이라인 (하늘-땅 경계) ──
+      const silCol = skyTheme.bot + '88'; // 반투명 하늘 하단색
+      ctx.fillStyle = silCol;
+      // 언덕 (해시 기반 오프셋)
+      const hoff = ((githubId?.charCodeAt(1) ?? 3) * 7) % 20;
+      ctx.fillRect(0, 20, SIZE, 4);
+      ctx.fillRect(4 + hoff, 18, 30, 2);
+      ctx.fillRect(10 + hoff, 16, 18, 2);
+      // 먼 나무 실루엣 (2개)
+      const tx1 = (8 + hoff) % 50 + 4;
+      const tx2 = (tx1 + 25) % 56 + 4;
+      ctx.fillRect(tx1, 14, 2, 6); ctx.fillRect(tx1 - 2, 12, 6, 3);
+      ctx.fillRect(tx2, 15, 2, 5); ctx.fillRect(tx2 - 1, 13, 4, 2);
 
-      // 잔디 패턴
+      // ── 3단 깊이 지면 ──
+      const farColor = tier >= 3 ? '#3D7020' : tier >= 2 ? '#4A8828' : '#7A5A10';
+      const midColor = tier >= 3 ? '#4A8828' : tier >= 2 ? '#5A9E32' : '#8B6914';
+      const nearColor = tier >= 3 ? '#5A9E32' : tier >= 2 ? '#6AB840' : '#9B7920';
+      // 먼 지면 (y 24-36)
+      ctx.fillStyle = farColor;
+      ctx.fillRect(0, 24, SIZE, 12);
+      ctx.fillStyle = midColor;
+      for (let gx = 0; gx < SIZE; gx += 6) {
+        ctx.fillRect(gx + 1, 26, 1, 1);
+      }
+      // 중간 지면 (y 36-50)
+      ctx.fillStyle = midColor;
+      ctx.fillRect(0, 36, SIZE, 14);
       if (tier >= 2) {
-        ctx.fillStyle = tier >= 3 ? '#3A7818' : '#4A8828';
+        ctx.fillStyle = farColor;
         for (let gx = 0; gx < SIZE; gx += 4) {
-          for (let gy = 24; gy < SIZE; gy += 4) {
+          for (let gy = 36; gy < 50; gy += 4) {
             ctx.fillRect(gx + (gy % 3), gy, 1, 1);
+          }
+        }
+      }
+      // 가까운 지면 (y 50-64)
+      ctx.fillStyle = nearColor;
+      ctx.fillRect(0, 50, SIZE, 14);
+      if (tier >= 2) {
+        ctx.fillStyle = midColor;
+        for (let gx = 0; gx < SIZE; gx += 3) {
+          for (let gy = 50; gy < 64; gy += 3) {
+            ctx.fillRect(gx + (gy % 2), gy, 1, 1);
           }
         }
       }

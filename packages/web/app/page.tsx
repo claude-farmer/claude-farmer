@@ -37,13 +37,13 @@ function FarmCarousel({ farms, onVisit }: {
       <div
         className="overflow-hidden"
         style={{
-          maskImage: 'linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)',
+          maskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
         }}
       >
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-4 pb-3"
+          className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-8 pb-3 items-center"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           onTouchStart={() => setAutoScroll(false)}
           onMouseDown={() => setAutoScroll(false)}
@@ -52,9 +52,9 @@ function FarmCarousel({ farms, onVisit }: {
             <button
               key={farm.github_id}
               onClick={() => onVisit(farm.github_id)}
-              className="snap-start shrink-0 w-44 bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 hover:border-[var(--accent)] transition-colors text-left"
+              className="snap-center shrink-0 w-40 bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden hover:border-[var(--accent)] transition-all active:scale-95 text-left"
             >
-              {/* 캐릭터 + 성취 썸네일 */}
+              {/* 썸네일이 카드 전체를 채움 */}
               <FarmThumbnail
                 githubId={farm.github_id}
                 character={farm.character}
@@ -63,26 +63,17 @@ function FarmCarousel({ farms, onVisit }: {
                 uniqueItems={farm.unique_items}
                 streakDays={farm.streak_days}
                 inventory={farm.inventory}
-                className="w-full mb-2"
+                className="w-full"
               />
-              <div className="flex items-center gap-1.5 mb-1">
+              {/* 닉네임만 간결하게 */}
+              <div className="flex items-center gap-1.5 px-2 py-1.5">
                 <img
                   src={farm.avatar_url}
                   alt=""
-                  className="w-5 h-5 rounded-full border border-[var(--border)]"
+                  className="w-4 h-4 rounded-full border border-[var(--border)]"
                   loading="lazy"
                 />
                 <span className="text-xs font-bold truncate">{farm.nickname}</span>
-                <span className="text-xs opacity-30 shrink-0">Lv.{farm.level}</span>
-              </div>
-              {farm.status_message?.text && (
-                <div className="text-xs opacity-40 truncate">
-                  💬 {farm.status_message.text}
-                </div>
-              )}
-              <div className="flex items-center gap-2 text-xs opacity-30 mt-1">
-                <span>🪙{farm.total_harvests}</span>
-                {farm.streak_days && farm.streak_days > 1 && <span>🔥{farm.streak_days}</span>}
               </div>
             </button>
           ))}

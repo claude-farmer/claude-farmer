@@ -542,20 +542,58 @@ export class FarmRenderer {
       { x: shelfX, y: groundY + 74 }, { x: shelfX + 18, y: groundY + 74 },
     ];
 
-    // 우측 진열대 배경 (나무 선반)
-    ctx.fillStyle = '#6B4E0A';
-    ctx.globalAlpha = 0.3;
-    ctx.fillRect(shelfX - 2, groundY + 6, 40, 88);
-    ctx.globalAlpha = 1;
-    // 선반 라인
+    // 우측 진열대 (나무 캐비닛 + 입체감)
+    const shelfW = 42;
+    const shelfH = 90;
+    const shelfY = groundY + 4;
+    // 뒤판
+    ctx.fillStyle = '#5A4008';
+    ctx.fillRect(shelfX - 2, shelfY, shelfW, shelfH);
+    // 좌측 하이라이트 (깊이)
     ctx.fillStyle = '#A0724A';
+    ctx.fillRect(shelfX - 2, shelfY, 2, shelfH);
+    // 우측/하단 그림자
+    ctx.fillStyle = '#3A2808';
+    ctx.fillRect(shelfX + shelfW - 2, shelfY, 2, shelfH);
+    ctx.fillRect(shelfX - 2, shelfY + shelfH - 2, shelfW, 2);
+    // 선반판 (3단, 2px 두께 + 1px 하이라이트)
     for (let sy = 0; sy < 3; sy++) {
-      ctx.fillRect(shelfX - 2, groundY + 26 + sy * 20, 40, 1);
+      const py = shelfY + 22 + sy * 22;
+      ctx.fillStyle = '#8B6544';
+      ctx.fillRect(shelfX - 2, py, shelfW, 2);
+      ctx.fillStyle = '#A0724A';
+      ctx.fillRect(shelfX - 1, py, shelfW - 2, 1);
     }
+    // 다리
+    ctx.fillStyle = '#6B4E0A';
+    ctx.fillRect(shelfX - 1, shelfY + shelfH, 2, 3);
+    ctx.fillRect(shelfX + shelfW - 3, shelfY + shelfH, 2, 3);
+    // 차양 (상단 지붕)
+    ctx.fillStyle = '#8B6544';
+    ctx.fillRect(shelfX - 4, shelfY - 3, shelfW + 4, 3);
+    ctx.fillStyle = '#A0724A';
+    ctx.fillRect(shelfX - 3, shelfY - 3, shelfW + 2, 1);
+    ctx.fillStyle = '#4A3508';
+    ctx.fillRect(shelfX - 4, shelfY, shelfW + 4, 1); // 그림자
+
 
     // 레어리티 순으로 정렬 (legendary > epic > rare > common)
     const rarityOrder: Record<string, number> = { legendary: 0, epic: 1, rare: 2, common: 3 };
     const sorted = [...decorations].sort((a, b) => (rarityOrder[a.rarity] ?? 4) - (rarityOrder[b.rarity] ?? 4));
+
+    // 좌측 돌 화단 테두리 (아이템 7개 이상일 때)
+    if (sorted.length > 6) {
+      ctx.fillStyle = '#8b929e';
+      ctx.fillRect(1, groundY + 12, 42, 2);
+      ctx.fillRect(1, groundY + 88, 42, 2);
+      ctx.fillRect(1, groundY + 12, 2, 78);
+      ctx.fillRect(41, groundY + 12, 2, 78);
+      ctx.fillStyle = '#b0b8c4';
+      ctx.fillRect(2, groundY + 13, 40, 1);
+      ctx.fillRect(2, groundY + 13, 1, 76);
+      ctx.fillStyle = '#6B5E3A';
+      ctx.fillRect(3, groundY + 14, 38, 74);
+    }
 
     // 아이템별 스프라이트 (10×10, 구체적 형태)
     const f = this.frame;
@@ -810,6 +848,30 @@ export class FarmRenderer {
       const sprites = CROP_SPRITES[slot.crop];
       if (sprites && sprites[slot.stage]) {
         drawSprite(this.ctx, sprites[slot.stage], x, y, 1);
+
+        // 바람 잎 흔들림 (stage 2+)
+        if (slot.stage >= 2) {
+          const windPhase = Math.sin(this.frame * 0.04 + i * 1.7);
+          if (windPhase > 0.6) {
+            this.ctx.fillStyle = '#7BC74D';
+            this.ctx.fillRect(x + 8 + 1, y + (slot.stage === 3 ? 3 : 6), 1, 1);
+          }
+        }
+
+        // 수확 가능 스파클 (stage 3)
+        if (slot.stage === 3 && (Math.sin(i * 3.1) + Math.sin(this.frame * 0.02) > 0.5)) {
+          const sparklePhase = this.frame * 0.15 + i * 2.5;
+          const sx = x + 8 + Math.round(Math.cos(sparklePhase) * 3);
+          const sy = y + 6 + Math.round(Math.sin(sparklePhase) * 3);
+          this.ctx.fillStyle = '#fff';
+          this.ctx.fillRect(sx, sy, 1, 1);
+        }
+
+        // 수분 반짝 (낮 시간)
+        if ((this.frame + i * 17) % 48 < 3) {
+          this.ctx.fillStyle = 'rgba(255,255,255,0.5)';
+          this.ctx.fillRect(x + 4 + (i % 3), y + 14, 1, 1);
+        }
       }
     }
   }
@@ -880,6 +942,20 @@ export class FarmRenderer {
       drawSprite(ctx, ownerSprite, charX, charY, 1);
     }
 
+    // 눈 깜빡 (10초마다 2프레임)
+    if (this.charMode === 'idle' && this.frame % 120 < 2) {
+      const skinColor = this.currentState?.ownerCharacter?.type === 'human'
+        ? '#FFD5B8' : '#8B6544';
+      ctx.fillStyle = skinColor;
+      if (this.charFacing === 'left') {
+        ctx.fillRect(charX + TILE - 7, charY + 4, 1, 1);
+        ctx.fillRect(charX + TILE - 9, charY + 4, 1, 1);
+      } else {
+        ctx.fillRect(charX + 6, charY + 4, 1, 1);
+        ctx.fillRect(charX + 8, charY + 4, 1, 1);
+      }
+    }
+
     // 상태 메시지 말풍선 (주인 캐릭터)
     if (this.currentState?.ownerStatusText && !this.trackedGhostId) {
       this.drawPixelSpeechBubble(charX + TILE / 2, charY - 2, this.currentState.ownerStatusText);
@@ -938,6 +1014,9 @@ export class FarmRenderer {
     const ctx = this.ctx;
 
     if (tod === 'morning') {
+      // 골든아워 오버레이
+      ctx.fillStyle = 'rgba(255,236,179,0.12)';
+      ctx.fillRect(0, SKY_TILES * TILE, BASE_W, BASE_H - SKY_TILES * TILE);
       // 이슬 반짝임
       if (this.frame % 60 < 10) {
         ctx.fillStyle = 'rgba(255,255,255,0.8)';
@@ -961,14 +1040,14 @@ export class FarmRenderer {
         }
       }
 
-      // 어두운 오버레이
-      ctx.fillStyle = 'rgba(13,27,42,0.25)';
+      // 어두운 오버레이 (약화 — 아이템 가시성 유지)
+      ctx.fillStyle = 'rgba(20,30,55,0.18)';
       ctx.fillRect(0, SKY_TILES * TILE, BASE_W, BASE_H - SKY_TILES * TILE);
     }
 
     if (tod === 'evening') {
-      // 따뜻한 오버레이
-      ctx.fillStyle = 'rgba(255,152,0,0.08)';
+      // 따뜻한 앰버 오버레이 (강화)
+      ctx.fillStyle = 'rgba(255,111,0,0.15)';
       ctx.fillRect(0, 0, BASE_W, BASE_H);
     }
 
