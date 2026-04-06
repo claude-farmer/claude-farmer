@@ -270,10 +270,10 @@ function FarmApp() {
             </>
           ) : user ? (
             <>
-              <Link href="/" className="flex items-center gap-2 text-sm hover:opacity-80">
+              <div className="flex items-center gap-2 text-sm">
                 <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full border border-[var(--border)]" />
                 <span className="font-bold">{user.nickname}</span>
-              </Link>
+              </div>
               <button onClick={handleLogout} className="text-xs opacity-40 hover:opacity-70">
                 {t.logoutBtn}
               </button>
