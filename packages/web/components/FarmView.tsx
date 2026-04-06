@@ -16,9 +16,10 @@ interface FarmViewProps {
   isLoggedIn?: boolean;
   onStatusUpdate?: (text: string, link?: string) => void;
   onCharacterUpdate?: (character: CharacterAppearance) => void;
+  onVisitUser?: (userId: string) => void;
 }
 
-export default function FarmView({ state, footprints, notifications, serverUniqueItems, isLoggedIn, onStatusUpdate, onCharacterUpdate }: FarmViewProps) {
+export default function FarmView({ state, footprints, notifications, serverUniqueItems, isLoggedIn, onStatusUpdate, onCharacterUpdate, onVisitUser }: FarmViewProps) {
   const { t, locale } = useLocale();
   const canvasRef = useRef<FarmCanvasHandle>(null);
   const prevWaterCountRef = useRef<number | null>(null);
@@ -233,7 +234,7 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
 
       {/* 내 농장 방명록 */}
       {isLoggedIn && (
-        <GuestbookPanel farmId={user.github_id} />
+        <GuestbookPanel farmId={user.github_id} onVisitUser={onVisitUser} />
       )}
 
       {showCharEditor && (

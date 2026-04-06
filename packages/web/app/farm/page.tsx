@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import TabBar from '@/components/TabBar';
 import FarmView from '@/components/FarmView';
 import BagView from '@/components/BagView';
@@ -12,8 +13,21 @@ import { useLocale } from '@/lib/locale-context';
 import usePolling from '@/hooks/usePolling';
 import type { LocalState, PublicProfile, FarmNotifications, Footprint, CharacterAppearance } from '@claude-farmer/shared';
 
-export default function FarmApp() {
+export default function FarmPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-md mx-auto min-h-screen flex items-center justify-center bg-[var(--bg)]">
+        <div className="text-4xl animate-bounce">🌱</div>
+      </div>
+    }>
+      <FarmApp />
+    </Suspense>
+  );
+}
+
+function FarmApp() {
   const { t } = useLocale();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<'farm' | 'bag' | 'explore'>('farm');
   const [user, setUser] = useState<{ github_id: string; nickname: string; avatar_url: string } | null>(null);
   const [state, setState] = useState<LocalState>(MOCK_STATE);
@@ -91,8 +105,13 @@ export default function FarmApp() {
       }
       setLoading(false);
 
-      // Demo mode: auto-visit a random real farm
-      if (!session) {
+      // URL에서 ?visit= 파라미터 확인 (랜딩에서 넘어온 경우)
+      const visitParam = searchParams.get('visit');
+      if (visitParam) {
+        setVisitingId(visitParam);
+        if (!session) setIsDemo(true);
+      } else if (!session) {
+        // Demo mode: auto-visit a random real farm
         try {
           const randomFarms = await fetchExplore('', 1);
           if (randomFarms.length > 0) {
@@ -222,6 +241,7 @@ export default function FarmApp() {
                 isLoggedIn={!!user}
                 onStatusUpdate={handleStatusUpdate}
                 onCharacterUpdate={handleCharacterUpdate}
+                onVisitUser={(id) => { setVisitingId(id); setVisitingNickname(''); }}
               />
             )}
             {tab === 'bag' && <BagView inventory={state.inventory} />}

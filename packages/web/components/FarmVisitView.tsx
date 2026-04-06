@@ -276,7 +276,7 @@ export default function FarmVisitView({
       )}
 
       {/* 방명록 */}
-      <GuestbookPanel farmId={targetId} refreshKey={guestbookKey} />
+      <GuestbookPanel farmId={targetId} refreshKey={guestbookKey} onVisitUser={(id) => onWaveSurf?.(id)} />
 
       {/* 선물 선택 모달 */}
       {showGiftPicker && (

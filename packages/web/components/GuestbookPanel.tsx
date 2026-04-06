@@ -7,10 +7,11 @@ import type { GuestbookEntry } from '@claude-farmer/shared';
 
 interface GuestbookPanelProps {
   farmId: string;
-  refreshKey?: number; // increment to refetch
+  refreshKey?: number;
+  onVisitUser?: (userId: string) => void;
 }
 
-export default function GuestbookPanel({ farmId, refreshKey }: GuestbookPanelProps) {
+export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: GuestbookPanelProps) {
   const { t } = useLocale();
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [totalWater, setTotalWater] = useState(0);
@@ -62,17 +63,20 @@ export default function GuestbookPanel({ farmId, refreshKey }: GuestbookPanelPro
           <div className="divide-y divide-[var(--border)]">
             {entries.map((entry, i) => (
               <div key={i} className="px-3 py-2 flex gap-2 items-start">
-                {/* Avatar */}
-                <div className="w-7 h-7 rounded-full bg-[var(--border)] flex-shrink-0 overflow-hidden mt-0.5">
+                {/* Avatar — 클릭하면 해당 유저 농장 방문 */}
+                <button
+                  onClick={() => onVisitUser?.(entry.from_id)}
+                  className="w-7 h-7 rounded-full bg-[var(--border)] flex-shrink-0 overflow-hidden mt-0.5 hover:ring-2 hover:ring-[var(--accent)] transition-all cursor-pointer"
+                >
                   {entry.from_avatar_url && (
                     <img src={entry.from_avatar_url} alt="" className="w-full h-full" />
                   )}
-                </div>
+                </button>
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs">{typeIcon(entry.type)}</span>
-                    <span className="text-sm font-bold truncate">{entry.from_nickname}</span>
+                    <button onClick={() => onVisitUser?.(entry.from_id)} className="text-sm font-bold truncate hover:text-[var(--accent)] transition-colors">{entry.from_nickname}</button>
                     <span className="text-xs opacity-40 flex-shrink-0">{timeAgo(entry.at)}</span>
                   </div>
                   {entry.message && (

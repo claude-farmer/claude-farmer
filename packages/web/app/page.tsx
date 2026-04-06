@@ -3,381 +3,223 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useLocale } from '@/lib/locale-context';
+import MiniCropGrid from '@/components/MiniCropGrid';
 import type { PublicProfile } from '@claude-farmer/shared';
 
-// ── 미니 캔버스 프리뷰 (히어로용) ──
-function PixelFarmPreview() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const frameRef = useRef(0);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d')!;
-    canvas.width = 128;
-    canvas.height = 96;
-
-    const crops = ['#FF8C00', '#EF4444', '#FACC15', '#FF6B81', '#F97316', '#FBB6CE'];
-    const stages = [2, 3, 4, 6, 4, 3];
-
-    const interval = setInterval(() => {
-      frameRef.current++;
-      const f = frameRef.current;
-      ctx.clearRect(0, 0, 128, 96);
-
-      const hour = new Date().getHours();
-      let skyTop: string, skyBot: string;
-      if (hour >= 6 && hour < 11) { skyTop = '#FFF3E0'; skyBot = '#FFCCBC'; }
-      else if (hour >= 11 && hour < 17) { skyTop = '#B3E5FC'; skyBot = '#E1F5FE'; }
-      else if (hour >= 17 && hour < 21) { skyTop = '#F48FB1'; skyBot = '#FFE082'; }
-      else { skyTop = '#0D1B2A'; skyBot = '#1B2838'; }
-
-      const grad = ctx.createLinearGradient(0, 0, 0, 36);
-      grad.addColorStop(0, skyTop);
-      grad.addColorStop(1, skyBot);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 128, 36);
-
-      ctx.fillStyle = '#7BC74D';
-      ctx.fillRect(0, 36, 128, 60);
-      ctx.fillStyle = '#5A9E32';
-      for (let x = 0; x < 128; x += 5) {
-        for (let y = 36; y < 96; y += 4) {
-          ctx.fillRect(x + (y % 3), y, 1, 1);
-        }
-      }
-
-      ctx.fillStyle = '#8B6914';
-      ctx.fillRect(16, 42, 56, 44);
-      ctx.fillStyle = '#6B4E0A';
-      for (let x = 16; x < 72; x += 3) {
-        for (let y = 42; y < 86; y += 3) {
-          ctx.fillRect(x + (y % 2), y, 1, 1);
-        }
-      }
-
-      for (let i = 0; i < 6; i++) {
-        const row = Math.floor(i / 3);
-        const col = i % 3;
-        const cx = 24 + col * 16;
-        const cy = 52 + row * 18;
-        const h = stages[i] + (f % 40 < 20 ? 0 : 1);
-        ctx.fillStyle = '#7BC74D';
-        ctx.fillRect(cx, cy - h, 2, h);
-        ctx.fillRect(cx - 1, cy - h - 1, 4, 2);
-        if (stages[i] > 3) {
-          ctx.fillStyle = crops[i];
-          ctx.fillRect(cx - 1, cy - h + 1, 3, 3);
-        }
-      }
-
-      const bounce = f % 40 < 20 ? 0 : -1;
-      const charX = 84;
-      const charY = 56 + bounce;
-      ctx.fillStyle = '#5C3A1E';
-      ctx.fillRect(charX, charY, 6, 3);
-      ctx.fillStyle = '#FFD5B8';
-      ctx.fillRect(charX + 1, charY + 3, 4, 3);
-      ctx.fillStyle = '#3E2723';
-      ctx.fillRect(charX + 1, charY + 4, 1, 1);
-      ctx.fillRect(charX + 4, charY + 4, 1, 1);
-      ctx.fillStyle = '#6C9BD2';
-      ctx.fillRect(charX, charY + 6, 6, 4);
-      ctx.fillStyle = '#5B7A9E';
-      ctx.fillRect(charX + 1, charY + 10, 2, 2);
-      ctx.fillRect(charX + 3, charY + 10, 2, 2);
-
-      if (hour >= 21 || hour < 6) {
-        ctx.fillStyle = '#FFFFFF';
-        [12, 35, 58, 82, 105].forEach((sx, i) => {
-          if (f % 60 < 40 || i % 2 === 0)
-            ctx.fillRect(sx, 5 + (i * 7) % 25, 1, 1);
-        });
-      }
-    }, 80);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="w-full max-w-sm rounded-xl border-2 border-[var(--border)]"
-      style={{ aspectRatio: '128/96', imageRendering: 'pixelated' }}
-    />
-  );
-}
-
-// ── 실제 유저 농장 캐러셀 ──
-function FarmCarousel({ farms }: { farms: (PublicProfile & { github_id: string })[] }) {
+// ── 농장 카드 캐러셀 ──
+function FarmCarousel({ farms, onVisit }: {
+  farms: (PublicProfile & { github_id: string })[];
+  onVisit: (id: string) => void;
+}) {
   const { t } = useLocale();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
 
-  // 자동 스크롤
   useEffect(() => {
-    if (!autoScroll || farms.length <= 1) return;
+    if (!autoScroll || farms.length <= 2) return;
     const el = scrollRef.current;
     if (!el) return;
     const interval = setInterval(() => {
-      const cardWidth = el.children[0]?.clientWidth ?? 260;
-      const gap = 12;
       const maxScroll = el.scrollWidth - el.clientWidth;
       if (el.scrollLeft >= maxScroll - 5) {
         el.scrollTo({ left: 0, behavior: 'smooth' });
       } else {
-        el.scrollBy({ left: cardWidth + gap, behavior: 'smooth' });
+        el.scrollBy({ left: 200, behavior: 'smooth' });
       }
-    }, 3000);
+    }, 3500);
     return () => clearInterval(interval);
   }, [autoScroll, farms.length]);
 
   if (farms.length === 0) return null;
 
   return (
-    <section className="w-full">
-      <h2 className="text-lg font-bold mb-3 text-center">{t.liveFarmsTitle}</h2>
+    <div className="w-full relative">
+      {/* 그라데이션 마스크 (양끝 페이드) */}
       <div
-        ref={scrollRef}
-        className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        onTouchStart={() => setAutoScroll(false)}
-        onMouseDown={() => setAutoScroll(false)}
+        className="overflow-hidden"
+        style={{
+          maskImage: 'linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)',
+        }}
       >
-        {farms.map(farm => (
-          <Link
-            key={farm.github_id}
-            href="/farm"
-            className="snap-start shrink-0 w-64 bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--accent)] transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <img
-                src={farm.avatar_url}
-                alt={farm.nickname}
-                className="w-8 h-8 rounded-full border border-[var(--border)]"
-                loading="lazy"
+        <div
+          ref={scrollRef}
+          className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-4 pb-3"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          onTouchStart={() => setAutoScroll(false)}
+          onMouseDown={() => setAutoScroll(false)}
+        >
+          {farms.map(farm => (
+            <button
+              key={farm.github_id}
+              onClick={() => onVisit(farm.github_id)}
+              className="snap-start shrink-0 w-44 bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 hover:border-[var(--accent)] transition-colors text-left"
+            >
+              {/* 미니 농장 프리뷰 */}
+              <MiniCropGrid
+                grid={farm.farm_snapshot?.grid ?? []}
+                className="w-full mb-2"
               />
-              <div className="min-w-0">
-                <div className="font-bold text-sm truncate">{farm.nickname}</div>
-                <div className="text-xs opacity-40">Lv.{farm.level}</div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <img
+                  src={farm.avatar_url}
+                  alt=""
+                  className="w-5 h-5 rounded-full border border-[var(--border)]"
+                  loading="lazy"
+                />
+                <span className="text-xs font-bold truncate">{farm.nickname}</span>
+                <span className="text-xs opacity-30 shrink-0">Lv.{farm.level}</span>
               </div>
-            </div>
-            <div className="flex items-center gap-3 text-xs opacity-60">
-              <span>🪙 {farm.total_harvests}{t.times}</span>
-              {farm.streak_days && farm.streak_days > 1 && (
-                <span>🔥 {farm.streak_days}{t.days}</span>
+              {farm.status_message?.text && (
+                <div className="text-xs opacity-40 truncate">
+                  💬 {farm.status_message.text}
+                </div>
               )}
-              {farm.unique_items && (
-                <span>📦 {farm.unique_items}/32</span>
-              )}
-            </div>
-            {farm.status_message?.text && (
-              <div className="mt-2 text-xs opacity-50 truncate">
-                💬 {farm.status_message.text}
+              <div className="flex items-center gap-2 text-xs opacity-30 mt-1">
+                <span>🪙{farm.total_harvests}</span>
+                {farm.streak_days && farm.streak_days > 1 && <span>🔥{farm.streak_days}</span>}
               </div>
-            )}
-          </Link>
-        ))}
-      </div>
-      <p className="text-center text-xs opacity-30 mt-2">{t.liveFarmsDesc}</p>
-    </section>
-  );
-}
-
-// ── 통계 카운터 ──
-function StatsBar({ farmCount }: { farmCount: number }) {
-  const { t } = useLocale();
-  if (farmCount <= 0) return null;
-
-  return (
-    <div className="flex justify-center gap-6 text-center">
-      <div>
-        <div className="text-2xl font-bold text-[var(--accent)]">{farmCount}+</div>
-        <div className="text-xs opacity-40">{t.statsFarmers}</div>
-      </div>
-      <div>
-        <div className="text-2xl font-bold text-[var(--accent)]">32</div>
-        <div className="text-xs opacity-40">{t.statsItems}</div>
-      </div>
-      <div>
-        <div className="text-2xl font-bold text-[var(--accent)]">24/7</div>
-        <div className="text-xs opacity-40">{t.statsAutoGrow}</div>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-// ── 메인 랜딩 ──
+// ── 메인 랜딩 (앱 스타일) ──
 export default function Landing() {
   const { locale, t, setLocale } = useLocale();
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
   const [farms, setFarms] = useState<(PublicProfile & { github_id: string })[]>([]);
 
-  // 실제 유저 농장 로드
   useEffect(() => {
-    fetch('/api/explore?exclude=&count=10')
+    fetch('/api/explore?exclude=&count=12')
       .then(res => res.ok ? res.json() : [])
       .then(data => setFarms(data))
       .catch(() => {});
   }, []);
 
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.trim()) {
-      const res = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      if (res.ok) setSubscribed(true);
-    }
+  const handleVisit = (farmId: string) => {
+    window.location.href = `/farm?visit=${farmId}`;
   };
 
-  const features = [
-    { icon: '🌱', title: t.feat1Title, desc: t.feat1Desc },
-    { icon: '🎲', title: t.feat2Title, desc: t.feat2Desc },
-    { icon: '💧', title: t.feat3Title, desc: t.feat3Desc },
-    { icon: '🎨', title: t.feat4Title, desc: t.feat4Desc },
-  ];
-
-  const steps = [
-    { num: '1', text: 'npm install -g claude-farmer' },
-    { num: '2', text: 'claude-farmer init' },
-    { num: '3', text: t.step3 },
-  ];
-
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12 flex flex-col items-center gap-14">
-      {/* Hero */}
-      <section className="text-center flex flex-col items-center gap-5">
-        <h1 className="text-4xl font-bold">🌱 Claude Farmer</h1>
-        <p className="text-xl text-[var(--text)] opacity-70">{t.heroTagline}</p>
-        <p className="text-sm opacity-50 max-w-md">{t.heroDesc}</p>
-
-        <PixelFarmPreview />
-
-        <div className="flex gap-3 flex-wrap justify-center">
+    <div className="max-w-md mx-auto min-h-screen flex flex-col bg-[var(--bg)] shadow-2xl border-x border-[var(--border)]">
+      {/* Header (앱과 동일한 스타일) */}
+      <header className="sticky top-0 z-50 bg-[var(--bg)] border-b border-[var(--border)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="flex items-center justify-between px-4 py-2">
+          <span className="font-bold text-sm">🌱 Claude Farmer</span>
           <a
-            href="https://www.npmjs.com/package/claude-farmer"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-[var(--accent)] text-black font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity"
+            href="/api/auth/login"
+            className="text-xs bg-[var(--accent)] text-black px-3 py-1 rounded-full font-bold hover:opacity-90"
           >
-            npm install -g claude-farmer
+            {t.loginBtn}
           </a>
-          <Link
-            href="/farm"
-            className="bg-[var(--card)] border border-[var(--border)] text-[var(--text)] font-bold px-6 py-3 rounded-lg hover:border-[var(--accent)] transition-colors"
-          >
-            {t.demoBtn}
-          </Link>
         </div>
-      </section>
+      </header>
 
-      {/* 실시간 통계 */}
-      <StatsBar farmCount={farms.length > 0 ? farms.length * 5 : 0} />
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        {/* 히어로 — 간결하게 */}
+        <section className="text-center px-4 pt-6 pb-4">
+          <h1 className="text-2xl font-bold mb-1">{t.heroTagline}</h1>
+          <p className="text-xs opacity-50 max-w-xs mx-auto">{t.heroDesc}</p>
+        </section>
 
-      {/* 실제 유저 농장 캐러셀 */}
-      <FarmCarousel farms={farms} />
+        {/* 실제 유저 농장 캐러셀 (첫 번째 eye-catching 요소) */}
+        <section className="pb-4">
+          <h2 className="text-sm font-bold opacity-50 px-4 mb-2">🌍 {t.liveFarmsTitle}</h2>
+          <FarmCarousel farms={farms} onVisit={handleVisit} />
+        </section>
 
-      {/* Features */}
-      <section className="w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {features.map(f => (
-            <div key={f.title} className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
-              <div className="text-2xl mb-2">{f.icon}</div>
-              <h3 className="font-bold mb-1">{f.title}</h3>
-              <p className="text-sm opacity-60">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Get Started */}
-      <section className="w-full text-center">
-        <h2 className="text-2xl font-bold mb-6">{t.getStarted}</h2>
-        <div className="flex flex-col gap-4 max-w-md mx-auto">
-          {steps.map(s => (
-            <div key={s.num} className="flex items-center gap-4 bg-[var(--card)] border border-[var(--border)] rounded-lg p-4">
-              <div className="w-8 h-8 rounded-full bg-[var(--accent)] text-black flex items-center justify-center font-bold text-sm shrink-0">
-                {s.num}
+        {/* Features — 컴팩트 */}
+        <section className="px-4 pb-4">
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { icon: '🌱', title: t.feat1Title, desc: t.feat1Desc },
+              { icon: '🎲', title: t.feat2Title, desc: t.feat2Desc },
+              { icon: '💧', title: t.feat3Title, desc: t.feat3Desc },
+              { icon: '🎨', title: t.feat4Title, desc: t.feat4Desc },
+            ].map(f => (
+              <div key={f.title} className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3">
+                <div className="text-lg mb-1">{f.icon}</div>
+                <h3 className="text-xs font-bold mb-0.5">{f.title}</h3>
+                <p className="text-xs opacity-40 leading-tight">{f.desc}</p>
               </div>
-              <code className="text-sm text-left">{s.text}</code>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Gacha */}
-      <section className="w-full text-center">
-        <h2 className="text-2xl font-bold mb-2">{t.gachaTitle}</h2>
-        <p className="text-sm opacity-50 mb-6">{t.gachaDesc}</p>
-        <div className="flex justify-center gap-6 text-sm">
-          {[
-            { emoji: '🪨', label: 'Common', pct: '60%', color: 'gray' },
-            { emoji: '🐱', label: 'Rare', pct: '28%', color: 'blue' },
-            { emoji: '⛲', label: 'Epic', pct: '10%', color: 'purple' },
-            { emoji: '🦄', label: 'Legendary', pct: '2%', color: 'yellow' },
-          ].map(g => (
-            <div key={g.label}>
-              <div className={`w-12 h-12 rounded-lg bg-${g.color}-500/20 border border-${g.color}-500 flex items-center justify-center mb-1`}>{g.emoji}</div>
-              <span className={`text-${g.color}-400`}>{g.label}</span>
-              <div className="text-xs opacity-40">{g.pct}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Subscribe */}
-      <section className="w-full text-center">
-        <h2 className="text-2xl font-bold mb-2">{t.subscribeTitle}</h2>
-        <p className="text-sm opacity-50 mb-4">{t.subscribeDesc}</p>
-        {subscribed ? (
-          <div className="bg-[var(--success)]/20 border border-[var(--success)] rounded-lg p-4 max-w-sm mx-auto">
-            <span className="text-[var(--success)]">{t.subscribeDone}</span>
+            ))}
           </div>
-        ) : (
-          <form onSubmit={handleSubscribe} className="flex gap-2 max-w-sm mx-auto">
-            <input
-              type="email"
-              placeholder={t.emailPlaceholder}
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              className="flex-1 bg-[var(--card)] border border-[var(--border)] rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
-            />
-            <button
-              type="submit"
-              className="bg-[var(--accent)] text-black font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity text-sm"
-            >
-              {t.subscribeBtn}
-            </button>
-          </form>
-        )}
-      </section>
+        </section>
 
-      {/* Footer */}
-      <footer className="text-center text-xs opacity-30 pb-8">
-        <div className="flex gap-4 justify-center mb-2">
-          <a href="https://github.com/claude-farmer/claude-farmer" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">GitHub</a>
-          <a href="https://www.npmjs.com/package/claude-farmer" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">npm</a>
-          <a href="https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">VSCode</a>
-        </div>
-        <div className="flex gap-2 justify-center mb-2">
-          <button
-            onClick={() => setLocale('en')}
-            className={`hover:opacity-60 ${locale === 'en' ? 'underline opacity-100' : ''}`}
-          >EN</button>
-          <span>|</span>
-          <button
-            onClick={() => setLocale('ko')}
-            className={`hover:opacity-60 ${locale === 'ko' ? 'underline opacity-100' : ''}`}
-          >KO</button>
-        </div>
-        <p>{t.footerContrib}</p>
-        <p className="mt-1">{t.footerLicense}</p>
-      </footer>
+        {/* Get Started — 심플 */}
+        <section className="px-4 pb-4">
+          <h2 className="text-sm font-bold mb-3 text-center">{t.getStarted}</h2>
+          <div className="flex flex-col gap-2 max-w-sm mx-auto">
+            {[
+              { n: '1', t: 'npm install -g claude-farmer' },
+              { n: '2', t: 'claude-farmer init' },
+              { n: '3', t: t.step3 },
+            ].map(s => (
+              <div key={s.n} className="flex items-center gap-3 bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2">
+                <div className="w-6 h-6 rounded-full bg-[var(--accent)] text-black flex items-center justify-center font-bold text-xs shrink-0">
+                  {s.n}
+                </div>
+                <code className="text-xs">{s.t}</code>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="px-4 pb-6">
+          <div className="flex gap-2">
+            <a
+              href="https://www.npmjs.com/package/claude-farmer"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 bg-[var(--accent)] text-black font-bold py-3 rounded-lg text-center text-sm hover:opacity-90 transition-opacity"
+            >
+              npm install
+            </a>
+            <Link
+              href="/farm"
+              className="flex-1 bg-[var(--card)] border border-[var(--border)] text-[var(--text)] font-bold py-3 rounded-lg text-center text-sm hover:border-[var(--accent)] transition-colors"
+            >
+              {t.demoBtn}
+            </Link>
+          </div>
+        </section>
+
+        {/* Footer — 최소 */}
+        <footer className="text-center text-xs opacity-20 px-4 pb-6">
+          <div className="flex gap-4 justify-center mb-2">
+            <a href="https://github.com/claude-farmer/claude-farmer" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">GitHub</a>
+            <a href="https://www.npmjs.com/package/claude-farmer" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">npm</a>
+            <a href="https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">VSCode</a>
+          </div>
+          <div className="flex gap-2 justify-center mb-2">
+            <button onClick={() => setLocale('en')} className={`hover:opacity-60 ${locale === 'en' ? 'underline opacity-100' : ''}`}>EN</button>
+            <span>|</span>
+            <button onClick={() => setLocale('ko')} className={`hover:opacity-60 ${locale === 'ko' ? 'underline opacity-100' : ''}`}>KO</button>
+          </div>
+          <p>{t.footerLicense}</p>
+        </footer>
+      </div>
+
+      {/* Bottom bar — 앱과 동일한 스타일 */}
+      <nav className="flex border-t border-[var(--border)] bg-[var(--card)] sticky bottom-0 z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <Link href="/farm" className="flex-1 py-2 text-center text-sm text-[var(--text)] opacity-50 hover:opacity-75">
+          <div className="text-base">🏠</div>
+          <div>{t.tabFarm}</div>
+        </Link>
+        <Link href="/farm" className="flex-1 py-2 text-center text-sm text-[var(--text)] opacity-50 hover:opacity-75">
+          <div className="text-base">📖</div>
+          <div>{t.tabBag}</div>
+        </Link>
+        <button className="flex-1 py-2 text-center text-sm text-[var(--accent)]">
+          <div className="text-base">🌍</div>
+          <div>{t.tabExplore}</div>
+        </button>
+      </nav>
     </div>
   );
 }
