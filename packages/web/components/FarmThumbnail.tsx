@@ -66,17 +66,39 @@ export default function FarmThumbnail({
         }
       }
 
-      // ── 성취 도트 (배경에 깔리는 도감 아이템) ──
-      for (let i = 0; i < uniqueInventory.length && i < 32; i++) {
-        const col = i % 8;
-        const row = Math.floor(i / 8);
-        const dx = 2 + col * 7;
-        const dy = 24 + row * 7;
-        ctx.globalAlpha = 0.3;
-        ctx.fillStyle = RARITY_COLOR[uniqueInventory[i].rarity] ?? '#9ca3af';
-        ctx.fillRect(dx, dy, 3, 3);
+      // ── 수집품을 땅 위에 배치 ──
+      const groundY2 = 22;
+      const decoSlots = [
+        // 좌측 잔디
+        { x: 3, y: groundY2 + 24 }, { x: 12, y: groundY2 + 32 },
+        { x: 5, y: groundY2 + 38 }, { x: 14, y: groundY2 + 18 },
+        { x: 2, y: groundY2 + 10 }, { x: 10, y: groundY2 + 6 },
+        // 우측 잔디
+        { x: 48, y: groundY2 + 24 }, { x: 54, y: groundY2 + 32 },
+        { x: 50, y: groundY2 + 38 }, { x: 58, y: groundY2 + 18 },
+        { x: 46, y: groundY2 + 10 }, { x: 56, y: groundY2 + 6 },
+        // 하단
+        { x: 20, y: groundY2 + 36 }, { x: 38, y: groundY2 + 36 },
+        { x: 28, y: groundY2 + 38 },
+      ];
+      // 레어리티 순 정렬 (legendary 우선)
+      const rarityOrder: Record<string, number> = { legendary: 0, epic: 1, rare: 2, common: 3 };
+      const sorted = [...uniqueInventory].sort((a, b) => (rarityOrder[a.rarity] ?? 4) - (rarityOrder[b.rarity] ?? 4));
+      for (let i = 0; i < sorted.length && i < decoSlots.length; i++) {
+        const slot = decoSlots[i];
+        const color = RARITY_COLOR[sorted[i].rarity] ?? '#9ca3af';
+        // 미니 아이템 아이콘 (3×3 + 레어리티 색상)
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 0.7;
+        ctx.fillRect(slot.x, slot.y, 3, 3);
+        // 레전더리/에픽은 하이라이트
+        if (sorted[i].rarity === 'legendary' || sorted[i].rarity === 'epic') {
+          ctx.fillStyle = '#fff';
+          ctx.globalAlpha = 0.3 + Math.sin(f * 0.08 + i) * 0.2;
+          ctx.fillRect(slot.x, slot.y, 1, 1);
+        }
+        ctx.globalAlpha = 1;
       }
-      ctx.globalAlpha = 1;
 
       // ── 캐릭터 (2배 스케일 = 32×32, 중앙) ──
       const charX = (SIZE - 32) / 2;
