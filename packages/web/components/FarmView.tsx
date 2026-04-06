@@ -3,7 +3,8 @@
 import { useRef, useEffect, useState } from 'react';
 import FarmCanvas, { type FarmCanvasHandle } from './FarmCanvas';
 import CharacterEditor from './CharacterEditor';
-import { TOTAL_ITEMS, getTimeOfDay, getFarmerTitle } from '@claude-farmer/shared';
+import GuestbookPanel from './GuestbookPanel';
+import { TOTAL_ITEMS, getTimeOfDay, getFarmerTitle, GACHA_ITEMS, getItemCounts } from '@claude-farmer/shared';
 import type { LocalState, Footprint, FarmNotifications, CharacterAppearance } from '@claude-farmer/shared';
 import { useLocale } from '@/lib/locale-context';
 
@@ -27,6 +28,12 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
   const [showCharEditor, setShowCharEditor] = useState(false);
   const statusInputRef = useRef<HTMLInputElement>(null);
   const { farm, user, status_message, inventory, activity } = state;
+
+  // 인벤토리에서 장식 데이터 계산
+  const itemCounts = getItemCounts(inventory);
+  const decorationItems = GACHA_ITEMS
+    .filter(item => (itemCounts.get(item.id) ?? 0) > 0)
+    .map(item => ({ itemId: item.id, count: itemCounts.get(item.id) ?? 0, rarity: item.rarity }));
 
   // 물 받을 때 캔버스 이펙트 트리거
   useEffect(() => {
@@ -97,22 +104,25 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
           ownerUniqueItems={uniqueItems}
           ownerCharacter={user.character}
           ownerAvatarUrl={user.avatar_url}
+          decorations={decorationItems}
         />
       </div>
 
-      {notifications && notifications.visitor_count > 0 && (
-        <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)] text-xs">
-          <span className="opacity-50">👣</span>
-          <span className="ml-2">
-            {notifications.visitor_count}{t.times} {t.times === '' ? 'visitor(s)' : '명 방문'}
+      {/* 오늘 방문자 / 물 받은 알림 */}
+      {(footprints && footprints.length > 0) || (notifications && notifications.visitor_count > 0) ? (
+        <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)] text-xs flex items-center gap-3">
+          <span>
+            <span className="opacity-50">👣</span>
+            <span className="ml-1 font-bold">{t.todayVisitors} {footprints?.length ?? notifications?.visitor_count ?? 0}{t.todayVisitorUnit}</span>
           </span>
-          {notifications.water_received_count > 0 && (
-            <span className="ml-3">
-              💧 {notifications.water_received_count}{t.times} {t.times === '' ? 'watered' : '물 받음'}
+          {notifications && notifications.water_received_count > 0 && (
+            <span>
+              <span className="opacity-50">💧</span>
+              <span className="ml-1 font-bold">{notifications.water_received_count}{t.todayVisitorUnit}</span>
             </span>
           )}
         </div>
-      )}
+      ) : null}
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)]">
@@ -219,6 +229,11 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
           </a>
         )}
       </div>
+
+      {/* 내 농장 방명록 */}
+      {isLoggedIn && (
+        <GuestbookPanel farmId={user.github_id} />
+      )}
 
       {showCharEditor && (
         <CharacterEditor

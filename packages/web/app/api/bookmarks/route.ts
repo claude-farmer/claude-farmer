@@ -18,15 +18,20 @@ export async function GET(request: NextRequest) {
     }
 
     const bookmarkIds = await redis.smembers(keys.bookmarks(userId));
-    const profiles: (PublicProfile & { github_id: string })[] = [];
 
-    for (const id of bookmarkIds) {
-      const profile = await redis.get<PublicProfile>(keys.user(id));
-      if (profile) {
-        profiles.push({ ...profile, github_id: id });
-      }
-    }
+    // 병렬로 프로필 + 이웃 여부 조회
+    const results = await Promise.all(
+      bookmarkIds.map(async (id) => {
+        const [profile, isMutual] = await Promise.all([
+          redis.get<PublicProfile>(keys.user(id)),
+          redis.sismember(keys.bookmarks(id), userId),
+        ]);
+        if (!profile) return null;
+        return { ...profile, github_id: id, is_neighbor: !!isMutual };
+      })
+    );
 
+    const profiles = results.filter(Boolean);
     return NextResponse.json(profiles);
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

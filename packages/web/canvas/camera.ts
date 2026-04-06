@@ -5,12 +5,13 @@ export interface CameraState {
   zoom: number;
 }
 
-export const MIN_ZOOM = 1.0;
+export const MIN_ZOOM = 1.25;
 export const MAX_ZOOM = 3.0;
 export const ZOOM_STEP = 0.25;
 export const LERP_SPEED = 0.15;
 
-export const DEFAULT_CAMERA: CameraState = { x: 0, y: 0, zoom: 1.0 };
+// Centered on farm grid at 1.5x zoom: pan to show grid centered
+export const DEFAULT_CAMERA: CameraState = { x: -64, y: -48, zoom: 1.5 };
 
 /** 줌을 0.25 단위로 스냅 (서브픽셀 아티팩트 방지) */
 export function snapZoom(zoom: number): number {

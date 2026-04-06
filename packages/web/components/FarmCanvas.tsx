@@ -21,6 +21,8 @@ interface FarmCanvasProps {
   ownerUniqueItems?: number;
   ownerCharacter?: CharacterAppearance;
   ownerAvatarUrl?: string;
+  decorations?: { itemId: string; count: number; rarity: 'common' | 'rare' | 'epic' | 'legendary' }[];
+  totalWaterReceived?: number;
   visitorProfiles?: Map<string, { nickname: string; level?: number; statusText?: string; statusLink?: string; totalHarvests?: number; character?: CharacterAppearance; avatarUrl?: string }>;
   onVisitFarm?: (userId: string) => void;
 }
@@ -45,7 +47,8 @@ const DRAG_THRESHOLD = 3; // px before drag is detected
 const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCanvas(
   { grid, working = false, className, footprints, farmOwnerId, clickToMove = true,
     ownerNickname, ownerLevel, ownerStatusText, ownerStatusLink,
-    ownerTotalHarvests, ownerUniqueItems, ownerCharacter, ownerAvatarUrl, visitorProfiles, onVisitFarm },
+    ownerTotalHarvests, ownerUniqueItems, ownerCharacter, ownerAvatarUrl,
+    decorations, totalWaterReceived, visitorProfiles, onVisitFarm },
   ref
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -77,6 +80,7 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
     grid, characterWorking: working, footprints, farmOwnerId,
     ownerNickname, ownerLevel, ownerStatusText, ownerStatusLink,
     ownerTotalHarvests, ownerUniqueItems, ownerCharacter, ownerAvatarUrl, visitorProfiles,
+    decorations, totalWaterReceived,
   };
 
   useImperativeHandle(ref, () => ({

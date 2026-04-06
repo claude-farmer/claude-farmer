@@ -14,11 +14,19 @@ const GRID_OFFSET_X = 4 * TILE; // 그리드 시작 X (타일 4)
 const GRID_OFFSET_Y = SKY_TILES * TILE + TILE; // 하늘 + 여백 1타일
 const CELL_SIZE = 2 * TILE; // 각 칸 32px (16px 작물 + 여백)
 
+export interface DecorationItem {
+  itemId: string;
+  count: number;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+}
+
 export interface FarmRenderState {
   grid: (CropSlot | null)[];
   characterWorking: boolean;
   footprints?: Footprint[];
   farmOwnerId?: string;
+  decorations?: DecorationItem[];
+  totalWaterReceived?: number;
   // 유저 정보 (하단 패널 + 말풍선용)
   ownerNickname?: string;
   ownerLevel?: number;
@@ -216,6 +224,9 @@ export class FarmRenderer {
 
     this.drawSky(tod, boost);
     this.drawGround();
+    if (state.decorations?.length) {
+      this.drawItemDecorations(state.decorations, state.totalWaterReceived ?? 0);
+    }
     if (state.footprints?.length) {
       this.drawFootprints(state.footprints, state.farmOwnerId ?? '');
     }
@@ -501,6 +512,123 @@ export class FarmRenderer {
       }
       ctx.fillStyle = '#3E2723';
       ctx.fillRect(bx, by, 1, 1); // 몸통
+    }
+  }
+
+  // ── 아이템 장식 (수집품 + 선물) ──
+  private drawItemDecorations(decorations: DecorationItem[], totalWater: number) {
+    const ctx = this.ctx;
+    const groundY = SKY_TILES * TILE;
+    const farmRight = GRID_OFFSET_X + 4 * CELL_SIZE + 8;
+
+    // 장식 슬롯 위치 (잔디밭 영역)
+    const slots = [
+      // 왼쪽 영역
+      { x: 6, y: groundY + 16 }, { x: 22, y: groundY + 36 },
+      { x: 10, y: groundY + 58 }, { x: 34, y: groundY + 48 },
+      { x: 16, y: groundY + 78 }, { x: 40, y: groundY + 68 },
+      { x: 8, y: groundY + 98 }, { x: 30, y: groundY + 88 },
+      // 오른쪽 영역
+      { x: farmRight + 6, y: groundY + 20 }, { x: farmRight + 26, y: groundY + 40 },
+      { x: farmRight + 14, y: groundY + 62 }, { x: farmRight + 36, y: groundY + 52 },
+      { x: farmRight + 8, y: groundY + 82 }, { x: farmRight + 30, y: groundY + 72 },
+      { x: farmRight + 18, y: groundY + 100 }, { x: farmRight + 40, y: groundY + 30 },
+    ];
+
+    // 레어리티 순으로 정렬 (legendary > epic > rare > common)
+    const rarityOrder: Record<string, number> = { legendary: 0, epic: 1, rare: 2, common: 3 };
+    const sorted = [...decorations].sort((a, b) => (rarityOrder[a.rarity] ?? 4) - (rarityOrder[b.rarity] ?? 4));
+
+    // 아이템별 미니 스프라이트 (6×6 simple pixel art representations)
+    const itemSprites: Record<string, { color: string; draw: (x: number, y: number) => void }> = {
+      // Common
+      c01: { color: '#9ca3af', draw: (x, y) => { ctx.fillStyle = '#9ca3af'; ctx.fillRect(x+1,y+2,4,3); ctx.fillRect(x+2,y+1,2,1); ctx.fillStyle='#b0b8c4'; ctx.fillRect(x+2,y+2,1,1); } }, // 돌멩이
+      c02: { color: '#8B6544', draw: (x, y) => { ctx.fillStyle='#8B6544'; ctx.fillRect(x+2,y+1,1,4); ctx.fillStyle='#5A9E32'; ctx.fillRect(x+3,y,2,2); } }, // 나뭇가지
+      c03: { color: '#5A9E32', draw: (x, y) => { ctx.fillStyle='#5A9E32'; ctx.fillRect(x+1,y+2,1,3); ctx.fillRect(x+3,y+1,1,4); ctx.fillRect(x+5,y+2,1,3); } }, // 잡초
+      c04: { color: '#FFB6C1', draw: (x, y) => { ctx.fillStyle='#FFB6C1'; ctx.fillRect(x+1,y+2,1,1); ctx.fillRect(x+2,y+3,1,1); ctx.fillRect(x+3,y+2,1,1); ctx.fillRect(x+4,y+3,1,1); ctx.fillStyle='#2C1810'; ctx.fillRect(x+1,y+1,1,1); } }, // 지렁이
+      c05: { color: '#5A9E32', draw: (x, y) => { ctx.fillStyle='#5A9E32'; ctx.fillRect(x+1,y+1,3,3); ctx.fillRect(x+4,y,1,2); ctx.fillStyle='#64B5F6'; ctx.fillRect(x+4,y+2,1,1); } }, // 물뿌리개
+      c06: { color: '#A0724A', draw: (x, y) => { ctx.fillStyle='#A0724A'; ctx.fillRect(x,y+1,1,4); ctx.fillRect(x+2,y+1,1,4); ctx.fillRect(x+4,y+1,1,4); ctx.fillRect(x,y,5,1); } }, // 울타리
+      c07: { color: '#C4A97D', draw: (x, y) => { ctx.fillStyle='#C4A97D'; ctx.fillRect(x,y+1,5,4); ctx.fillStyle='#B8956E'; ctx.fillRect(x+2,y+1,1,4); ctx.fillRect(x,y+3,5,1); } }, // 돌길
+      c08: { color: '#6BBF3B', draw: (x, y) => { ctx.fillStyle='#6BBF3B'; ctx.fillRect(x+1,y+2,1,3); ctx.fillRect(x+2,y+1,1,4); ctx.fillRect(x+3,y,1,5); ctx.fillRect(x+4,y+2,1,3); } }, // 잔디
+      c09: { color: '#EF4444', draw: (x, y) => { ctx.fillStyle='#EF4444'; ctx.fillRect(x+1,y,3,2); ctx.fillStyle='#fff'; ctx.fillRect(x+2,y,1,1); ctx.fillStyle='#F5E6D3'; ctx.fillRect(x+1,y+2,3,2); ctx.fillRect(x+2,y+4,1,1); } }, // 버섯
+      // Rare
+      r01: { color: '#E8A040', draw: (x, y) => { ctx.fillStyle='#E8A040'; ctx.fillRect(x+1,y+1,3,3); ctx.fillRect(x+1,y,1,1); ctx.fillRect(x+3,y,1,1); ctx.fillStyle='#2C1810'; ctx.fillRect(x+1,y+1,1,1); ctx.fillRect(x+3,y+1,1,1); } }, // 고양이
+      r02: { color: '#8B6544', draw: (x, y) => { ctx.fillStyle='#8B6544'; ctx.fillRect(x+1,y+1,3,3); ctx.fillRect(x,y,1,2); ctx.fillRect(x+4,y,1,2); ctx.fillStyle='#2C1810'; ctx.fillRect(x+1,y+1,1,1); ctx.fillRect(x+3,y+1,1,1); } }, // 강아지
+      r03: { color: '#FF6B81', draw: (x, y) => { const colors=['#FF6B81','#FACC15','#a78bfa','#FF9A9E']; for(let i=0;i<4;i++){ctx.fillStyle=colors[i]; const fx=x+i%2*3; const fy=y+Math.floor(i/2)*3; ctx.fillRect(fx,fy,2,2);} } }, // 꽃밭
+      r04: { color: '#64B5F6', draw: (x, y) => { ctx.fillStyle='#64B5F6'; ctx.fillRect(x+1,y+1,4,3); ctx.fillStyle='#42A5F5'; ctx.fillRect(x+2,y+2,2,1); ctx.fillStyle='#5A9E32'; ctx.fillRect(x,y+1,2,1); } }, // 연못
+      r05: { color: '#A0724A', draw: (x, y) => { ctx.fillStyle='#A0724A'; ctx.fillRect(x,y+3,5,1); ctx.fillRect(x,y+1,1,3); ctx.fillRect(x+4,y+1,1,3); ctx.fillRect(x+1,y+2,3,1); } }, // 벤치
+      r06: { color: '#EF4444', draw: (x, y) => { ctx.fillStyle='#EF4444'; ctx.fillRect(x+1,y,3,3); ctx.fillStyle='#8B6544'; ctx.fillRect(x+2,y+3,1,2); } }, // 우체통
+      r07: { color: '#FACC15', draw: (x, y) => { ctx.fillStyle='#666'; ctx.fillRect(x+2,y+1,1,4); ctx.fillStyle='#FACC15'; ctx.fillRect(x+1,y,3,2); ctx.globalAlpha=0.5+Math.sin(this.frame*0.08)*0.3; ctx.fillRect(x+1,y-1,3,1); ctx.globalAlpha=1; } }, // 가로등
+      // Epic
+      e01: { color: '#a78bfa', draw: (x, y) => { ctx.fillStyle='#9ca3af'; ctx.fillRect(x+1,y+2,4,3); ctx.fillStyle='#64B5F6'; ctx.fillRect(x+2,y,2,3); ctx.globalAlpha=0.6+Math.sin(this.frame*0.1)*0.3; ctx.fillStyle='#90CAF9'; ctx.fillRect(x+2,y-1,2,1); ctx.globalAlpha=1; } }, // 분수대
+      e02: { color: '#a78bfa', draw: (x, y) => { ctx.fillStyle='#A0724A'; ctx.fillRect(x+2,y+2,1,3); ctx.fillStyle='#F5E6D3'; const a=this.frame*0.04; ctx.fillRect(x+2+Math.round(Math.cos(a)*2),y+1,1,1); ctx.fillRect(x+2+Math.round(Math.sin(a)*2),y+1,1,1); } }, // 풍차
+      e03: { color: '#5A9E32', draw: (x, y) => { ctx.fillStyle='#8B6544'; ctx.fillRect(x+2,y+3,1,2); ctx.fillStyle='#5A9E32'; ctx.fillRect(x+1,y+1,3,3); ctx.fillStyle='#EF4444'; ctx.fillRect(x+1,y+1,1,1); ctx.fillRect(x+3,y+2,1,1); } }, // 사과나무
+      e04: { color: '#fff', draw: (x, y) => { ctx.fillStyle='#fff'; ctx.fillRect(x+1,y+1,3,3); ctx.fillRect(x+1,y,1,1); ctx.fillRect(x+3,y,1,1); ctx.fillStyle='#FFB6C1'; ctx.fillRect(x+2,y+2,1,1); ctx.fillStyle='#EF4444'; ctx.fillRect(x+1,y+2,1,1); } }, // 토끼
+      e05: { color: '#FF6B81', draw: (x, y) => { const rc=['#EF4444','#E8A040','#FACC15','#5A9E32','#64B5F6','#a78bfa']; for(let i=0;i<6;i++){ctx.fillStyle=rc[i]; ctx.fillRect(x+i,y+3-Math.abs(i-2.5)*0.8|0,1,1);} } }, // 무지개
+      // Legendary
+      l01: { color: '#fbbf24', draw: (x, y) => { ctx.fillStyle='#fbbf24'; ctx.fillRect(x+2,y,2,1); ctx.fillRect(x+1,y+1,4,2); ctx.fillRect(x+2,y+3,2,1); ctx.fillStyle='#5A9E32'; ctx.fillRect(x+2,y+4,1,2); ctx.globalAlpha=0.4+Math.sin(this.frame*0.06)*0.4; ctx.fillStyle='#fff'; ctx.fillRect(x+1,y,1,1); ctx.globalAlpha=1; } }, // 황금 해바라기
+      l02: { color: '#fff', draw: (x, y) => { ctx.fillStyle='#fff'; ctx.fillRect(x+1,y+1,3,4); ctx.fillRect(x+2,y,1,1); ctx.fillStyle='#a78bfa'; ctx.fillRect(x+3,y-1,1,2); ctx.fillStyle='#2C1810'; ctx.fillRect(x+1,y+2,1,1); } }, // 유니콘
+      l03: { color: '#a78bfa', draw: (x, y) => { ctx.fillStyle='#8B6544'; ctx.fillRect(x+2,y+3,1,2); const rc=['#EF4444','#FACC15','#5A9E32','#64B5F6','#a78bfa']; for(let i=0;i<5;i++){ctx.fillStyle=rc[(i+Math.floor(this.frame*0.03))%5]; ctx.fillRect(x+i,y+1+Math.abs(i-2)*0.5|0,1,2);} } }, // 오로라 나무
+    };
+
+    const maxSlots = Math.min(sorted.length, slots.length);
+    for (let i = 0; i < maxSlots; i++) {
+      const item = sorted[i];
+      const slot = slots[i];
+      const sprite = itemSprites[item.itemId];
+      if (!sprite) continue;
+
+      ctx.save();
+
+      // 선물 누적에 따른 효과
+      if (item.count >= 15) {
+        // 금테 (15+)
+        ctx.fillStyle = '#fbbf24';
+        ctx.globalAlpha = 0.4;
+        ctx.fillRect(slot.x - 1, slot.y - 1, 8, 8);
+        ctx.globalAlpha = 1;
+      } else if (item.count >= 7) {
+        // 파티클 효과 (7+)
+        ctx.fillStyle = '#fff';
+        ctx.globalAlpha = 0.3 + Math.sin(this.frame * 0.08 + i) * 0.2;
+        ctx.fillRect(slot.x - 1, slot.y - 2, 1, 1);
+        ctx.fillRect(slot.x + 5, slot.y - 1, 1, 1);
+        ctx.globalAlpha = 1;
+      } else if (item.count >= 3) {
+        // 발광 (3+)
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = sprite.color;
+        ctx.fillRect(slot.x - 1, slot.y - 1, 8, 8);
+        ctx.globalAlpha = 1;
+      }
+
+      sprite.draw(slot.x, slot.y);
+
+      // 레전더리는 반짝임
+      if (item.rarity === 'legendary') {
+        ctx.fillStyle = '#fff';
+        ctx.globalAlpha = 0.5 + Math.sin(this.frame * 0.1 + i * 2) * 0.5;
+        ctx.fillRect(slot.x + (this.frame + i * 7) % 5, slot.y, 1, 1);
+        ctx.globalAlpha = 1;
+      }
+
+      ctx.restore();
+    }
+
+    // 총 받은 물에 따라 추가 꽃 밀도 (10+ = 추가 꽃 2개, 50+ = 추가 꽃 5개)
+    if (totalWater >= 10) {
+      const extraFlowers = totalWater >= 50 ? 5 : 2;
+      const waterColors = ['#64B5F6', '#90CAF9', '#42A5F5', '#B3E5FC', '#81D4FA'];
+      for (let i = 0; i < extraFlowers; i++) {
+        const fx = (i * 37 + 13) % 48 + 2;
+        const fy = groundY + (i * 23 + 17) % 90 + 15;
+        ctx.fillStyle = '#5A9E32';
+        ctx.fillRect(fx, fy + 1, 1, 2);
+        ctx.fillStyle = waterColors[i % waterColors.length];
+        ctx.fillRect(fx, fy, 1, 1);
+        ctx.fillRect(fx - 1, fy, 1, 1);
+        ctx.fillRect(fx + 1, fy, 1, 1);
+      }
     }
   }
 

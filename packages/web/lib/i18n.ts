@@ -45,6 +45,7 @@ const dict = {
 
     // Farm page
     demoMode: 'Demo Mode',
+    demoBanner: 'This is a real farm! Login to grow your own.',
     loginBtn: 'Login with GitHub',
     logoutBtn: 'Logout',
     loading: 'Loading farm...',
@@ -73,7 +74,8 @@ const dict = {
 
     // Explore view
     exploreTitle: 'Explore',
-    myNeighbors: 'Neighbors (Bookmarks)',
+    myNeighborsLabel: 'Neighbors',
+    myNeighbors: 'Bookmarks',
     noNeighbors: 'No neighbors yet.\nDiscover farms with Random Visit!',
     randomVisit: 'Random Farm Visit',
     searching: 'Searching...',
@@ -103,6 +105,29 @@ const dict = {
     tabFarm: 'Farm',
     tabBag: 'Codex',
     tabExplore: 'Explore',
+
+    // Guestbook
+    guestbookTitle: 'Guestbook',
+    guestbookTotalWater: 'Total water',
+    guestbookEmpty: 'No visitors yet. Be the first!',
+    guestbookJustNow: 'just now',
+    guestbookMinAgo: 'm ago',
+    guestbookHourAgo: 'h ago',
+    guestbookDayAgo: 'd ago',
+
+    // Gift
+    giftBtn: 'Gift',
+    giftPickerTitle: 'Send a Gift',
+    giftPickerEmpty: 'No items to gift. Harvest more!',
+    giftSent: 'Gift sent!',
+
+    // Wave surf
+    waveSurfBtn: 'Wave Surf — visit their neighbor!',
+    waveSurfEmpty: 'This farmer has no neighbors yet.',
+
+    // Visitor counter
+    todayVisitors: 'Today',
+    todayVisitorUnit: '',
 
     // Promo link
     promoLinkPlaceholder: 'https://...',
@@ -150,6 +175,7 @@ const dict = {
     footerContrib: '오픈소스 — 함께 즐겁게 코딩해요! 참여 환영합니다.',
 
     demoMode: '데모 모드',
+    demoBanner: '실제 농장이에요! 로그인해서 나만의 농장을 키워보세요.',
     loginBtn: 'GitHub 로그인',
     logoutBtn: '로그아웃',
     loading: '농장 불러오는 중...',
@@ -175,7 +201,8 @@ const dict = {
     bagNextEvolution: '다음 ★까지 {needed}개',
 
     exploreTitle: '탐험',
-    myNeighbors: '내 이웃 (북마크)',
+    myNeighborsLabel: '이웃',
+    myNeighbors: '북마크',
     noNeighbors: '아직 이웃이 없어요.\n랜덤 방문으로 농장을 구경해보세요!',
     randomVisit: '랜덤 농장 방문',
     searching: '찾는 중...',
@@ -201,6 +228,29 @@ const dict = {
     tabFarm: '농장',
     tabBag: '도감',
     tabExplore: '탐험',
+
+    // Guestbook
+    guestbookTitle: '방명록',
+    guestbookTotalWater: '총 받은 물',
+    guestbookEmpty: '아직 방문자가 없어요. 첫 번째 손님이 되어보세요!',
+    guestbookJustNow: '방금',
+    guestbookMinAgo: '분 전',
+    guestbookHourAgo: '시간 전',
+    guestbookDayAgo: '일 전',
+
+    // Gift
+    giftBtn: '선물',
+    giftPickerTitle: '선물 보내기',
+    giftPickerEmpty: '선물할 아이템이 없어요. 더 수확해보세요!',
+    giftSent: '선물 완료!',
+
+    // Wave surf
+    waveSurfBtn: '파도타기 — 이웃 농장으로!',
+    waveSurfEmpty: '이 농부는 아직 이웃이 없어요.',
+
+    // Visitor counter
+    todayVisitors: '오늘',
+    todayVisitorUnit: '명',
 
     // Promo link
     promoLinkPlaceholder: 'https://...',

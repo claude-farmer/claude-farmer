@@ -67,7 +67,9 @@ export const BOOST_RARITY_WEIGHTS = {
 } as const;
 
 // ── 물 주기 ──
-export const DAILY_WATER_LIMIT = 3;
+export const DAILY_WATER_LIMIT = 3; // legacy, kept for backward compat
+export const WATER_COOLDOWN_SECONDS = 300; // 5 minutes between water actions
+export const GUESTBOOK_MAX_ENTRIES = 100;
 
 // ── 경로 ──
 export const DATA_DIR = '.claude-farmer';

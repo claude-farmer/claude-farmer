@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
+import { GUESTBOOK_MAX_ENTRIES } from '@claude-farmer/shared';
 import type { PublicProfile } from '@claude-farmer/shared';
 
 // 다른 유저 농장 방문 기록
@@ -70,6 +71,32 @@ export async function POST(
 
     await redis.hset(keys.footprints(farmOwnerId), { [visitorId]: footprintData });
     await redis.expire(keys.footprints(farmOwnerId), 86400);
+
+    // 방명록 기록 (1시간 내 중복 방문은 기록 안 함)
+    const oneHourAgo = now - 60 * 60 * 1000;
+    const recentEntries = await redis.zrange(keys.guestbook(farmOwnerId), oneHourAgo, now, { byScore: true });
+    const hasRecentVisit = recentEntries.some((entry: unknown) => {
+      try {
+        const e = typeof entry === 'string' ? JSON.parse(entry) : entry;
+        return e.from_id === visitorId && e.type === 'visit';
+      } catch { return false; }
+    });
+
+    if (!hasRecentVisit) {
+      const guestbookEntry = JSON.stringify({
+        from_id: visitorId,
+        from_nickname: nickname,
+        from_avatar_url: visitorProfile?.avatar_url,
+        type: 'visit',
+        message: visitorProfile?.status_message?.text || null,
+        at: new Date(now).toISOString(),
+      });
+      await redis.zadd(keys.guestbook(farmOwnerId), { score: now, member: guestbookEntry });
+      const count = await redis.zcard(keys.guestbook(farmOwnerId));
+      if (count > GUESTBOOK_MAX_ENTRIES) {
+        await redis.zremrangebyrank(keys.guestbook(farmOwnerId), 0, count - GUESTBOOK_MAX_ENTRIES - 1);
+      }
+    }
 
     return NextResponse.json({ ok: true });
   } catch {

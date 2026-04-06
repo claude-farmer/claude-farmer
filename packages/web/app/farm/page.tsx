@@ -6,7 +6,7 @@ import FarmView from '@/components/FarmView';
 import BagView from '@/components/BagView';
 import ExploreView from '@/components/ExploreView';
 import FarmVisitView from '@/components/FarmVisitView';
-import { fetchSession, fetchFarm, logout, fetchBookmarks, toggleBookmark, updateStatus, updateCharacter } from '@/lib/api';
+import { fetchSession, fetchFarm, logout, fetchBookmarks, toggleBookmark, updateStatus, updateCharacter, fetchExplore } from '@/lib/api';
 import { MOCK_STATE, MOCK_NEIGHBORS } from '@/lib/mock-data';
 import { useLocale } from '@/lib/locale-context';
 import usePolling from '@/hooks/usePolling';
@@ -22,6 +22,8 @@ export default function FarmApp() {
   const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
   const [footprints, setFootprints] = useState<Footprint[]>([]);
   const [visitingId, setVisitingId] = useState<string | null>(null);
+  const [visitingNickname, setVisitingNickname] = useState<string>('');
+  const [isDemo, setIsDemo] = useState(false);
   const [serverUniqueItems, setServerUniqueItems] = useState<number>(0);
 
   // 30초 polling으로 알림 조회 (로그인 시)
@@ -88,6 +90,17 @@ export default function FarmApp() {
         }
       }
       setLoading(false);
+
+      // Demo mode: auto-visit a random real farm
+      if (!session) {
+        try {
+          const randomFarms = await fetchExplore('', 1);
+          if (randomFarms.length > 0) {
+            setVisitingId(randomFarms[0].github_id);
+            setIsDemo(true);
+          }
+        } catch {}
+      }
     }
     init();
   }, []);
@@ -130,7 +143,7 @@ export default function FarmApp() {
 
   if (loading) {
     return (
-      <div className="max-w-md mx-auto min-h-screen flex items-center justify-center bg-[var(--bg)]">
+      <div className="max-w-md mx-auto min-h-screen flex items-center justify-center bg-[var(--bg)] shadow-2xl border-x border-[var(--border)]">
         <div className="text-center">
           <div className="text-4xl mb-4 animate-bounce">🌱</div>
           <p className="opacity-60">{t.loading}</p>
@@ -140,40 +153,64 @@ export default function FarmApp() {
   }
 
   return (
-    <div className="max-w-md mx-auto min-h-screen flex flex-col bg-[var(--bg)]">
-      <div className="flex items-center justify-between px-4 pt-3 pb-1">
-        {user ? (
-          <>
-            <div className="flex items-center gap-2 text-sm">
-              <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full border border-[var(--border)]" />
-              <span className="font-bold">{user.nickname}</span>
-            </div>
-            <button onClick={handleLogout} className="text-xs opacity-40 hover:opacity-70">
-              {t.logoutBtn}
-            </button>
-          </>
-        ) : (
-          <>
-            <span className="text-xs opacity-40">{t.demoMode}</span>
-            <a
-              href="/api/auth/login"
-              className="text-xs bg-[var(--accent)] text-black px-3 py-1 rounded-full font-bold hover:opacity-90"
-            >
-              {t.loginBtn}
-            </a>
-          </>
-        )}
-      </div>
+    <div className="max-w-md mx-auto min-h-screen flex flex-col bg-[var(--bg)] shadow-2xl border-x border-[var(--border)] relative">
+      {/* Fixed Header */}
+      <header className="sticky top-0 z-50 bg-[var(--bg)] border-b border-[var(--border)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="flex items-center justify-between px-4 py-2">
+          {visitingId ? (
+            <>
+              <button onClick={() => setVisitingId(null)} className="text-sm opacity-60 hover:opacity-100">
+                ← {t.visitBack}
+              </button>
+              <span className="text-sm font-bold">{visitingNickname || ''}</span>
+              <div className="w-16" />
+            </>
+          ) : user ? (
+            <>
+              <div className="flex items-center gap-2 text-sm">
+                <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full border border-[var(--border)]" />
+                <span className="font-bold">{user.nickname}</span>
+              </div>
+              <button onClick={handleLogout} className="text-xs opacity-40 hover:opacity-70">
+                {t.logoutBtn}
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="text-xs opacity-40">{t.demoMode}</span>
+              <a
+                href="/api/auth/login"
+                className="text-xs bg-[var(--accent)] text-black px-3 py-1 rounded-full font-bold hover:opacity-90"
+              >
+                {t.loginBtn}
+              </a>
+            </>
+          )}
+        </div>
+      </header>
 
+      {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        {visitingId && user ? (
-          <FarmVisitView
-            targetId={visitingId}
-            currentUserId={user.github_id}
-            onBack={() => setVisitingId(null)}
-            isBookmarked={bookmarkIds.includes(visitingId)}
-            onToggleBookmark={handleToggleBookmark}
-          />
+        {visitingId ? (
+          <>
+            {isDemo && (
+              <div className="bg-[var(--accent)] text-black text-center py-2 text-sm font-bold">
+                🌱 {t.demoBanner}
+                <a href="/api/auth/login" className="underline ml-2">{t.loginBtn}</a>
+              </div>
+            )}
+            <FarmVisitView
+              targetId={visitingId}
+              currentUserId={user?.github_id ?? ''}
+              onBack={() => { setVisitingId(null); setIsDemo(false); }}
+              isBookmarked={bookmarkIds.includes(visitingId)}
+              onToggleBookmark={handleToggleBookmark}
+              onNicknameLoaded={setVisitingNickname}
+              isDemo={isDemo}
+              userInventory={state.inventory}
+              onWaveSurf={(nextId) => { setVisitingId(nextId); setVisitingNickname(''); }}
+            />
+          </>
         ) : (
           <>
             {tab === 'farm' && (
@@ -198,6 +235,8 @@ export default function FarmApp() {
           </>
         )}
       </div>
+
+      {/* Fixed TabBar */}
       {!visitingId && <TabBar active={tab} onChange={setTab} />}
     </div>
   );

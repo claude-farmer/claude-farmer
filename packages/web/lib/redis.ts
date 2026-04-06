@@ -32,6 +32,13 @@ export const keys = {
   waterDetail: (id: string) => `farm:${id}:water_detail:${todayKey()}`,
   bookmarks: (id: string) => `user:${id}:bookmarks`,
   nicknameIndex: 'global:nickname_index',
+  // 방명록 & 물 쿨다운
+  guestbook: (id: string) => `farm:${id}:guestbook`,
+  totalWaterReceived: (id: string) => `farm:${id}:total_water_received`,
+  waterCooldown: (id: string) => `user:${id}:water_cooldown`,
+  // 선물
+  gifts: (id: string) => `farm:${id}:gifts`,
+  totalGiftsReceived: (id: string) => `farm:${id}:total_gifts_received`,
 };
 
 function todayKey(): string {

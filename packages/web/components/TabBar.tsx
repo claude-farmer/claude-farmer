@@ -17,7 +17,7 @@ export default function TabBar({ active, onChange }: TabBarProps) {
   ];
 
   return (
-    <nav className="flex border-t border-[var(--border)] bg-[var(--card)]">
+    <nav className="flex border-t border-[var(--border)] bg-[var(--card)] sticky bottom-0 z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {tabs.map(tab => (
         <button
           key={tab.id}

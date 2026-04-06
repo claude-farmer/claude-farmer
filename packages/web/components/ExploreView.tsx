@@ -77,22 +77,39 @@ export default function ExploreView({ bookmarks, currentUser, onVisit }: Explore
     <div className="flex flex-col gap-3 p-3">
       <h2 className="text-lg font-bold">🌍 {t.exploreTitle}</h2>
 
-      {/* Bookmarks — always on top for quick access */}
-      <div>
-        <h3 className="text-sm font-bold opacity-60 mb-2">⭐ {t.myNeighbors}</h3>
-
-        {bookmarks.length === 0 ? (
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-6 text-center opacity-50 text-sm whitespace-pre-line">
-            {t.noNeighbors}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {bookmarks.map((profile, i) => (
-              <ProfileCard key={i} profile={profile} />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* 이웃 (mutual bookmarks) */}
+      {(() => {
+        const neighbors = bookmarks.filter((p: PublicProfile & { is_neighbor?: boolean }) => p.is_neighbor);
+        const others = bookmarks.filter((p: PublicProfile & { is_neighbor?: boolean }) => !p.is_neighbor);
+        return (
+          <>
+            {neighbors.length > 0 && (
+              <div>
+                <h3 className="text-sm font-bold opacity-60 mb-2">🏡 {t.myNeighborsLabel}</h3>
+                <div className="flex flex-col gap-2">
+                  {neighbors.map((profile, i) => (
+                    <ProfileCard key={`n-${i}`} profile={profile} />
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <h3 className="text-sm font-bold opacity-60 mb-2">⭐ {t.myNeighbors}</h3>
+              {others.length === 0 && neighbors.length === 0 ? (
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-6 text-center opacity-50 text-sm whitespace-pre-line">
+                  {t.noNeighbors}
+                </div>
+              ) : others.length === 0 ? null : (
+                <div className="flex flex-col gap-2">
+                  {others.map((profile, i) => (
+                    <ProfileCard key={`b-${i}`} profile={profile} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        );
+      })()}
 
       {/* Search */}
       <div className="flex gap-2">

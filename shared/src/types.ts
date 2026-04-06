@@ -114,6 +114,17 @@ export interface Footprint {
   crop_slot?: number;
 }
 
+// ── 소셜: 방명록 ──
+export interface GuestbookEntry {
+  from_id: string;
+  from_nickname: string;
+  from_avatar_url?: string;
+  type: 'visit' | 'water' | 'gift';
+  message: string | null;  // visitor's status_message
+  item_id?: string;        // for gift type
+  at: string;              // ISO timestamp
+}
+
 // ── 소셜: 알림 ──
 export interface FarmNotifications {
   visitors: Footprint[];

@@ -1,4 +1,4 @@
-import type { PublicProfile, FarmNotifications, Footprint, CharacterAppearance } from '@claude-farmer/shared';
+import type { PublicProfile, FarmNotifications, Footprint, CharacterAppearance, GuestbookEntry } from '@claude-farmer/shared';
 
 const BASE = '';
 
@@ -39,7 +39,7 @@ export async function syncFarm(data: Record<string, unknown>): Promise<boolean> 
   }
 }
 
-export async function waterUser(to: string, cropSlot?: number): Promise<{ ok: boolean; remaining?: number; error?: string }> {
+export async function waterUser(to: string, cropSlot?: number): Promise<{ ok: boolean; remaining?: number; cooldown_seconds?: number; cooldown_remaining?: number; error?: string }> {
   try {
     const res = await fetch(`${BASE}/api/water`, {
       method: 'POST',
@@ -149,6 +149,40 @@ export async function updateCharacter(character: CharacterAppearance): Promise<b
     return res.ok;
   } catch {
     return false;
+  }
+}
+
+export async function waveSurf(fromId: string, excludeId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${BASE}/api/explore/wave?from=${fromId}&exclude=${excludeId}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.target ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function sendGift(to: string, itemId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${BASE}/api/gift`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, item_id: itemId }),
+    });
+    return await res.json();
+  } catch {
+    return { ok: false, error: 'Network error' };
+  }
+}
+
+export async function fetchGuestbook(farmId: string): Promise<{ entries: GuestbookEntry[]; total_water_received: number }> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/${farmId}/guestbook`);
+    if (!res.ok) return { entries: [], total_water_received: 0 };
+    return await res.json();
+  } catch {
+    return { entries: [], total_water_received: 0 };
   }
 }
 
