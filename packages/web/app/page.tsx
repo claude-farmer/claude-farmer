@@ -104,7 +104,7 @@ export default function Landing() {
   }, [router]);
 
   const handleVisit = (farmId: string) => {
-    router.push(`/farm?visit=${farmId}`);
+    router.push(`/@${farmId}`);
   };
 
   return (
