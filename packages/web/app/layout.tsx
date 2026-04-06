@@ -7,8 +7,8 @@ export const metadata: Metadata = {
     default: 'Claude Farmer — Your Code Grows a Farm',
     template: '%s | Claude Farmer',
   },
-  description: 'An idle pixel-art farming game powered by Claude Code. Your coding automatically plants, grows, and harvests crops. Collect 24 gacha items and visit other developers\' farms.',
-  keywords: ['claude', 'claude-code', 'farming', 'idle-game', 'pixel-art', 'developer-tool', 'cli', 'vscode-extension'],
+  description: 'An idle pixel-art farming game powered by Claude Code. Your coding automatically plants, grows, and harvests crops. Collect 32 gacha items, visit other developers\' farms, leave guestbook notes, and gift items.',
+  keywords: ['claude', 'claude-code', 'farming', 'idle-game', 'pixel-art', 'developer-tool', 'cli', 'vscode-extension', 'gacha', 'social-game', 'coding-game'],
   authors: [{ name: 'Claude Farmer', url: 'https://claudefarmer.com' }],
   creator: 'Claude Farmer',
   publisher: 'Claude Farmer',
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Claude Farmer — Your Code Grows a Farm',
-    description: 'An idle pixel-art farming game powered by Claude Code. Plant, grow, harvest, and collect gacha items — all by just coding.',
+    description: 'An idle pixel-art farming game powered by Claude Code. Plant, grow, harvest, collect 32 gacha items, and visit other developers\' farms — all by just coding.',
     url: 'https://claudefarmer.com',
     siteName: 'Claude Farmer',
     locale: 'ko_KR',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Claude Farmer — Your Code Grows a Farm',
-    description: 'An idle pixel-art farming game powered by Claude Code. Plant, grow, harvest, and gacha!',
+    description: 'An idle pixel-art farming game powered by Claude Code. 32 gacha items, social features, pixel art. Just code!',
     images: ['/og'],
   },
   robots: {

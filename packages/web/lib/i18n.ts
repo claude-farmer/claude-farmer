@@ -43,6 +43,13 @@ const dict = {
     footerLicense: 'MIT License · Built by doribear.com 🇰🇷',
     footerContrib: 'Open source — contributions welcome! Let\'s code something fun together.',
 
+    // Landing - Live farms
+    liveFarmsTitle: 'Live Farms',
+    liveFarmsDesc: 'Real farms from real developers — visit them!',
+    statsFarmers: 'Farmers',
+    statsItems: 'Items',
+    statsAutoGrow: 'Auto Grow',
+
     // Farm page
     demoMode: 'Demo Mode',
     demoBanner: 'This is a real farm! Login to grow your own.',
@@ -173,6 +180,13 @@ const dict = {
 
     footerLicense: 'MIT License · Built by doribear.com 🇰🇷',
     footerContrib: '오픈소스 — 함께 즐겁게 코딩해요! 참여 환영합니다.',
+
+    // Landing - Live farms
+    liveFarmsTitle: '실시간 농장',
+    liveFarmsDesc: '실제 개발자들의 농장이에요 — 놀러가보세요!',
+    statsFarmers: '농부',
+    statsItems: '아이템',
+    statsAutoGrow: '자동 성장',
 
     demoMode: '데모 모드',
     demoBanner: '실제 농장이에요! 로그인해서 나만의 농장을 키워보세요.',

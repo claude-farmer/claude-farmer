@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useLocale } from '@/lib/locale-context';
+import type { PublicProfile } from '@claude-farmer/shared';
 
+// ── 미니 캔버스 프리뷰 (히어로용) ──
 function PixelFarmPreview() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef(0);
@@ -60,11 +62,9 @@ function PixelFarmPreview() {
         const cx = 24 + col * 16;
         const cy = 52 + row * 18;
         const h = stages[i] + (f % 40 < 20 ? 0 : 1);
-
         ctx.fillStyle = '#7BC74D';
         ctx.fillRect(cx, cy - h, 2, h);
         ctx.fillRect(cx - 1, cy - h - 1, 4, 2);
-
         if (stages[i] > 3) {
           ctx.fillStyle = crops[i];
           ctx.fillRect(cx - 1, cy - h + 1, 3, 3);
@@ -108,10 +108,119 @@ function PixelFarmPreview() {
   );
 }
 
+// ── 실제 유저 농장 캐러셀 ──
+function FarmCarousel({ farms }: { farms: (PublicProfile & { github_id: string })[] }) {
+  const { t } = useLocale();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
+
+  // 자동 스크롤
+  useEffect(() => {
+    if (!autoScroll || farms.length <= 1) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const interval = setInterval(() => {
+      const cardWidth = el.children[0]?.clientWidth ?? 260;
+      const gap = 12;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (el.scrollLeft >= maxScroll - 5) {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        el.scrollBy({ left: cardWidth + gap, behavior: 'smooth' });
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [autoScroll, farms.length]);
+
+  if (farms.length === 0) return null;
+
+  return (
+    <section className="w-full">
+      <h2 className="text-lg font-bold mb-3 text-center">{t.liveFarmsTitle}</h2>
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        onTouchStart={() => setAutoScroll(false)}
+        onMouseDown={() => setAutoScroll(false)}
+      >
+        {farms.map(farm => (
+          <Link
+            key={farm.github_id}
+            href="/farm"
+            className="snap-start shrink-0 w-64 bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--accent)] transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <img
+                src={farm.avatar_url}
+                alt={farm.nickname}
+                className="w-8 h-8 rounded-full border border-[var(--border)]"
+                loading="lazy"
+              />
+              <div className="min-w-0">
+                <div className="font-bold text-sm truncate">{farm.nickname}</div>
+                <div className="text-xs opacity-40">Lv.{farm.level}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 text-xs opacity-60">
+              <span>🪙 {farm.total_harvests}{t.times}</span>
+              {farm.streak_days && farm.streak_days > 1 && (
+                <span>🔥 {farm.streak_days}{t.days}</span>
+              )}
+              {farm.unique_items && (
+                <span>📦 {farm.unique_items}/32</span>
+              )}
+            </div>
+            {farm.status_message?.text && (
+              <div className="mt-2 text-xs opacity-50 truncate">
+                💬 {farm.status_message.text}
+              </div>
+            )}
+          </Link>
+        ))}
+      </div>
+      <p className="text-center text-xs opacity-30 mt-2">{t.liveFarmsDesc}</p>
+    </section>
+  );
+}
+
+// ── 통계 카운터 ──
+function StatsBar({ farmCount }: { farmCount: number }) {
+  const { t } = useLocale();
+  if (farmCount <= 0) return null;
+
+  return (
+    <div className="flex justify-center gap-6 text-center">
+      <div>
+        <div className="text-2xl font-bold text-[var(--accent)]">{farmCount}+</div>
+        <div className="text-xs opacity-40">{t.statsFarmers}</div>
+      </div>
+      <div>
+        <div className="text-2xl font-bold text-[var(--accent)]">32</div>
+        <div className="text-xs opacity-40">{t.statsItems}</div>
+      </div>
+      <div>
+        <div className="text-2xl font-bold text-[var(--accent)]">24/7</div>
+        <div className="text-xs opacity-40">{t.statsAutoGrow}</div>
+      </div>
+    </div>
+  );
+}
+
+// ── 메인 랜딩 ──
 export default function Landing() {
   const { locale, t, setLocale } = useLocale();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [farms, setFarms] = useState<(PublicProfile & { github_id: string })[]>([]);
+
+  // 실제 유저 농장 로드
+  useEffect(() => {
+    fetch('/api/explore?exclude=&count=10')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setFarms(data))
+      .catch(() => {});
+  }, []);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,9 +248,9 @@ export default function Landing() {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12 flex flex-col items-center gap-16">
+    <div className="max-w-2xl mx-auto px-4 py-12 flex flex-col items-center gap-14">
       {/* Hero */}
-      <section className="text-center flex flex-col items-center gap-6">
+      <section className="text-center flex flex-col items-center gap-5">
         <h1 className="text-4xl font-bold">🌱 Claude Farmer</h1>
         <p className="text-xl text-[var(--text)] opacity-70">{t.heroTagline}</p>
         <p className="text-sm opacity-50 max-w-md">{t.heroDesc}</p>
@@ -165,6 +274,12 @@ export default function Landing() {
           </Link>
         </div>
       </section>
+
+      {/* 실시간 통계 */}
+      <StatsBar farmCount={farms.length > 0 ? farms.length * 5 : 0} />
+
+      {/* 실제 유저 농장 캐러셀 */}
+      <FarmCarousel farms={farms} />
 
       {/* Features */}
       <section className="w-full">
