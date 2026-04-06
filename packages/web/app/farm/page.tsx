@@ -2,11 +2,13 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import TabBar from '@/components/TabBar';
 import FarmView from '@/components/FarmView';
 import BagView from '@/components/BagView';
 import ExploreView from '@/components/ExploreView';
 import FarmVisitView from '@/components/FarmVisitView';
+import FarmThumbnail from '@/components/FarmThumbnail';
 import { fetchSession, fetchFarm, logout, fetchBookmarks, toggleBookmark, updateStatus, updateCharacter, fetchExplore } from '@/lib/api';
 import { MOCK_STATE, MOCK_NEIGHBORS } from '@/lib/mock-data';
 import { useLocale } from '@/lib/locale-context';
@@ -25,6 +27,59 @@ export default function FarmPage() {
   );
 }
 
+// ── 비로그인 홈 뷰 (캐러셀 + 설명) ──
+function DemoHomeView({ onVisit }: { onVisit: (id: string) => void }) {
+  const { t } = useLocale();
+  const [farms, setFarms] = useState<(PublicProfile & { github_id: string })[]>([]);
+
+  useEffect(() => {
+    fetchExplore('', 12).then(setFarms).catch(() => {});
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-4 p-4">
+      {/* 히어로 */}
+      <div className="text-center py-2">
+        <h1 className="text-xl font-bold mb-1">{t.heroTagline}</h1>
+        <p className="text-xs opacity-50 max-w-xs mx-auto">{t.heroDesc}</p>
+      </div>
+
+      {/* 실시간 농장 그리드 */}
+      <div>
+        <h2 className="text-sm font-bold opacity-50 mb-2">🌍 {t.liveFarmsTitle}</h2>
+        <div className="grid grid-cols-3 gap-2">
+          {farms.map(farm => (
+            <button
+              key={farm.github_id}
+              onClick={() => onVisit(farm.github_id)}
+              className="bg-[var(--card)] border border-[var(--border)] rounded-lg overflow-hidden hover:border-[var(--accent)] transition-all active:scale-95"
+            >
+              <FarmThumbnail
+                githubId={farm.github_id}
+                character={farm.character}
+                level={farm.level}
+                totalHarvests={farm.total_harvests}
+                uniqueItems={farm.unique_items}
+                streakDays={farm.streak_days}
+                inventory={farm.inventory}
+                className="w-full"
+              />
+              <div className="px-1.5 py-1 text-center">
+                <span className="text-xs font-bold truncate block">{farm.nickname}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 설치 안내 (심플) */}
+      <div className="text-center text-xs opacity-40 py-2">
+        <code>npm i -g claude-farmer && claude-farmer init</code>
+      </div>
+    </div>
+  );
+}
+
 function FarmApp() {
   const { t } = useLocale();
   const searchParams = useSearchParams();
@@ -40,19 +95,53 @@ function FarmApp() {
   const [isDemo, setIsDemo] = useState(false);
   const [serverUniqueItems, setServerUniqueItems] = useState<number>(0);
 
-  // 30초 polling으로 알림 조회 (로그인 시)
+  // ── 방문 히스토리 스택 ──
+  const [visitHistory, setVisitHistory] = useState<string[]>([]);
+  const [prevTab, setPrevTab] = useState<'farm' | 'bag' | 'explore'>('farm');
+
+  // 방문 시 (모든 방문 경로 통합)
+  function handleVisitFarm(id: string) {
+    // 자기 농장 → 자기 탭으로
+    if (id === user?.github_id) {
+      setVisitingId(null);
+      setVisitHistory([]);
+      setTab('farm');
+      return;
+    }
+    // 이미 방문 중이면 히스토리에 push
+    if (visitingId) {
+      setVisitHistory(prev => [...prev, visitingId]);
+    } else {
+      setPrevTab(tab);
+    }
+    setVisitingId(id);
+    setVisitingNickname('');
+  }
+
+  // 뒤로가기 (스택 pop)
+  function handleBack() {
+    const prev = visitHistory[visitHistory.length - 1];
+    if (prev) {
+      setVisitHistory(h => h.slice(0, -1));
+      setVisitingId(prev);
+      setVisitingNickname('');
+    } else {
+      setVisitingId(null);
+      setIsDemo(false);
+      setTab(prevTab);
+    }
+  }
+
+  // 30초 polling
   const { data: notifications } = usePolling<FarmNotifications>(
     user ? `/api/farm/${user.github_id}/notifications` : null,
     { interval: 30_000, enabled: !!user }
   );
-
-  // 30초 polling으로 발자국 포함한 농장 데이터 조회 (로그인 시)
   const { data: farmPolled } = usePolling<PublicProfile & { footprints: Footprint[] }>(
     user ? `/api/farm/${user.github_id}` : null,
     { interval: 30_000, enabled: !!user }
   );
 
-  // polling 결과로 footprints + unique_items + streak 업데이트
   useEffect(() => {
     if (farmPolled) {
       if (farmPolled.footprints) setFootprints(farmPolled.footprints);
@@ -97,7 +186,6 @@ function FarmApp() {
             last_synced: profile.last_active,
           });
           setServerUniqueItems(profile.unique_items ?? 0);
-          // 서버에서 북마크 로드
           const bm = await fetchBookmarks();
           setBookmarks(bm);
           setBookmarkIds(bm.map(b => b.github_id));
@@ -105,35 +193,26 @@ function FarmApp() {
       }
       setLoading(false);
 
-      // URL에서 ?visit= 파라미터 확인 (랜딩에서 넘어온 경우)
+      // ?visit= 파라미터 처리
       const visitParam = searchParams.get('visit');
       if (visitParam) {
         setVisitingId(visitParam);
         if (!session) setIsDemo(true);
-      } else if (!session) {
-        // Demo mode: auto-visit a random real farm
-        try {
-          const randomFarms = await fetchExplore('', 1);
-          if (randomFarms.length > 0) {
-            setVisitingId(randomFarms[0].github_id);
-            setIsDemo(true);
-          }
-        } catch {}
       }
+      // 비로그인 + 방문 파람 없음 → DemoHomeView 표시 (자동 방문 안 함)
     }
     init();
   }, []);
 
   const handleVisit = (profile: PublicProfile & { github_id?: string }) => {
     const id = (profile as PublicProfile & { github_id: string }).github_id;
-    if (id) setVisitingId(id);
+    if (id) handleVisitFarm(id);
   };
 
   const handleToggleBookmark = async (targetId: string) => {
     const action = bookmarkIds.includes(targetId) ? 'remove' : 'add';
     const newIds = await toggleBookmark(targetId, action);
     setBookmarkIds(newIds);
-    // 북마크 프로필 목록도 리프레시
     const bm = await fetchBookmarks();
     setBookmarks(bm);
   };
@@ -158,6 +237,8 @@ function FarmApp() {
     setUser(null);
     setState(MOCK_STATE);
     setBookmarks(MOCK_NEIGHBORS);
+    setVisitingId(null);
+    setVisitHistory([]);
   };
 
   if (loading) {
@@ -171,14 +252,17 @@ function FarmApp() {
     );
   }
 
+  // 비로그인 + 방문 중 아님 → 홈 뷰 (캐러셀)
+  const showDemoHome = !user && !visitingId;
+
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col bg-[var(--bg)] shadow-2xl border-x border-[var(--border)] relative">
-      {/* Fixed Header */}
+      {/* Header */}
       <header className="sticky top-0 z-50 bg-[var(--bg)] border-b border-[var(--border)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-between px-4 py-2">
           {visitingId ? (
             <>
-              <button onClick={() => setVisitingId(null)} className="text-sm opacity-60 hover:opacity-100">
+              <button onClick={handleBack} className="text-sm opacity-60 hover:opacity-100">
                 ← {t.visitBack}
               </button>
               <span className="text-sm font-bold">{visitingNickname || ''}</span>
@@ -186,17 +270,17 @@ function FarmApp() {
             </>
           ) : user ? (
             <>
-              <div className="flex items-center gap-2 text-sm">
+              <Link href="/" className="flex items-center gap-2 text-sm hover:opacity-80">
                 <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full border border-[var(--border)]" />
                 <span className="font-bold">{user.nickname}</span>
-              </div>
+              </Link>
               <button onClick={handleLogout} className="text-xs opacity-40 hover:opacity-70">
                 {t.logoutBtn}
               </button>
             </>
           ) : (
             <>
-              <span className="text-xs opacity-40">{t.demoMode}</span>
+              <Link href="/" className="text-sm font-bold hover:opacity-80">🌱 Claude Farmer</Link>
               <a
                 href="/api/auth/login"
                 className="text-xs bg-[var(--accent)] text-black px-3 py-1 rounded-full font-bold hover:opacity-90"
@@ -208,7 +292,7 @@ function FarmApp() {
         </div>
       </header>
 
-      {/* Scrollable Content */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {visitingId ? (
           <>
@@ -221,15 +305,17 @@ function FarmApp() {
             <FarmVisitView
               targetId={visitingId}
               currentUserId={user?.github_id ?? ''}
-              onBack={() => { setVisitingId(null); setIsDemo(false); }}
+              onBack={handleBack}
               isBookmarked={bookmarkIds.includes(visitingId)}
               onToggleBookmark={handleToggleBookmark}
               onNicknameLoaded={setVisitingNickname}
               isDemo={isDemo}
               userInventory={state.inventory}
-              onWaveSurf={(nextId) => { setVisitingId(nextId); setVisitingNickname(''); }}
+              onWaveSurf={handleVisitFarm}
             />
           </>
+        ) : showDemoHome ? (
+          <DemoHomeView onVisit={(id) => { setVisitingId(id); setIsDemo(true); }} />
         ) : (
           <>
             {tab === 'farm' && (
@@ -241,7 +327,7 @@ function FarmApp() {
                 isLoggedIn={!!user}
                 onStatusUpdate={handleStatusUpdate}
                 onCharacterUpdate={handleCharacterUpdate}
-                onVisitUser={(id) => { setVisitingId(id); setVisitingNickname(''); }}
+                onVisitUser={handleVisitFarm}
               />
             )}
             {tab === 'bag' && <BagView inventory={state.inventory} />}
@@ -256,8 +342,8 @@ function FarmApp() {
         )}
       </div>
 
-      {/* Fixed TabBar */}
-      {!visitingId && <TabBar active={tab} onChange={setTab} />}
+      {/* TabBar — 방문 중이 아니고, 로그인 상태일 때만 */}
+      {!visitingId && !showDemoHome && <TabBar active={tab} onChange={setTab} />}
     </div>
   );
 }

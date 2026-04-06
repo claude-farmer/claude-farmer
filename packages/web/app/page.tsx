@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
 import FarmThumbnail from '@/components/FarmThumbnail';
 import type { PublicProfile } from '@claude-farmer/shared';
@@ -33,7 +34,6 @@ function FarmCarousel({ farms, onVisit }: {
 
   return (
     <div className="w-full relative">
-      {/* 그라데이션 마스크 (양끝 페이드) */}
       <div
         className="overflow-hidden"
         style={{
@@ -54,7 +54,6 @@ function FarmCarousel({ farms, onVisit }: {
               onClick={() => onVisit(farm.github_id)}
               className="snap-center shrink-0 w-40 bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden hover:border-[var(--accent)] transition-all active:scale-95 text-left"
             >
-              {/* 썸네일이 카드 전체를 채움 */}
               <FarmThumbnail
                 githubId={farm.github_id}
                 character={farm.character}
@@ -65,7 +64,6 @@ function FarmCarousel({ farms, onVisit }: {
                 inventory={farm.inventory}
                 className="w-full"
               />
-              {/* 닉네임만 간결하게 */}
               <div className="flex items-center gap-1.5 px-2 py-1.5">
                 <img
                   src={farm.avatar_url}
@@ -83,25 +81,35 @@ function FarmCarousel({ farms, onVisit }: {
   );
 }
 
-// ── 메인 랜딩 (앱 스타일) ──
+// ── 메인 랜딩 ──
 export default function Landing() {
   const { locale, t, setLocale } = useLocale();
+  const router = useRouter();
   const [farms, setFarms] = useState<(PublicProfile & { github_id: string })[]>([]);
 
   useEffect(() => {
+    // 로그인 유저 → /farm으로 리다이렉트
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(data => {
+        if (data.user) router.replace('/farm');
+      })
+      .catch(() => {});
+
+    // 농장 로드
     fetch('/api/explore?exclude=&count=12')
       .then(res => res.ok ? res.json() : [])
       .then(data => setFarms(data))
       .catch(() => {});
-  }, []);
+  }, [router]);
 
   const handleVisit = (farmId: string) => {
-    window.location.href = `/farm?visit=${farmId}`;
+    router.push(`/farm?visit=${farmId}`);
   };
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col bg-[var(--bg)] shadow-2xl border-x border-[var(--border)]">
-      {/* Header (앱과 동일한 스타일) */}
+      {/* Header */}
       <header className="sticky top-0 z-50 bg-[var(--bg)] border-b border-[var(--border)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-between px-4 py-2">
           <span className="font-bold text-sm">🌱 Claude Farmer</span>
@@ -114,15 +122,13 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Scrollable Content */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {/* 히어로 — 간결하게 */}
         <section className="text-center px-4 pt-6 pb-4">
           <h1 className="text-2xl font-bold mb-1">{t.heroTagline}</h1>
           <p className="text-xs opacity-50 max-w-xs mx-auto">{t.heroDesc}</p>
         </section>
 
-        {/* 실제 유저 농장 캐러셀 (첫 번째 eye-catching 요소) */}
         <section className="pb-4">
           <h2 className="text-sm font-bold opacity-50 px-4 mb-2">🌍 {t.liveFarmsTitle}</h2>
           <FarmCarousel farms={farms} onVisit={handleVisit} />
@@ -146,7 +152,7 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Get Started — 심플 */}
+        {/* Get Started */}
         <section className="px-4 pb-4">
           <h2 className="text-sm font-bold mb-3 text-center">{t.getStarted}</h2>
           <div className="flex flex-col gap-2 max-w-sm mx-auto">
@@ -185,7 +191,7 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Footer — 최소 */}
+        {/* Footer */}
         <footer className="text-center text-xs opacity-20 px-4 pb-6">
           <div className="flex gap-4 justify-center mb-2">
             <a href="https://github.com/claude-farmer/claude-farmer" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">GitHub</a>
@@ -200,22 +206,6 @@ export default function Landing() {
           <p>{t.footerLicense}</p>
         </footer>
       </div>
-
-      {/* Bottom bar — 앱과 동일한 스타일 */}
-      <nav className="flex border-t border-[var(--border)] bg-[var(--card)] sticky bottom-0 z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <Link href="/farm" className="flex-1 py-2 text-center text-sm text-[var(--text)] opacity-50 hover:opacity-75">
-          <div className="text-base">🏠</div>
-          <div>{t.tabFarm}</div>
-        </Link>
-        <Link href="/farm" className="flex-1 py-2 text-center text-sm text-[var(--text)] opacity-50 hover:opacity-75">
-          <div className="text-base">📖</div>
-          <div>{t.tabBag}</div>
-        </Link>
-        <button className="flex-1 py-2 text-center text-sm text-[var(--accent)]">
-          <div className="text-base">🌍</div>
-          <div>{t.tabExplore}</div>
-        </button>
-      </nav>
     </div>
   );
 }
