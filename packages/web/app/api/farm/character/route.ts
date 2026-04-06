@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
+import { extractUserId } from '@/lib/session';
 import type { PublicProfile, CharacterAppearance } from '@claude-farmer/shared';
 import { CHARACTER_TYPES } from '@claude-farmer/shared';
 
@@ -9,18 +10,6 @@ const VALID_EYE_STYLES = ['dot', 'round', 'line', 'star', 'closed'] as const;
 const VALID_ACCESSORIES = ['none', 'glasses', 'sunglasses', 'eyepatch', 'bandaid'] as const;
 const VALID_HAIR_COLORS = ['brown', 'black', 'blonde', 'red', 'pink', 'blue', 'white', 'green'] as const;
 const VALID_CLOTHES_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'pink', 'teal', 'yellow'] as const;
-
-function extractUserId(request: NextRequest, bodyGithubId?: string): string | null {
-  const session = request.cookies.get('cf_session')?.value;
-  if (session) {
-    try {
-      return JSON.parse(session).github_id;
-    } catch {
-      // fallthrough
-    }
-  }
-  return bodyGithubId || null;
-}
 
 function validateCharacter(raw: unknown): CharacterAppearance | null {
   if (!raw || typeof raw !== 'object') return null;

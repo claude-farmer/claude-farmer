@@ -1,17 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
+import { extractUserId } from '@/lib/session';
 import { WATER_COOLDOWN_SECONDS, GRID_SIZE, GUESTBOOK_MAX_ENTRIES } from '@claude-farmer/shared';
 import type { PublicProfile } from '@claude-farmer/shared';
-
-function extractUserId(request: NextRequest, bodyFrom?: string): string | null {
-  const session = request.cookies.get('cf_session')?.value;
-  if (session) {
-    try {
-      return JSON.parse(session).github_id;
-    } catch {}
-  }
-  return bodyFrom || null;
-}
 
 export async function POST(request: NextRequest) {
   try {

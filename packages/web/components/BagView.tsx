@@ -6,6 +6,17 @@ import { GACHA_ITEMS, RARITY_LABEL, RARITY_COLOR, TOTAL_ITEMS, getEvolutionTier,
 import { getItemCounts } from '@claude-farmer/shared';
 import { useLocale } from '@/lib/locale-context';
 
+// 아이템별 이모지 아이콘
+const ITEM_EMOJI: Record<string, string> = {
+  c01: '🪨', c02: '🌿', c03: '🌾', c04: '🪱', c05: '🚿', c06: '🏗️', c07: '🧱', c08: '🌱', c09: '🍄',
+  c10: '🐤', c11: '💥', c12: '📝',
+  r01: '🐱', r02: '🐶', r03: '🌸', r04: '💧', r05: '🪑', r06: '📮', r07: '🔦',
+  r08: '🤖', r09: '☕',
+  e01: '⛲', e02: '🌀', e03: '🍎', e04: '🐰', e05: '🌈',
+  e06: '📚', e07: '🌳',
+  l01: '🌻', l02: '🦄', l03: '🌌', l04: '✨',
+};
+
 interface BagViewProps {
   inventory: InventoryItem[];
 }
@@ -79,7 +90,7 @@ export default function BagView({ inventory }: BagViewProps) {
                   >
                     {isOwned ? (
                       <>
-                        <span className="text-center leading-tight">{item.name}</span>
+                        <span className="text-xl">{ITEM_EMOJI[item.id] ?? item.name.charAt(0)}</span>
                         {count > 1 && (
                           <span className="absolute top-0.5 right-1 text-[9px] opacity-50">
                             ×{count}
@@ -119,9 +130,9 @@ export default function BagView({ inventory }: BagViewProps) {
               onClick={e => e.stopPropagation()}
             >
               <div className="text-center">
-                <div className="w-16 h-16 rounded-lg mx-auto mb-3 flex items-center justify-center text-2xl"
+                <div className="w-16 h-16 rounded-lg mx-auto mb-3 flex items-center justify-center text-3xl"
                   style={{ backgroundColor: RARITY_COLOR[selected.rarity] + '20', border: `2px solid ${RARITY_COLOR[selected.rarity]}` }}>
-                  {selected.name.charAt(0)}
+                  {ITEM_EMOJI[selected.id] ?? selected.name.charAt(0)}
                 </div>
                 <h3 className="font-bold text-lg">
                   {selected.name} {tier.label && <span style={{ color: RARITY_COLOR[selected.rarity] }}>{tier.label}</span>}

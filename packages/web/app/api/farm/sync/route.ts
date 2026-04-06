@@ -1,22 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
+import { extractUserId } from '@/lib/session';
 import { GRID_SIZE, CHARACTER_TYPES } from '@claude-farmer/shared';
 import type { PublicProfile, Farm, CharacterAppearance } from '@claude-farmer/shared';
-
-// 요청에서 인증된 사용자 ID 추출 (session cookie 또는 body)
-function extractUserId(request: NextRequest, bodyGithubId?: string): string | null {
-  // 1. Web: session cookie
-  const session = request.cookies.get('cf_session')?.value;
-  if (session) {
-    try {
-      return JSON.parse(session).github_id;
-    } catch {
-      // fallthrough to body
-    }
-  }
-  // 2. CLI/VSCode: body의 github_id 필드
-  return bodyGithubId || null;
-}
 
 const VALID_HAIR_STYLES = ['short', 'long', 'curly', 'ponytail', 'bun', 'spiky', 'bob', 'buzz'] as const;
 const VALID_SKIN_TONES = ['light', 'medium', 'dark', 'pale'] as const;

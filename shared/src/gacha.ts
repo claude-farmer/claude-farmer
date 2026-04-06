@@ -85,7 +85,12 @@ function pickItemFromPool(pool: GachaItem[], ownedItemIds?: Set<string>): GachaI
 }
 
 export function rollGacha(boost = false, ownedItemIds?: Set<string>): GachaItem {
-  const rarity = rollRarity(boost);
+  // 첫 수확 보장: 아이템 0-1개일 때 Rare+ 보장
+  const isFirstHarvest = !ownedItemIds || ownedItemIds.size <= 1;
+  let rarity = rollRarity(boost);
+  if (isFirstHarvest && rarity === 'common') {
+    rarity = 'rare'; // Common → Rare 승격
+  }
   const pool = GACHA_ITEMS.filter(item => item.rarity === rarity);
   return pickItemFromPool(pool, ownedItemIds);
 }

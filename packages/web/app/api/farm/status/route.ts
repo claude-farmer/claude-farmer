@@ -1,19 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
+import { extractUserId } from '@/lib/session';
 import type { PublicProfile } from '@claude-farmer/shared';
-
-// 요청에서 인증된 사용자 ID 추출 (session cookie 또는 body github_id)
-function extractUserId(request: NextRequest, bodyGithubId?: string): string | null {
-  const session = request.cookies.get('cf_session')?.value;
-  if (session) {
-    try {
-      return JSON.parse(session).github_id;
-    } catch {
-      // fallthrough to body
-    }
-  }
-  return bodyGithubId || null;
-}
 
 export async function POST(request: NextRequest) {
   try {

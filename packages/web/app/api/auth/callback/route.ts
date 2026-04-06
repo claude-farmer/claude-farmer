@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
-import { GRID_SIZE } from '@claude-farmer/shared';
+import { signSession } from '@/lib/session';
+import { GRID_SIZE, CROPS } from '@claude-farmer/shared';
+import { GACHA_ITEMS } from '@claude-farmer/shared';
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
@@ -36,17 +38,29 @@ export async function GET(request: NextRequest) {
   });
   const user = await userRes.json();
 
-  // Redis에 프로필 저장 (없으면 생성)
+  // Redis에 프로필 저장 (없으면 생성 + 웰컴 기프트)
   const existing = await redis.get(keys.user(user.login));
   if (!existing) {
+    // 웰컴 기프트: 랜덤 Rare 아이템 1개
+    const rareItems = GACHA_ITEMS.filter(i => i.rarity === 'rare');
+    const welcomeItem = rareItems[Math.floor(Math.random() * rareItems.length)];
+    const now = new Date().toISOString();
+
+    // 첫 씨앗 1개 심기
+    const grid: (unknown | null)[] = new Array(GRID_SIZE).fill(null);
+    const randomCrop = CROPS[Math.floor(Math.random() * CROPS.length)];
+    grid[0] = { slot: 0, crop: randomCrop, stage: 1, planted_at: now };
+
     await redis.set(keys.user(user.login), {
       nickname: user.name || user.login,
       avatar_url: user.avatar_url,
       level: 1,
       total_harvests: 0,
+      unique_items: 1,
+      inventory: [{ id: welcomeItem.id, name: welcomeItem.name, rarity: welcomeItem.rarity, obtained_at: now }],
       status_message: null,
-      farm_snapshot: { level: 1, grid: new Array(GRID_SIZE).fill(null), total_harvests: 0 },
-      last_active: new Date().toISOString(),
+      farm_snapshot: { level: 1, grid, total_harvests: 0 },
+      last_active: now,
     });
   }
 
@@ -68,7 +82,7 @@ export async function GET(request: NextRequest) {
   // Web OAuth: 세션 쿠키 설정 후 /farm으로 리다이렉트
   const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://claudefarmer.com').trim();
   const res = NextResponse.redirect(new URL('/farm', baseUrl));
-  res.cookies.set('cf_session', JSON.stringify({
+  res.cookies.set('cf_session', signSession({
     github_id: user.login,
     nickname: user.name || user.login,
     avatar_url: user.avatar_url,
