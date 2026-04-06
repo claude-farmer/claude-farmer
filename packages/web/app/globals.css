@@ -20,6 +20,13 @@ body {
 }
 
 canvas {
+  image-rendering: -webkit-optimize-contrast;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+}
+
+/* 캔버스 픽셀아트 선명도: GPU 합성 레이어에서 서브픽셀 블러 방지 */
+canvas.rounded-lg {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }

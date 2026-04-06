@@ -456,11 +456,14 @@ export default function FarmThumbnail({
         }
       }
 
-      // ── Tier 4: 금색 테두리 ──
+      // ── Tier 4: 금색 테두리 (fillRect로, strokeRect 사용 금지 — 0.5px 블러 방지) ──
       if (tier >= 4) {
-        ctx.strokeStyle = '#fbbf24';
+        ctx.fillStyle = '#fbbf24';
         ctx.globalAlpha = 0.5 + Math.sin(f * 0.05) * 0.3;
-        ctx.strokeRect(0.5, 0.5, SIZE - 1, SIZE - 1);
+        ctx.fillRect(0, 0, SIZE, 1); // top
+        ctx.fillRect(0, SIZE - 1, SIZE, 1); // bottom
+        ctx.fillRect(0, 0, 1, SIZE); // left
+        ctx.fillRect(SIZE - 1, 0, 1, SIZE); // right
         ctx.globalAlpha = 1;
         // 코너 스파클
         ctx.fillStyle = '#fff';
@@ -476,8 +479,14 @@ export default function FarmThumbnail({
   return (
     <canvas
       ref={canvasRef}
+      width={SIZE}
+      height={SIZE}
       className={`rounded-lg ${className ?? ''}`}
-      style={{ width: '100%', aspectRatio: '1/1', imageRendering: 'pixelated' }}
+      style={{
+        width: '100%',
+        aspectRatio: '1/1',
+        imageRendering: 'pixelated',
+      }}
     />
   );
 }
