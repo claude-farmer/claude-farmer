@@ -43,7 +43,7 @@ function FarmCarousel({ farms, onVisit }: {
       >
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-8 pb-3 items-center"
+          className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-6 pb-3 items-center"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           onTouchStart={() => setAutoScroll(false)}
           onMouseDown={() => setAutoScroll(false)}
@@ -122,21 +122,22 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Content */}
+      {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        <section className="text-center px-4 pt-6 pb-4">
-          <h1 className="text-2xl font-bold mb-1">{t.heroTagline}</h1>
-          <p className="text-xs opacity-50 max-w-xs mx-auto">{t.heroDesc}</p>
+        {/* 히어로 + 캐러셀 (하나의 블록) */}
+        <section className="text-center px-6 pt-10 pb-8">
+          <h1 className="text-3xl font-extrabold tracking-tight mb-3">{t.heroTagline}</h1>
+          <p className="text-sm opacity-60 max-w-[260px] mx-auto leading-relaxed">{t.heroDesc}</p>
         </section>
 
-        <section className="pb-4">
-          <h2 className="text-sm font-bold opacity-50 px-4 mb-2">🌍 {t.liveFarmsTitle}</h2>
+        <section className="pb-8">
+          <h2 className="text-sm font-bold opacity-50 px-6 mb-2">🌍 {t.liveFarmsTitle}</h2>
           <FarmCarousel farms={farms} onVisit={handleVisit} />
         </section>
 
-        {/* Features — 컴팩트 */}
-        <section className="px-4 pb-4">
-          <div className="grid grid-cols-2 gap-2">
+        {/* 피처 (배경 틴트로 구분) */}
+        <section className="px-6 py-8" style={{ backgroundColor: 'rgba(35,39,54,0.5)' }}>
+          <div className="grid grid-cols-2 gap-3">
             {[
               { icon: '🌱', title: t.feat1Title, desc: t.feat1Desc },
               { icon: '🎲', title: t.feat2Title, desc: t.feat2Desc },
@@ -144,24 +145,24 @@ export default function Landing() {
               { icon: '🎨', title: t.feat4Title, desc: t.feat4Desc },
             ].map(f => (
               <div key={f.title} className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3">
-                <div className="text-lg mb-1">{f.icon}</div>
-                <h3 className="text-xs font-bold mb-0.5">{f.title}</h3>
-                <p className="text-xs opacity-40 leading-tight">{f.desc}</p>
+                <div className="text-xl mb-1.5">{f.icon}</div>
+                <h3 className="text-xs font-bold mb-1">{f.title}</h3>
+                <p className="text-xs opacity-40 leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Get Started */}
-        <section className="px-4 pb-4">
-          <h2 className="text-sm font-bold mb-3 text-center">{t.getStarted}</h2>
-          <div className="flex flex-col gap-2 max-w-sm mx-auto">
+        {/* 설치 스텝 */}
+        <section className="px-6 pt-8 pb-6">
+          <h2 className="text-sm font-bold mb-4 text-center">{t.getStarted}</h2>
+          <div className="flex flex-col gap-2">
             {[
               { n: '1', t: 'npm install -g claude-farmer' },
               { n: '2', t: 'claude-farmer init' },
               { n: '3', t: t.step3 },
             ].map(s => (
-              <div key={s.n} className="flex items-center gap-3 bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2">
+              <div key={s.n} className="flex items-center gap-3 bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2.5">
                 <div className="w-6 h-6 rounded-full bg-[var(--accent)] text-black flex items-center justify-center font-bold text-xs shrink-0">
                   {s.n}
                 </div>
@@ -171,28 +172,8 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="px-4 pb-6">
-          <div className="flex gap-2">
-            <a
-              href="https://www.npmjs.com/package/claude-farmer"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 bg-[var(--accent)] text-black font-bold py-3 rounded-lg text-center text-sm hover:opacity-90 transition-opacity"
-            >
-              npm install
-            </a>
-            <Link
-              href="/farm"
-              className="flex-1 bg-[var(--card)] border border-[var(--border)] text-[var(--text)] font-bold py-3 rounded-lg text-center text-sm hover:border-[var(--accent)] transition-colors"
-            >
-              {t.demoBtn}
-            </Link>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="text-center text-xs opacity-20 px-4 pb-6">
+        {/* 푸터 */}
+        <footer className="text-center text-xs opacity-20 px-6 pt-6 pb-8 border-t border-[var(--border)]">
           <div className="flex gap-4 justify-center mb-2">
             <a href="https://github.com/claude-farmer/claude-farmer" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">GitHub</a>
             <a href="https://www.npmjs.com/package/claude-farmer" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">npm</a>
@@ -205,6 +186,26 @@ export default function Landing() {
           </div>
           <p>{t.footerLicense}</p>
         </footer>
+      </div>
+
+      {/* CTA 하단 고정 */}
+      <div className="px-6 pt-3 pb-4 border-t border-[var(--border)] bg-[var(--bg)]" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+        <div className="flex gap-2">
+          <a
+            href="https://www.npmjs.com/package/claude-farmer"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 bg-[var(--accent)] text-black font-bold py-3 rounded-lg text-center text-sm hover:opacity-90 transition-opacity"
+          >
+            npm install
+          </a>
+          <Link
+            href="/farm"
+            className="flex-1 bg-[var(--card)] border border-[var(--border)] text-[var(--text)] font-bold py-3 rounded-lg text-center text-sm hover:border-[var(--accent)] transition-colors"
+          >
+            {t.demoBtn}
+          </Link>
+        </div>
       </div>
     </div>
   );

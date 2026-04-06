@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import TabBar from '@/components/TabBar';
 import FarmView from '@/components/FarmView';
 import BagView from '@/components/BagView';
 import ExploreView from '@/components/ExploreView';
 import FarmVisitView from '@/components/FarmVisitView';
-import FarmThumbnail from '@/components/FarmThumbnail';
-import { fetchSession, fetchFarm, logout, fetchBookmarks, toggleBookmark, updateStatus, updateCharacter, fetchExplore } from '@/lib/api';
+import { fetchSession, fetchFarm, logout, fetchBookmarks, toggleBookmark, updateStatus, updateCharacter } from '@/lib/api';
 import { MOCK_STATE, MOCK_NEIGHBORS } from '@/lib/mock-data';
 import { useLocale } from '@/lib/locale-context';
 import usePolling from '@/hooks/usePolling';
@@ -27,62 +26,10 @@ export default function FarmPage() {
   );
 }
 
-// ── 비로그인 홈 뷰 (캐러셀 + 설명) ──
-function DemoHomeView({ onVisit }: { onVisit: (id: string) => void }) {
-  const { t } = useLocale();
-  const [farms, setFarms] = useState<(PublicProfile & { github_id: string })[]>([]);
-
-  useEffect(() => {
-    fetchExplore('', 12).then(setFarms).catch(() => {});
-  }, []);
-
-  return (
-    <div className="flex flex-col gap-4 p-4">
-      {/* 히어로 */}
-      <div className="text-center py-2">
-        <h1 className="text-xl font-bold mb-1">{t.heroTagline}</h1>
-        <p className="text-xs opacity-50 max-w-xs mx-auto">{t.heroDesc}</p>
-      </div>
-
-      {/* 실시간 농장 그리드 */}
-      <div>
-        <h2 className="text-sm font-bold opacity-50 mb-2">🌍 {t.liveFarmsTitle}</h2>
-        <div className="grid grid-cols-3 gap-2">
-          {farms.map(farm => (
-            <button
-              key={farm.github_id}
-              onClick={() => onVisit(farm.github_id)}
-              className="bg-[var(--card)] border border-[var(--border)] rounded-lg overflow-hidden hover:border-[var(--accent)] transition-all active:scale-95"
-            >
-              <FarmThumbnail
-                githubId={farm.github_id}
-                character={farm.character}
-                level={farm.level}
-                totalHarvests={farm.total_harvests}
-                uniqueItems={farm.unique_items}
-                streakDays={farm.streak_days}
-                inventory={farm.inventory}
-                className="w-full"
-              />
-              <div className="px-1.5 py-1 text-center">
-                <span className="text-xs font-bold truncate block">{farm.nickname}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 설치 안내 (심플) */}
-      <div className="text-center text-xs opacity-40 py-2">
-        <code>npm i -g claude-farmer && claude-farmer init</code>
-      </div>
-    </div>
-  );
-}
-
 function FarmApp() {
   const { t } = useLocale();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [tab, setTab] = useState<'farm' | 'bag' | 'explore'>('farm');
   const [user, setUser] = useState<{ github_id: string; nickname: string; avatar_url: string } | null>(null);
   const [state, setState] = useState<LocalState>(MOCK_STATE);
@@ -125,6 +72,13 @@ function FarmApp() {
       setVisitHistory(h => h.slice(0, -1));
       setVisitingId(prev);
       setVisitingNickname('');
+    } else if (!user) {
+      // 비로그인 → 브라우저 히스토리로 (/ 또는 이전 페이지)
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        router.back();
+      } else {
+        router.push('/');
+      }
     } else {
       setVisitingId(null);
       setIsDemo(false);
@@ -198,8 +152,11 @@ function FarmApp() {
       if (visitParam) {
         setVisitingId(visitParam);
         if (!session) setIsDemo(true);
+      } else if (!session) {
+        // 비로그인 + visit 파람 없음 → 랜딩으로 리다이렉트
+        router.replace('/');
+        return;
       }
-      // 비로그인 + 방문 파람 없음 → DemoHomeView 표시 (자동 방문 안 함)
     }
     init();
   }, []);
@@ -253,7 +210,7 @@ function FarmApp() {
   }
 
   // 비로그인 + 방문 중 아님 → 홈 뷰 (캐러셀)
-  const showDemoHome = !user && !visitingId;
+  // 비로그인 + 방문 없음 → init에서 이미 / 로 리다이렉트됨
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col bg-[var(--bg)] shadow-2xl border-x border-[var(--border)] relative">
@@ -314,8 +271,6 @@ function FarmApp() {
               onWaveSurf={handleVisitFarm}
             />
           </>
-        ) : showDemoHome ? (
-          <DemoHomeView onVisit={(id) => { setVisitingId(id); setIsDemo(true); }} />
         ) : (
           <>
             {tab === 'farm' && (
@@ -343,7 +298,7 @@ function FarmApp() {
       </div>
 
       {/* TabBar — 방문 중이 아니고, 로그인 상태일 때만 */}
-      {!visitingId && !showDemoHome && <TabBar active={tab} onChange={setTab} />}
+      {!visitingId && user && <TabBar active={tab} onChange={setTab} />}
     </div>
   );
 }
