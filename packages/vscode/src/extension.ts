@@ -854,6 +854,10 @@ let visitingId = null;
 let visitGrid = null;
 let visitProfile = null;
 let waterRemaining = 3;
+let waterCooldown = 0;
+let cooldownTimer = null;
+let visitHistory = [];
+let prevTab = 'farm';
 
 // Character animation state
 let charMode = 'idle';
@@ -984,10 +988,19 @@ function doExplore() {
 
 // ── Farm Visit ──
 function openVisit(targetId) {
+  // 자기 농장 방문 방지
+  if (targetId === myGithubId) return;
+  // 히스토리 스택 push
+  if (visitingId) {
+    visitHistory.push(visitingId);
+  } else {
+    prevTab = currentTab;
+  }
   visitingId = targetId;
   visitGrid = null;
   visitProfile = null;
-  waterRemaining = 3;
+  waterCooldown = 0;
+  if (cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
   document.getElementById('farmTab').style.display = 'none';
   document.getElementById('exploreTab').style.display = 'none';
   document.getElementById('visitView').style.display = 'block';
@@ -995,24 +1008,55 @@ function openVisit(targetId) {
   document.getElementById('visitLevel').textContent = '';
   document.getElementById('visitStatus').textContent = '';
   document.getElementById('visitHarvests').textContent = '0';
+  updateWaterBtn();
   updateBookmarkBtn();
   vscode.postMessage({ type: 'visitFarm', targetId });
   vscode.postMessage({ type: 'fetchFarm', targetId });
 }
 
 function closeVisit() {
+  if (cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
+  // 히스토리 스택 pop
+  const prev = visitHistory.length > 0 ? visitHistory.pop() : null;
+  if (prev) {
+    openVisit(prev);
+    return;
+  }
   visitingId = null;
   visitGrid = null;
+  visitHistory = [];
   document.getElementById('visitView').style.display = 'none';
-  document.getElementById('exploreTab').style.display = 'block';
-  document.getElementById('tabExplore').className = 'tab-btn active';
-  document.getElementById('tabFarm').className = 'tab-btn';
-  currentTab = 'explore';
+  // 이전 탭 복원
+  if (prevTab === 'farm') {
+    document.getElementById('farmTab').style.display = 'block';
+    document.getElementById('tabFarm').className = 'tab-btn active';
+    document.getElementById('tabExplore').className = 'tab-btn';
+  } else {
+    document.getElementById('exploreTab').style.display = 'block';
+    document.getElementById('tabExplore').className = 'tab-btn active';
+    document.getElementById('tabFarm').className = 'tab-btn';
+  }
+  currentTab = prevTab;
 }
 
 function doWater() {
-  if (!visitingId || waterRemaining <= 0) return;
+  if (!visitingId || waterCooldown > 0) return;
   vscode.postMessage({ type: 'water', targetId: visitingId });
+}
+
+function startCooldown(seconds) {
+  waterCooldown = seconds;
+  if (cooldownTimer) clearInterval(cooldownTimer);
+  updateWaterBtn();
+  cooldownTimer = setInterval(() => {
+    waterCooldown--;
+    if (waterCooldown <= 0) {
+      waterCooldown = 0;
+      clearInterval(cooldownTimer);
+      cooldownTimer = null;
+    }
+    updateWaterBtn();
+  }, 1000);
 }
 
 function doToggleBookmark() {
@@ -1029,12 +1073,14 @@ function updateBookmarkBtn() {
 
 function updateWaterBtn() {
   const btn = document.getElementById('waterBtn');
-  if (waterRemaining <= 0) {
-    btn.textContent = '💧 ${d.vscodeVisitWaterDone}';
+  if (waterCooldown > 0) {
+    const m = Math.floor(waterCooldown / 60);
+    const s = waterCooldown % 60;
+    btn.textContent = '💧 ' + m + ':' + (s < 10 ? '0' : '') + s;
     btn.disabled = true;
     btn.style.opacity = '0.5';
   } else {
-    btn.textContent = '💧 ${d.vscodeVisitWater} (' + waterRemaining + '${d.vscodeVisitWaterRemaining})';
+    btn.textContent = '💧 ${d.vscodeVisitWater}';
     btn.disabled = false;
     btn.style.opacity = '1';
   }
@@ -1750,11 +1796,11 @@ window.addEventListener('message',(e)=>{
     }
   } else if(msg.type==='waterResult'){
     if(msg.ok) {
-      waterRemaining = typeof msg.remaining === 'number' ? msg.remaining : Math.max(0, waterRemaining-1);
-      updateWaterBtn();
+      startCooldown(msg.cooldown_seconds || 300);
       showNotif('💧 ${locale === 'ko' ? '물을 줬어요!' : 'Watered!'}');
+    } else if(msg.cooldown_remaining) {
+      startCooldown(msg.cooldown_remaining);
     } else {
-      waterRemaining = 0;
       updateWaterBtn();
     }
   } else if(msg.type==='bookmarkToggled'){

@@ -30,7 +30,7 @@ export async function syncToServer(state: LocalState): Promise<boolean> {
   }
 }
 
-export async function sendWater(from: string, to: string): Promise<{ ok: boolean; remaining?: number; error?: string }> {
+export async function sendWater(from: string, to: string): Promise<{ ok: boolean; remaining?: number; cooldown_seconds?: number; cooldown_remaining?: number; error?: string }> {
   try {
     const res = await fetch(`${BASE_URL}/api/water`, {
       method: 'POST',

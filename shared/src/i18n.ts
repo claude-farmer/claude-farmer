@@ -62,11 +62,12 @@ const dict = {
     openingWeb: "Opening claudefarmer.com...",
 
     // ── water ──
-    waterLimitReached: "You've used all your water today. Come back tomorrow!",
+    waterLimitReached: "Water is on cooldown. Try again in a few minutes!",
+    waterCooldown: "Water is on cooldown. Try again in ~{minutes} minute(s)!",
     waterUserNotFound: "Can't find @{target}",
-    waterServerLimit: "Daily water limit reached. Come back tomorrow!",
+    waterServerLimit: "Water is on cooldown!",
     waterSentOffline: "Watered @{target}! (offline mode)",
-    waterSent: "Watered @{target}! (remaining: {remaining}/{limit})",
+    waterSent: "Watered @{target}!",
 
     // ── watch ──
     watchDetecting: "Detecting Claude Code activity... (Ctrl+C to stop)",
@@ -199,11 +200,12 @@ const dict = {
 
     openingWeb: "claudefarmer.com을 열고 있어요...",
 
-    waterLimitReached: "오늘 물 주기를 다 썼어요. 내일 다시 와주세요!",
+    waterLimitReached: "물주기 쿨다운 중이에요. 잠시 후 다시 시도해주세요!",
+    waterCooldown: "물주기 쿨다운 중이에요. ~{minutes}분 후 다시 시도해주세요!",
     waterUserNotFound: "@{target}님을 찾을 수 없어요 🌧️",
-    waterServerLimit: "오늘 물 주기를 다 썼어요. 내일 다시 와주세요!",
+    waterServerLimit: "물주기 쿨다운 중이에요!",
     waterSentOffline: "@{target}님에게 물을 줬어요! (오프라인 모드)",
-    waterSent: "@{target}님에게 물을 줬어요! (남은 횟수: {remaining}/{limit})",
+    waterSent: "@{target}님에게 물을 줬어요!",
 
     watchDetecting: "Claude Code 활동을 감지하고 있어요... (Ctrl+C로 종료)",
 
