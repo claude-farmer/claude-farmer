@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useLocale } from '@/lib/locale-context';
-import MiniCropGrid from '@/components/MiniCropGrid';
+import FarmThumbnail from '@/components/FarmThumbnail';
 import type { PublicProfile } from '@claude-farmer/shared';
 
 // ── 농장 카드 캐러셀 ──
@@ -55,9 +55,14 @@ function FarmCarousel({ farms, onVisit }: {
               onClick={() => onVisit(farm.github_id)}
               className="snap-start shrink-0 w-44 bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 hover:border-[var(--accent)] transition-colors text-left"
             >
-              {/* 미니 농장 프리뷰 */}
-              <MiniCropGrid
-                grid={farm.farm_snapshot?.grid ?? []}
+              {/* 캐릭터 + 성취 썸네일 */}
+              <FarmThumbnail
+                character={farm.character}
+                level={farm.level}
+                totalHarvests={farm.total_harvests}
+                uniqueItems={farm.unique_items}
+                streakDays={farm.streak_days}
+                inventory={farm.inventory}
                 className="w-full mb-2"
               />
               <div className="flex items-center gap-1.5 mb-1">
