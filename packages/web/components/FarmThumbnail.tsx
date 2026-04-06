@@ -83,17 +83,6 @@ export default function FarmThumbnail({
       const charY = 12 + (f % 40 < 20 ? 0 : -1);
       drawSprite(ctx, sprite, charX, charY, 2);
 
-      // ── 레벨 뱃지 (좌상단) ──
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(1, 1, 16, 8);
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillRect(2, 2, 14, 6);
-      ctx.fillStyle = '#000';
-      // "Lv" + number in minimal pixel font
-      ctx.font = '7px monospace';
-      ctx.textBaseline = 'top';
-      ctx.fillText(`${level}`, 4, 2);
-
       // ── 도감 진행 바 (우상단) ──
       const barW = 14;
       const barX = SIZE - barW - 2;
