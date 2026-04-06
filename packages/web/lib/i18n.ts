@@ -41,6 +41,8 @@ const dict = {
 
     // Footer
     footerLicense: 'MIT License · Built by doribear.com 🇰🇷',
+    footerPlatforms: 'Available on',
+    footerOpenSource: 'Open source on GitHub — contributions welcome!',
     footerContrib: 'Open source — contributions welcome! Let\'s code something fun together.',
 
     // Landing - Live farms
@@ -179,6 +181,8 @@ const dict = {
     emailPlaceholder: '이메일 주소',
 
     footerLicense: 'MIT License · Built by doribear.com 🇰🇷',
+    footerPlatforms: '사용 가능한 플랫폼',
+    footerOpenSource: '오픈소스 GitHub — 참여 환영합니다!',
     footerContrib: '오픈소스 — 함께 즐겁게 코딩해요! 참여 환영합니다.',
 
     // Landing - Live farms

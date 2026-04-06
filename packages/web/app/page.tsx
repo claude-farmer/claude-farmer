@@ -173,18 +173,43 @@ export default function Landing() {
         </section>
 
         {/* 푸터 */}
-        <footer className="text-center text-xs opacity-20 px-6 pt-6 pb-8 border-t border-[var(--border)]">
-          <div className="flex gap-4 justify-center mb-2">
-            <a href="https://github.com/claude-farmer/claude-farmer" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">GitHub</a>
-            <a href="https://www.npmjs.com/package/claude-farmer" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">npm</a>
-            <a href="https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">VSCode</a>
+        <footer className="px-6 pt-6 pb-8 border-t border-[var(--border)] text-xs">
+          {/* 플랫폼 */}
+          <div className="mb-4">
+            <div className="opacity-40 mb-2 font-bold">{t.footerPlatforms}</div>
+            <div className="flex gap-2">
+              <a href="https://www.npmjs.com/package/claude-farmer" target="_blank" rel="noopener noreferrer"
+                className="flex-1 bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 text-center hover:border-[var(--accent)] transition-colors">
+                📦 npm (CLI)
+              </a>
+              <a href="https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode" target="_blank" rel="noopener noreferrer"
+                className="flex-1 bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 text-center hover:border-[var(--accent)] transition-colors">
+                🧩 VSCode
+              </a>
+              <a href="https://claudefarmer.com" className="flex-1 bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 text-center hover:border-[var(--accent)] transition-colors">
+                🌐 Web
+              </a>
+            </div>
           </div>
-          <div className="flex gap-2 justify-center mb-2">
-            <button onClick={() => setLocale('en')} className={`hover:opacity-60 ${locale === 'en' ? 'underline opacity-100' : ''}`}>EN</button>
-            <span>|</span>
-            <button onClick={() => setLocale('ko')} className={`hover:opacity-60 ${locale === 'ko' ? 'underline opacity-100' : ''}`}>KO</button>
+
+          {/* 오픈소스 */}
+          <div className="mb-4">
+            <a href="https://github.com/claude-farmer/claude-farmer" target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 hover:border-[var(--accent)] transition-colors">
+              <span>⭐</span>
+              <span className="opacity-70">{t.footerOpenSource}</span>
+            </a>
           </div>
-          <p>{t.footerLicense}</p>
+
+          {/* 언어 + 라이센스 */}
+          <div className="text-center opacity-20">
+            <div className="flex gap-2 justify-center mb-1">
+              <button onClick={() => setLocale('en')} className={`hover:opacity-60 ${locale === 'en' ? 'underline opacity-100' : ''}`}>EN</button>
+              <span>|</span>
+              <button onClick={() => setLocale('ko')} className={`hover:opacity-60 ${locale === 'ko' ? 'underline opacity-100' : ''}`}>KO</button>
+            </div>
+            <p>{t.footerLicense}</p>
+          </div>
         </footer>
       </div>
 

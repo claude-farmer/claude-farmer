@@ -88,6 +88,22 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
               ✏️ {locale === 'ko' ? '캐릭터' : 'Edit'}
             </button>
           )}
+          {isLoggedIn && (
+            <button
+              onClick={() => {
+                const url = `https://claudefarmer.com/farm/${user.github_id}`;
+                if (navigator.share) {
+                  navigator.share({ title: `${user.nickname}'s Farm`, url });
+                } else {
+                  navigator.clipboard.writeText(url);
+                  alert(locale === 'ko' ? '링크가 복사되었어요!' : 'Link copied!');
+                }
+              }}
+              className="text-xs px-2 py-0.5 rounded-full border border-[var(--border)] opacity-60 hover:opacity-100 hover:border-[var(--accent)] transition-all"
+            >
+              🔗 {locale === 'ko' ? '공유' : 'Share'}
+            </button>
+          )}
         </div>
       </div>
 
