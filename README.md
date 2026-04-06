@@ -27,7 +27,7 @@ Code with Claude → Seeds planted → Crops grow → Auto-harvest → Gacha dro
 
 - 🌰 **Seed** → 🌱 **Sprout** → 🌿 **Growing** → 🥕 **Harvestable!**
 - Every harvest triggers a gacha roll: Common (60%) / Rare (28%) / Epic (10%) / Legendary (2%)
-- 24 collectible items — can you catch 'em all?
+- 32 collectible items — can you catch 'em all?
 
 ## CLI Commands
 

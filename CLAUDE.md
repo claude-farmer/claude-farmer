@@ -28,7 +28,7 @@ claude-farmer/
 │   └── src/
 │       ├── types.ts     → All type definitions (CropSlot, GachaItem, LocalState, etc.)
 │       ├── constants.ts → Config values (GRID_SIZE, RARITY_WEIGHTS, level calc, farmer titles, evolution tiers)
-│       ├── gacha.ts     → 24 gacha items + rollGacha() with diminishing returns + getItemCounts()
+│       ├── gacha.ts     → 32 gacha items + rollGacha() with diminishing returns + getItemCounts()
 │       └── i18n.ts      → Translation dict (en/ko), detectLocale(), t() helper
 ├── packages/
 │   ├── cli/             → claude-farmer (npm package, global install)
@@ -49,10 +49,11 @@ claude-farmer/
 │   │   │   └── api/
 │   │   │       ├── auth/      → login, callback (GitHub OAuth), session, logout
 │   │   │       ├── farm/      → sync, status, [id] (profile+footprints), [id]/notifications, [id]/visit
-│   │   │       ├── water/     → Watering (3/day limit, optional crop_slot)
-│   │   │       ├── explore/   → Random user discovery
+│   │   │       ├── water/     → Watering (5-min cooldown, optional crop_slot)
+│   │   │       ├── gift/      → Gift gacha items to other farms
+│   │   │       ├── explore/   → Random user discovery + wave surf
 │   │   │       └── subscribe/ → Email subscription (Resend)
-│   │   ├── components/        → FarmView, BagView, ExploreView, TabBar, FarmCanvas
+│   │   ├── components/        → FarmView, BagView, ExploreView, TabBar, FarmCanvas, GuestbookPanel, GiftPicker
 │   │   ├── hooks/
 │   │   │   └── usePolling.ts  → 30s polling hook (visibility-aware)
 │   │   ├── canvas/            → Pixel art rendering engine
@@ -93,7 +94,7 @@ cd packages/vscode && npm run dev
 2. Prompt input → plant random crop in empty slot (4×4 = 16 slots)
 3. 1 conversation turn = all crops grow 1 stage (seed → sprout → growing → harvestable)
 4. Auto-harvest ready crops → gacha drop (Common 60%, Rare 28%, Epic 10%, Legendary 2%)
-5. Items auto-registered in codex (24 items total)
+5. Items auto-registered in codex (32 items total)
 
 ## Gacha Diminishing Returns
 
@@ -163,8 +164,8 @@ Collecting duplicates of the same item triggers automatic evolution tiers:
 
 1. **Farm** — Canvas 2D pixel art (256×192, 4× scale), time-based background, notifications
 2. **Codex** — Rarity-grouped progress bars + item grid (obtained/locked)
-3. **Explore** — Neighbor list + random visit + user search + watering (3/day) + bookmarks
-4. **Farm Visit** — View another user's farm, water crops, toggle bookmark
+3. **Explore** — Neighbors (mutual bookmarks) + bookmarks + random visit + user search
+4. **Farm Visit** — View another user's farm, water (5-min cooldown), gift items, guestbook, wave surf, bookmark
 
 ## VSCode Extension Screens (2 tabs)
 
@@ -184,10 +185,13 @@ Collecting duplicates of the same item triggers automatic evolution tiers:
 | `/api/farm/[id]` | GET | Public profile lookup (includes footprints) |
 | `/api/farm/[id]/notifications` | GET | Farm notifications (visitors, water received) |
 | `/api/farm/[id]/visit` | POST | Record farm visit (session auth) |
-| `/api/water` | POST | Water a user's farm (3/day limit, optional crop_slot) |
+| `/api/water` | POST | Water a user's farm (5-min cooldown, optional crop_slot) |
+| `/api/gift` | POST | Gift a gacha item to another farm |
 | `/api/explore` | GET | Random user discovery |
 | `/api/explore/search` | GET | Search users by GitHub ID or nickname |
-| `/api/bookmarks` | GET | List bookmarked user profiles (session auth) |
+| `/api/explore/wave` | GET | Wave surf: random bookmark from target user |
+| `/api/farm/[id]/guestbook` | GET | Farm guestbook entries (visit/water/gift records) |
+| `/api/bookmarks` | GET | List bookmarked user profiles + neighbor status (session auth) |
 | `/api/bookmarks` | POST | Add/remove bookmark (session auth) |
 | `/api/subscribe` | POST | Email subscription + welcome email |
 
@@ -199,7 +203,7 @@ Collecting duplicates of the same item triggers automatic evolution tiers:
 - **Water bonus**: Water log recorded server-side, actual growth applied on CLI's next turn (no sync conflict)
 - **Notifications**: CLI shows social notifications on `claude-farmer farm`; Web polls `/notifications`
 - **Hover tooltip**: Mouse over footprints shows visitor nickname + time
-- **Redis keys**: `farm:{id}:visitors` (sorted set), `farm:{id}:footprints` (hash), `farm:{id}:water_detail:{date}` (sorted set)
+- **Redis keys**: `farm:{id}:visitors` (sorted set), `farm:{id}:footprints` (hash), `farm:{id}:water_detail:{date}` (sorted set), `farm:{id}:guestbook` (sorted set, max 100), `farm:{id}:total_water_received` (integer), `farm:{id}:gifts` (hash), `user:{id}:water_cooldown` (string, 5min TTL)
 - **Nickname index**: `global:nickname_index` (hash, `nickname_lowercase → github_id`) — updated on sync, used for user search
 
 ## Farmer Title (Activity Badge)
@@ -249,6 +253,57 @@ Web reads from server on login and polls every 30s. VSCode reads local state dir
 - **API**: `GET /api/bookmarks` (list), `POST /api/bookmarks` (add/remove)
 - **UI**: Star toggle on farm visit screen, bookmarked farms shown in Explore tab
 
+## Guestbook (방명록)
+
+- Chat-like log of visit/water/gift records on each farm
+- Entries created automatically when visiting, watering, or gifting
+- Stores visitor's status_message as speech bubble
+- Redis: `farm:{id}:guestbook` (sorted set, max 100 entries, newest first)
+- API: `GET /api/farm/[id]/guestbook` returns entries + total water received
+- Shown on both FarmVisitView and FarmView (own farm)
+- Visit records deduped per visitor per hour
+
+## Gift System (선물)
+
+- Send gacha items from inventory to other farms as "likes"
+- Deducts from sender's server-side inventory
+- Recipient accumulates gifts: `farm:{id}:gifts` (hash, item_id → count)
+- Gift counts affect farm decoration visuals (3→glow, 7→sparkle, 15→gold border)
+- Recorded in guestbook as type "gift"
+
+## Wave Surf (파도타기)
+
+- Jump to a random farm from the visited farm's bookmark list
+- `SRANDMEMBER user:{id}:bookmarks` — one API call
+- Button on FarmVisitView: "🌊 파도타기 — 이웃 농장으로!"
+- Enables organic discovery through friend-of-friend chains
+
+## Neighbors (이웃)
+
+- Mutual bookmarks automatically detected as "neighbors" (이웃)
+- Bookmarks API returns `is_neighbor: boolean` via `SISMEMBER` check
+- Explore tab shows 🏡 Neighbors section above regular bookmarks
+
+## Farm Decorations
+
+- Collected gacha items appear as 6×6 pixel art on farm grass areas
+- 16 decoration slots (8 left, 8 right of grid), rarity-prioritized
+- Gift accumulation upgrades: 1→appear, 3→glow, 7→particles, 15→gold border
+- Total water received increases flower density (10+ / 50+ thresholds)
+
+## Streak Bonfire
+
+- Visual campfire on farm based on `streak_days`:
+  - 1d: ember, 3d: small flame, 7d: campfire + particles, 14d: large fire, 30d+: blue flame
+- Rendered at farm right-bottom grass area, visible to visitors
+
+## Micro Weather
+
+- Deterministic daily weather per farm: `hash(userId + dateString) % 100`
+- Clear (70%), Rain (15%), Snow (8%), Fog (5%), Aurora (2%, night only)
+- Purely visual — no gameplay effects
+- Helper: `getFarmWeather()` in `shared/src/constants.ts`
+
 ## Visual Effects System (Canvas)
 
 The FarmRenderer exposes trigger methods for rich visual feedback:
@@ -266,7 +321,7 @@ FarmCanvas exposes these via `forwardRef`/`useImperativeHandle` so parent compon
 
 - Zero user effort required. Install and forget — your farm grows on its own.
 - Cute, cozy pixel art. Warm color palette.
-- Minimal social = status bubble + watering + bookmarks + ghost visits. Warm but low-pressure.
+- Rich social = guestbook + watering + gifting + neighbors + wave surf + ghost visits. Warm but low-pressure.
 
 ## Documentation
 
