@@ -2,7 +2,7 @@ import { PALETTE } from './palette';
 import { CROP_SPRITES, drawSprite } from './sprites';
 import { composeCharacterSprite, drawGhostCharacter, drawMiniCharacter } from './character';
 import type { CropSlot, Footprint, CharacterAppearance } from '@claude-farmer/shared';
-import { getTimeOfDay, isBoostTime, type TimeOfDay, GRID_SIZE, GRID_COLS } from '@claude-farmer/shared';
+import { getTimeOfDay, isBoostTime, getFarmWeather, type TimeOfDay, type FarmWeather, GRID_SIZE, GRID_COLS } from '@claude-farmer/shared';
 import { type CameraState, DEFAULT_CAMERA, lerpCamera, clampCamera } from './camera';
 
 // 캔버스 설정: 256×192px 기본, 4× 스케일
@@ -27,6 +27,7 @@ export interface FarmRenderState {
   farmOwnerId?: string;
   decorations?: DecorationItem[];
   totalWaterReceived?: number;
+  streakDays?: number;
   // 유저 정보 (하단 패널 + 말풍선용)
   ownerNickname?: string;
   ownerLevel?: number;
@@ -227,13 +228,17 @@ export class FarmRenderer {
     if (state.decorations?.length) {
       this.drawItemDecorations(state.decorations, state.totalWaterReceived ?? 0);
     }
+    if (state.streakDays && state.streakDays > 0) {
+      this.drawBonfire(state.streakDays);
+    }
     if (state.footprints?.length) {
       this.drawFootprints(state.footprints, state.farmOwnerId ?? '');
     }
     this.drawGrid(state.grid);
     this.drawGhosts();
     this.drawCharacter(state.characterWorking, boost);
-    this.drawWeatherEffects(tod);
+    const weather = state.farmOwnerId ? getFarmWeather(state.farmOwnerId) : 'clear';
+    this.drawWeatherEffects(tod, weather);
     this.drawWaterAnims();
     this.drawFloatingTexts();
     this.drawParticles();
@@ -569,6 +574,15 @@ export class FarmRenderer {
       l01: { color: '#fbbf24', draw: (x, y) => { ctx.fillStyle='#fbbf24'; ctx.fillRect(x+2,y,2,1); ctx.fillRect(x+1,y+1,4,2); ctx.fillRect(x+2,y+3,2,1); ctx.fillStyle='#5A9E32'; ctx.fillRect(x+2,y+4,1,2); ctx.globalAlpha=0.4+Math.sin(this.frame*0.06)*0.4; ctx.fillStyle='#fff'; ctx.fillRect(x+1,y,1,1); ctx.globalAlpha=1; } }, // 황금 해바라기
       l02: { color: '#fff', draw: (x, y) => { ctx.fillStyle='#fff'; ctx.fillRect(x+1,y+1,3,4); ctx.fillRect(x+2,y,1,1); ctx.fillStyle='#a78bfa'; ctx.fillRect(x+3,y-1,1,2); ctx.fillStyle='#2C1810'; ctx.fillRect(x+1,y+2,1,1); } }, // 유니콘
       l03: { color: '#a78bfa', draw: (x, y) => { ctx.fillStyle='#8B6544'; ctx.fillRect(x+2,y+3,1,2); const rc=['#EF4444','#FACC15','#5A9E32','#64B5F6','#a78bfa']; for(let i=0;i<5;i++){ctx.fillStyle=rc[(i+Math.floor(this.frame*0.03))%5]; ctx.fillRect(x+i,y+1+Math.abs(i-2)*0.5|0,1,2);} } }, // 오로라 나무
+      // Dev Culture 2탄
+      c10: { color: '#FACC15', draw: (x, y) => { ctx.fillStyle='#FACC15'; ctx.fillRect(x+1,y+1,3,3); ctx.fillRect(x+2,y,1,1); ctx.fillStyle='#E8A040'; ctx.fillRect(x+3,y+1,1,1); ctx.fillStyle='#2C1810'; ctx.fillRect(x+1,y+2,1,1); } }, // 고무오리
+      c11: { color: '#666', draw: (x, y) => { ctx.fillStyle='#444'; ctx.fillRect(x,y+3,5,1); ctx.fillRect(x+1,y+2,1,1); ctx.fillRect(x+3,y+1,1,2); ctx.fillStyle='#EF4444'; ctx.fillRect(x+2,y+2,1,1); } }, // 세그폴트 균열
+      c12: { color: '#FACC15', draw: (x, y) => { ctx.fillStyle='#FACC15'; ctx.fillRect(x,y,5,5); ctx.fillStyle='#8B6544'; ctx.fillRect(x+1,y+1,3,1); ctx.fillRect(x+1,y+3,2,1); } }, // TODO 메모
+      r08: { color: '#8B6544', draw: (x, y) => { ctx.fillStyle='#8B6544'; ctx.fillRect(x+2,y+2,1,3); ctx.fillRect(x+1,y+3,3,1); ctx.fillStyle='#F5E6D3'; ctx.fillRect(x+1,y,3,2); ctx.fillStyle='#a78bfa'; ctx.fillRect(x+2,y,1,1); } }, // 404 허수아비
+      r09: { color: '#8B6544', draw: (x, y) => { ctx.fillStyle='#F5E6D3'; ctx.fillRect(x+1,y+1,3,3); ctx.fillRect(x+2,y+4,1,1); ctx.fillStyle='#8B6544'; ctx.fillRect(x,y+1,1,3); ctx.fillRect(x+4,y+2,1,1); ctx.fillStyle='#fff'; ctx.globalAlpha=0.4+Math.sin(this.frame*0.06)*0.3; ctx.fillRect(x+1,y,3,1); ctx.globalAlpha=1; } }, // 커피잔
+      e06: { color: '#60a5fa', draw: (x, y) => { ctx.fillStyle='#E8A040'; ctx.fillRect(x,y+2,5,3); ctx.fillRect(x+1,y+1,3,1); ctx.fillRect(x+2,y,1,1); ctx.fillStyle='#60a5fa'; ctx.fillRect(x+1,y+2,1,1); ctx.fillRect(x+3,y+3,1,1); } }, // 스택오버플로우
+      e07: { color: '#5A9E32', draw: (x, y) => { ctx.fillStyle='#8B6544'; ctx.fillRect(x+2,y+2,1,3); ctx.fillStyle='#5A9E32'; ctx.fillRect(x+1,y+1,3,2); ctx.fillStyle='#EF4444'; ctx.fillRect(x+4,y+1,1,2); ctx.fillRect(x+4,y,1,1); ctx.fillStyle='#5A9E32'; ctx.fillRect(x,y,1,2); } }, // Git 가지
+      l04: { color: '#fbbf24', draw: (x, y) => { ctx.fillStyle='#fbbf24'; ctx.fillRect(x+2,y,1,4); ctx.fillRect(x+1,y,1,2); ctx.fillRect(x+1,y+3,2,1); ctx.globalAlpha=0.4+Math.sin(this.frame*0.08)*0.5; ctx.fillStyle='#fff'; ctx.fillRect(x+1,y-1,2,1); ctx.fillRect(x+3,y,1,1); ctx.globalAlpha=1; } }, // 황금 세미콜론
     };
 
     const maxSlots = Math.min(sorted.length, slots.length);
@@ -629,6 +643,79 @@ export class FarmRenderer {
         ctx.fillRect(fx - 1, fy, 1, 1);
         ctx.fillRect(fx + 1, fy, 1, 1);
       }
+    }
+  }
+
+  // ── 모닥불 (연속 코딩) ──
+  private drawBonfire(streakDays: number) {
+    const ctx = this.ctx;
+    const groundY = SKY_TILES * TILE;
+    const farmRight = GRID_OFFSET_X + 4 * CELL_SIZE + 8;
+    const bx = farmRight + 16;
+    const by = groundY + 85;
+
+    // 장작
+    ctx.fillStyle = '#8B6544';
+    ctx.fillRect(bx - 2, by + 3, 6, 2);
+    ctx.fillRect(bx - 1, by + 2, 4, 1);
+
+    if (streakDays >= 30) {
+      // 파란 불꽃 (30일+)
+      ctx.fillStyle = '#60a5fa';
+      ctx.fillRect(bx, by - 3, 2, 5);
+      ctx.fillRect(bx - 1, by - 1, 4, 3);
+      ctx.fillStyle = '#93c5fd';
+      ctx.fillRect(bx, by - 5, 2, 3);
+      ctx.globalAlpha = 0.4 + Math.sin(this.frame * 0.12) * 0.3;
+      ctx.fillStyle = '#bfdbfe';
+      ctx.fillRect(bx - 1, by - 6, 4, 2);
+      ctx.globalAlpha = 1;
+      // 파란 파티클
+      for (let i = 0; i < 3; i++) {
+        const px = bx + Math.sin(this.frame * 0.05 + i * 2) * 4;
+        const py = by - 7 - (this.frame * 0.3 + i * 5) % 10;
+        ctx.fillStyle = '#93c5fd';
+        ctx.globalAlpha = 0.6 - ((this.frame + i * 3) % 10) * 0.06;
+        ctx.fillRect(px, py, 1, 1);
+      }
+      ctx.globalAlpha = 1;
+    } else if (streakDays >= 14) {
+      // 큰 불 (14일+)
+      ctx.fillStyle = '#EF4444';
+      ctx.fillRect(bx, by - 2, 2, 4);
+      ctx.fillRect(bx - 1, by, 4, 2);
+      ctx.fillStyle = '#FACC15';
+      ctx.fillRect(bx, by - 4, 2, 3);
+      ctx.globalAlpha = 0.5 + Math.sin(this.frame * 0.1) * 0.3;
+      ctx.fillStyle = '#FDE68A';
+      ctx.fillRect(bx - 1, by - 5, 4, 2);
+      ctx.globalAlpha = 1;
+    } else if (streakDays >= 7) {
+      // 캠프파이어 (7일+) + 파티클
+      ctx.fillStyle = '#EF4444';
+      ctx.fillRect(bx, by - 1, 2, 3);
+      ctx.fillStyle = '#FACC15';
+      ctx.fillRect(bx, by - 3, 2, 2);
+      // 불꽃 파티클
+      const px = bx + Math.sin(this.frame * 0.08) * 2;
+      const py = by - 4 - (this.frame % 8);
+      ctx.fillStyle = '#FACC15';
+      ctx.globalAlpha = 0.7 - (this.frame % 8) * 0.08;
+      ctx.fillRect(px, py, 1, 1);
+      ctx.globalAlpha = 1;
+    } else if (streakDays >= 3) {
+      // 작은 불 (3일+)
+      ctx.fillStyle = '#EF4444';
+      ctx.fillRect(bx, by, 2, 2);
+      ctx.fillStyle = '#FACC15';
+      ctx.fillRect(bx, by - 1, 1, 1);
+    } else {
+      // 불씨 (1일+)
+      ctx.fillStyle = '#EF4444';
+      ctx.globalAlpha = 0.5 + Math.sin(this.frame * 0.06) * 0.3;
+      ctx.fillRect(bx, by + 1, 1, 1);
+      ctx.fillRect(bx + 1, by, 1, 1);
+      ctx.globalAlpha = 1;
     }
   }
 
@@ -835,7 +922,7 @@ export class FarmRenderer {
   }
 
   // ── 날씨 이펙트 ──
-  private drawWeatherEffects(tod: TimeOfDay) {
+  private drawWeatherEffects(tod: TimeOfDay, weather: FarmWeather = 'clear') {
     const ctx = this.ctx;
 
     if (tod === 'morning') {
@@ -871,6 +958,59 @@ export class FarmRenderer {
       // 따뜻한 오버레이
       ctx.fillStyle = 'rgba(255,152,0,0.08)';
       ctx.fillRect(0, 0, BASE_W, BASE_H);
+    }
+
+    // ── 마이크로 날씨 효과 (일일 결정론적) ──
+    if (weather === 'rain') {
+      // 빗방울 파티클 (12개, 대각선 낙하)
+      ctx.fillStyle = 'rgba(100,181,246,0.6)';
+      for (let i = 0; i < 12; i++) {
+        const rx = (i * 23 + this.frame * 2) % BASE_W;
+        const ry = ((i * 37 + this.frame * 3) % (BASE_H - SKY_TILES * TILE)) + SKY_TILES * TILE;
+        ctx.fillRect(rx, ry, 1, 2);
+      }
+      // 웅덩이 (잔디 위 3개)
+      ctx.fillStyle = 'rgba(100,181,246,0.2)';
+      ctx.fillRect(15, SKY_TILES * TILE + 50, 6, 2);
+      ctx.fillRect(210, SKY_TILES * TILE + 70, 5, 2);
+      ctx.fillRect(30, SKY_TILES * TILE + 100, 7, 2);
+    }
+
+    if (weather === 'snow') {
+      // 눈송이 (8개, 천천히 내림)
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      for (let i = 0; i < 8; i++) {
+        const sx = (i * 31 + Math.sin(this.frame * 0.02 + i) * 15) % BASE_W;
+        const sy = ((i * 29 + this.frame) % (BASE_H - 10)) + 5;
+        ctx.fillRect(Math.round(sx), Math.round(sy), 1, 1);
+      }
+      // 밝은 오버레이
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(0, 0, BASE_W, BASE_H);
+    }
+
+    if (weather === 'fog') {
+      // 안개 오버레이 (반투명 흰색 띠)
+      for (let i = 0; i < 3; i++) {
+        const fy = SKY_TILES * TILE + 20 + i * 40;
+        const alpha = 0.08 + Math.sin(this.frame * 0.01 + i * 2) * 0.04;
+        ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+        ctx.fillRect(0, fy, BASE_W, 15);
+      }
+    }
+
+    if (weather === 'aurora' && tod === 'night') {
+      // 오로라 (하늘에 무지개빛 그라디언트 밴드)
+      const skyH = SKY_TILES * TILE;
+      const auroraColors = ['#4ade80', '#60a5fa', '#a78bfa', '#f472b6', '#fbbf24'];
+      for (let i = 0; i < 5; i++) {
+        const ay = 5 + i * 6 + Math.sin(this.frame * 0.015 + i) * 3;
+        const alpha = 0.15 + Math.sin(this.frame * 0.02 + i * 1.5) * 0.1;
+        ctx.fillStyle = auroraColors[i];
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(0, Math.round(ay), BASE_W, 4);
+      }
+      ctx.globalAlpha = 1;
     }
   }
 

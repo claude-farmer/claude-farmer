@@ -23,6 +23,7 @@ interface FarmCanvasProps {
   ownerAvatarUrl?: string;
   decorations?: { itemId: string; count: number; rarity: 'common' | 'rare' | 'epic' | 'legendary' }[];
   totalWaterReceived?: number;
+  streakDays?: number;
   visitorProfiles?: Map<string, { nickname: string; level?: number; statusText?: string; statusLink?: string; totalHarvests?: number; character?: CharacterAppearance; avatarUrl?: string }>;
   onVisitFarm?: (userId: string) => void;
 }
@@ -48,7 +49,7 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
   { grid, working = false, className, footprints, farmOwnerId, clickToMove = true,
     ownerNickname, ownerLevel, ownerStatusText, ownerStatusLink,
     ownerTotalHarvests, ownerUniqueItems, ownerCharacter, ownerAvatarUrl,
-    decorations, totalWaterReceived, visitorProfiles, onVisitFarm },
+    decorations, totalWaterReceived, streakDays, visitorProfiles, onVisitFarm },
   ref
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -80,7 +81,7 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
     grid, characterWorking: working, footprints, farmOwnerId,
     ownerNickname, ownerLevel, ownerStatusText, ownerStatusLink,
     ownerTotalHarvests, ownerUniqueItems, ownerCharacter, ownerAvatarUrl, visitorProfiles,
-    decorations, totalWaterReceived,
+    decorations, totalWaterReceived, streakDays,
   };
 
   useImperativeHandle(ref, () => ({

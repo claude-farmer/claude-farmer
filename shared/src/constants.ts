@@ -76,6 +76,26 @@ export const DATA_DIR = '.claude-farmer';
 export const STATE_FILE = 'state.json';
 export const ACTIVITY_FILE = 'activity.json';
 
+// ── 날씨 ──
+export type FarmWeather = 'clear' | 'rain' | 'snow' | 'fog' | 'aurora';
+
+export function getFarmWeather(userId: string, date?: string): FarmWeather {
+  const dateStr = date ?? new Date().toISOString().slice(0, 10);
+  // 결정론적 해시: 같은 userId+date = 같은 날씨
+  let hash = 0;
+  const seed = userId + dateStr;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+  }
+  const roll = Math.abs(hash) % 100;
+  // clear(70%), rain(15%), snow(8%), fog(5%), aurora(2%)
+  if (roll < 2) return 'aurora';
+  if (roll < 7) return 'fog';
+  if (roll < 15) return 'snow';
+  if (roll < 30) return 'rain';
+  return 'clear';
+}
+
 // ── 시간대 ──
 export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
 

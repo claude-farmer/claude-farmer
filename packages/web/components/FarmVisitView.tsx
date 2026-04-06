@@ -184,6 +184,7 @@ export default function FarmVisitView({
           ownerCharacter={profile.character}
           ownerAvatarUrl={profile.avatar_url}
           decorations={visitDecorations}
+          streakDays={profile.streak_days}
         />
       </div>
 

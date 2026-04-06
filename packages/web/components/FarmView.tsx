@@ -105,6 +105,7 @@ export default function FarmView({ state, footprints, notifications, serverUniqu
           ownerCharacter={user.character}
           ownerAvatarUrl={user.avatar_url}
           decorations={decorationItems}
+          streakDays={activity.streak_days}
         />
       </div>
 

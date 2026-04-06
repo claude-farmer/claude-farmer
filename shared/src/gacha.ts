@@ -34,9 +34,26 @@ export const GACHA_ITEMS: GachaItem[] = [
   { id: 'l01', name: '황금 해바라기', rarity: 'legendary', description: '반짝이는 금색 해바라기' },
   { id: 'l02', name: '유니콘', rarity: 'legendary', description: '하얀 유니콘. 무지개 뿔' },
   { id: 'l03', name: '오로라 나무', rarity: 'legendary', description: '무지개빛 잎 나무' },
+
+  // ── 개발자 문화 2탄 ──
+  // Common (3종)
+  { id: 'c10', name: '고무오리', rarity: 'common', description: '노란 디버깅 오리' },
+  { id: 'c11', name: '세그폴트', rarity: 'common', description: '바닥의 작은 균열' },
+  { id: 'c12', name: 'TODO 메모', rarity: 'common', description: '노란 포스트잇. TODO 적힘' },
+
+  // Rare (2종)
+  { id: 'r08', name: '404 허수아비', rarity: 'rare', description: '? 표시 허수아비' },
+  { id: 'r09', name: '커피잔', rarity: 'rare', description: '김이 나는 따뜻한 커피' },
+
+  // Epic (2종)
+  { id: 'e06', name: '스택오버플로우', rarity: 'epic', description: '책이 넘치는 탑' },
+  { id: 'e07', name: 'Git 가지', rarity: 'epic', description: '초록+빨강 가지가 갈라지는 나무' },
+
+  // Legendary (1종)
+  { id: 'l04', name: '황금 세미콜론', rarity: 'legendary', description: '반짝이는 거대한 세미콜론' },
 ];
 
-export const TOTAL_ITEMS = GACHA_ITEMS.length; // 24
+export const TOTAL_ITEMS = GACHA_ITEMS.length; // 32
 
 function rollRarity(boost = false): Rarity {
   const weights = boost ? BOOST_RARITY_WEIGHTS : RARITY_WEIGHTS;
