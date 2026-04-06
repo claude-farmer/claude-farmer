@@ -178,6 +178,45 @@ export const DEFAULT_CHARACTER_APPEARANCE: CharacterAppearance = {
   clothesColor: 'blue',
 };
 
+/** github_id 기반 결정론적 캐릭터 외형 생성 (커스텀하지 않은 유저용) */
+export function generateDefaultAppearance(seed: string): CharacterAppearance {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+  }
+  const h = Math.abs(hash);
+
+  const types = CHARACTER_TYPES;
+  const type = types[h % types.length];
+
+  if (type !== 'human') {
+    const clothes = Object.keys(CHARACTER_CLOTHES_COLORS);
+    const eyes: CharacterAppearance['eyeStyle'][] = ['dot', 'round', 'line', 'star', 'closed'];
+    return {
+      type,
+      eyeStyle: eyes[(h >> 4) % eyes.length],
+      clothesColor: clothes[(h >> 8) % clothes.length],
+    };
+  }
+
+  const hairs: CharacterAppearance['hairStyle'][] = ['short', 'long', 'curly', 'ponytail', 'bun', 'spiky', 'bob', 'buzz'];
+  const hairColors = Object.keys(CHARACTER_HAIR_COLORS);
+  const skins: CharacterAppearance['skinTone'][] = ['light', 'medium', 'dark', 'pale'];
+  const eyes: CharacterAppearance['eyeStyle'][] = ['dot', 'round', 'line', 'star', 'closed'];
+  const accs: CharacterAppearance['accessory'][] = ['none', 'none', 'none', 'glasses', 'sunglasses']; // none 확률 높게
+  const clothes = Object.keys(CHARACTER_CLOTHES_COLORS);
+
+  return {
+    type: 'human',
+    hairStyle: hairs[(h >> 3) % hairs.length],
+    hairColor: hairColors[(h >> 6) % hairColors.length],
+    skinTone: skins[(h >> 9) % skins.length],
+    eyeStyle: eyes[(h >> 12) % eyes.length],
+    accessory: accs[(h >> 15) % accs.length],
+    clothesColor: clothes[(h >> 18) % clothes.length],
+  };
+}
+
 export const CHARACTER_HAIR_COLORS: Record<string, { base: string; highlight: string }> = {
   brown:  { base: '#5C3A1E', highlight: '#7A5230' },
   black:  { base: '#2C1810', highlight: '#3E2723' },

@@ -11,7 +11,6 @@ function FarmCarousel({ farms, onVisit }: {
   farms: (PublicProfile & { github_id: string })[];
   onVisit: (id: string) => void;
 }) {
-  const { t } = useLocale();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
 
@@ -57,6 +56,7 @@ function FarmCarousel({ farms, onVisit }: {
             >
               {/* 캐릭터 + 성취 썸네일 */}
               <FarmThumbnail
+                githubId={farm.github_id}
                 character={farm.character}
                 level={farm.level}
                 totalHarvests={farm.total_harvests}
