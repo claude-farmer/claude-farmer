@@ -208,6 +208,21 @@
 
 ---
 
+## 9. README 라이브 임베드 (`/api/og/random`)
+
+### 적용된 것
+- **`/api/og/random` 엣지 라우트** — `global:recent_active` sorted set 상위 100명 중 랜덤 1명 픽
+- 해당 유저의 `/[username]/og` PNG를 fetch해서 **응답 body 스트림 그대로 프록시**
+- README 헤더에 `[![](url)](link)` + `<sub>` 캡션으로 임베드
+- Cache-Control `max-age=600 s-maxage=600 stale-while-revalidate=300` → CDN 10분 캐시 + Camo 회전
+
+### 실패/시행착오
+- 처음에 `max-age=0`으로 설정했더니 GitHub Camo가 캐싱하지 않고 이미지 표시 거부 → 600초로 늘려서 해결
+- 처음엔 redirect로 구현하려 했으나 Camo가 redirect 따라간 후 그 final URL을 캐싱해서 같은 이미지에 고정될 수 있어서 stream 프록시로 변경
+- Redis 비어있을 때 fallback 필요 → site-level `/og`로 302
+
+---
+
 ## 핵심 교훈
 
 ### Satori (next/og)

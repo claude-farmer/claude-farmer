@@ -225,6 +225,7 @@ The web app is built around a single profile page at `/@username` (rewritten via
 | `/api/explore/wave` | GET | Wave surf: random bookmark from target user |
 | `/api/subscribe` | POST | Email subscription + welcome email |
 | `/[username]/og` | GET | Per-user OG card (Satori, edge runtime, ASCII-safe text + pixel art via CanvasRecorder shim) |
+| `/api/og/random` | GET | Stream a random active user's OG card (used by README embed; cache 10 min so GitHub Camo rotates over time) |
 
 All API routes (web/CLI/VSCode) use `extractUserId(request, bodyFrom?)` from `lib/session.ts` — verifies HMAC-signed `cf_session` cookie first, falls back to body `from`/`github_id` for CLI/VSCode.
 
