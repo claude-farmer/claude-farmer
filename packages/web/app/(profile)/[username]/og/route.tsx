@@ -2,6 +2,7 @@ import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 import { redis, keys } from '@/lib/redis';
 import { getThumbnailRects } from '@/canvas/thumbnailRects';
+import { getThumbnailSkyTheme } from '@/canvas/thumbnailScene';
 import type { PublicProfile } from '@claude-farmer/shared';
 
 export const runtime = 'edge';
@@ -15,9 +16,6 @@ function asciiSafe(s: string | undefined | null, max = 80): string {
 const W = 1200;
 const H = 630;
 const THUMB_PX = 64;
-const THUMB_SCALE = W / THUMB_PX; // 18.75 → 1200×1200 cover
-const THUMB_DRAWN = THUMB_PX * THUMB_SCALE; // 1200
-const THUMB_OFFSET_Y = (H - THUMB_DRAWN) / 2; // -285 (crop top/bottom)
 
 // 텍스트 비율 1 / 1.3 / 1.5 (base 36)
 const FS_BASE = 36;
@@ -26,13 +24,13 @@ const FS_HANDLE = Math.round(FS_BASE * 1.3); // 47 (1.3×)
 const FS_NICK = Math.round(FS_BASE * 1.5); // 54 (1.5×)
 const FS_URL = 30;
 
-// 우측 카드 썸네일 (텍스트 영역과 동일 높이)
-const TOP_PAD = 56;
-const BOTTOM_RESERVED = 120; // 하단 로고 영역
-const CARD_SIZE = H - TOP_PAD - BOTTOM_RESERVED; // 454
-const CARD_X = W - CARD_SIZE - 56; // 690
-const CARD_Y = TOP_PAD; // 56
-const CARD_SCALE = CARD_SIZE / THUMB_PX; // ~7.09
+// 우측 카드 썸네일 (텍스트 영역과 동일 높이, 살짝 더 크게)
+const TOP_PAD = 40;
+const BOTTOM_RESERVED = 100; // 하단 로고 영역
+const CARD_SIZE = H - TOP_PAD - BOTTOM_RESERVED; // 490
+const CARD_X = W - CARD_SIZE - 40; // 670
+const CARD_Y = TOP_PAD; // 40
+const CARD_SCALE = CARD_SIZE / THUMB_PX; // ~7.66
 
 function homeFallback() {
   return new ImageResponse(
@@ -94,6 +92,10 @@ export async function GET(
     inventory: profile.inventory ?? [],
   }, 16);
 
+  // 배경: 사용자 sky 테마 기반 그라데이션 (블러 대용 - Satori filter:blur 미동작)
+  const sky = getThumbnailSkyTheme(username);
+  const bgGradient = `linear-gradient(135deg, ${sky.top} 0%, ${sky.bot} 35%, #1a2f1a 70%, #0f1117 100%)`;
+
   return new ImageResponse(
     (
       <div
@@ -102,38 +104,11 @@ export async function GET(
           height: H,
           display: 'flex',
           position: 'relative',
-          background: '#0f1117',
+          background: bgGradient,
           fontFamily: 'sans-serif',
           overflow: 'hidden',
         }}
       >
-        {/* 풀 캔버스 썸네일 (cover-crop + 블러 배경) */}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            width: W,
-            height: H,
-            filter: 'blur(20px)',
-          }}
-        >
-          {rects.map((r, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                left: Math.round(r.x * THUMB_SCALE),
-                top: Math.round(r.y * THUMB_SCALE + THUMB_OFFSET_Y),
-                width: Math.ceil(r.w * THUMB_SCALE) + 1,
-                height: Math.ceil(r.h * THUMB_SCALE) + 1,
-                backgroundColor: r.color,
-                opacity: r.opacity,
-              }}
-            />
-          ))}
-        </div>
 
         {/* 우측 그라데이션 (텍스트 가독성 보장) */}
         <div
@@ -199,10 +174,11 @@ export async function GET(
             flexDirection: 'column',
             position: 'absolute',
             left: 56,
-            top: 56,
+            top: TOP_PAD,
             width: CARD_X - 56 - 32,
-            maxHeight: H - 56 - 120,
+            maxHeight: CARD_SIZE,
             overflow: 'hidden',
+            justifyContent: 'flex-start',
           }}
         >
           <div style={{ display: 'flex', fontSize: FS_NICK, fontWeight: 900, color: '#ffffff', lineHeight: 1.1 }}>

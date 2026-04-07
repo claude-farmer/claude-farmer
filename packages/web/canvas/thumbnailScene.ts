@@ -8,12 +8,17 @@ import type { CharacterAppearance, InventoryItem } from '@claude-farmer/shared';
 
 export const THUMBNAIL_SIZE = 64;
 
-const SKY_THEMES = [
+export const THUMBNAIL_SKY_THEMES = [
   { top: '#2D1B4E', bot: '#4A2B6B' },
   { top: '#1B2838', bot: '#2a3a4a' },
   { top: '#3B1929', bot: '#6B3040' },
   { top: '#1A2F1A', bot: '#2A4A2A' },
 ];
+const SKY_THEMES = THUMBNAIL_SKY_THEMES;
+
+export function getThumbnailSkyTheme(githubId: string) {
+  return SKY_THEMES[(githubId.charCodeAt(0) ?? 0) % SKY_THEMES.length];
+}
 
 export function getThumbnailTier(level: number, uniqueItems: number, streakDays: number): number {
   const score = level * 10 + uniqueItems * 5 + streakDays * 2;
