@@ -72,12 +72,17 @@ export default function ShareModal({ username, nickname, onClose }: ShareModalPr
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2">
-          <span className="font-bold text-sm flex items-center gap-2">
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)]">
+          <span className="h-8 flex items-center gap-2 text-sm font-bold flex-1 min-w-0">
             <Icon name="share" size={18} />
             {locale === 'ko' ? '공유' : 'Share'}
           </span>
-          <button onClick={onClose} className="opacity-40 hover:opacity-100">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="shrink-0 h-8 w-8 flex items-center justify-center border border-[var(--border)] rounded-lg hover:bg-[var(--bg)] hover:border-[var(--accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          >
             <Icon name="close" size={18} />
           </button>
         </div>

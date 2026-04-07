@@ -67,12 +67,17 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
       <div className="max-w-md mx-auto w-full flex-1 flex flex-col bg-[var(--bg)] shadow-2xl border-x border-[var(--border)]" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <header className="sticky top-0 z-10 bg-[var(--bg)] border-b border-[var(--border)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-          <div className="flex items-center justify-between px-4 py-2">
-            <span className="text-sm font-bold flex items-center gap-2">
+          <div className="flex items-center gap-2 px-3 py-2">
+            <span className="h-8 flex items-center gap-2 text-sm font-bold flex-1 min-w-0">
               <Icon name="explore" size={18} />
               {t.exploreTitle}
             </span>
-            <button onClick={onClose} className="opacity-40 hover:opacity-100 p-1">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="shrink-0 h-8 w-8 flex items-center justify-center border border-[var(--border)] rounded-lg hover:bg-[var(--card)] hover:border-[var(--accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            >
               <Icon name="close" size={18} />
             </button>
           </div>
@@ -89,12 +94,14 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
                 placeholder={t.searchPlaceholder}
                 autoFocus
-                className="flex-1 bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
+                className="flex-1 h-9 bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 text-sm focus:outline-none focus:border-[var(--accent)]"
               />
               <button
+                type="button"
                 onClick={handleSearch}
                 disabled={searchLoading || searchQuery.trim().length < 2}
-                className="bg-[var(--accent)] text-black font-bold rounded-lg px-4 py-2 text-sm disabled:opacity-50 flex items-center"
+                aria-label={t.exploreTitle}
+                className="shrink-0 h-9 w-9 flex items-center justify-center border border-[var(--border)] rounded-lg hover:bg-[var(--card)] hover:border-[var(--accent)] transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
               >
                 <Icon name="search" size={18} />
               </button>
