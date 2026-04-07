@@ -1,4 +1,4 @@
-import type { PublicProfile, FarmNotifications, Footprint, CharacterAppearance, GuestbookEntry } from '@claude-farmer/shared';
+import type { PublicProfile, Footprint, CharacterAppearance, GuestbookEntry } from '@claude-farmer/shared';
 
 const BASE = '';
 
@@ -23,19 +23,6 @@ export async function fetchFarm(id: string): Promise<PublicProfile | null> {
     return await res.json();
   } catch {
     return null;
-  }
-}
-
-export async function syncFarm(data: Record<string, unknown>): Promise<boolean> {
-  try {
-    const res = await fetch(`${BASE}/api/farm/sync`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return res.ok;
-  } catch {
-    return false;
   }
 }
 
@@ -78,16 +65,6 @@ export async function visitFarm(farmOwnerId: string): Promise<boolean> {
     return res.ok;
   } catch {
     return false;
-  }
-}
-
-export async function fetchNotifications(userId: string): Promise<FarmNotifications | null> {
-  try {
-    const res = await fetch(`${BASE}/api/farm/${userId}/notifications`);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
   }
 }
 
