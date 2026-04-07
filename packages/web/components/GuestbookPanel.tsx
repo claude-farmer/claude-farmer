@@ -57,9 +57,10 @@ export function guestbookTypeLabel(entry: GuestbookEntry, locale: 'ko' | 'en'): 
 }
 
 export function GuestbookEntryItem({
-  entry, onVisitUser,
+  entry, count = 1, onVisitUser,
 }: {
   entry: GuestbookEntry;
+  count?: number;
   onVisitUser?: (userId: string) => void;
 }) {
   const { locale } = useLocale();
@@ -89,6 +90,11 @@ export function GuestbookEntryItem({
           </span>
           <span className="opacity-40">·</span>
           <span className="opacity-40">{timeAgo(entry.at)}</span>
+          {count > 1 && (
+            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full bg-[var(--bg)] border border-[var(--border)] text-[10px] font-bold text-[var(--accent)]">
+              +{count - 1}
+            </span>
+          )}
         </div>
         {(entry.message || entry.link) && (
           <div className="mt-1.5 inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm overflow-hidden">
@@ -134,7 +140,24 @@ export default function GuestbookPanel({
     });
   }, [farmId, refreshKey]);
 
-  const visible = entries.slice(0, limit);
+  // 연속된 동일 항목 그룹핑 (같은 사용자 + 같은 액션 + 같은 메시지/아이템)
+  const grouped: { entry: GuestbookEntry; count: number }[] = [];
+  for (const e of entries) {
+    const last = grouped[grouped.length - 1];
+    if (
+      last &&
+      last.entry.from_id === e.from_id &&
+      last.entry.type === e.type &&
+      last.entry.item_id === e.item_id &&
+      last.entry.message === e.message &&
+      last.entry.link === e.link
+    ) {
+      last.count++;
+    } else {
+      grouped.push({ entry: e, count: 1 });
+    }
+  }
+  const visible = grouped.slice(0, limit);
 
   return (
     <Card
@@ -183,8 +206,8 @@ export default function GuestbookPanel({
           <div className="text-center py-4 opacity-40 text-sm">{t.guestbookEmpty}</div>
         ) : (
           <div className="space-y-4">
-            {visible.map((entry, i) => (
-              <GuestbookEntryItem key={i} entry={entry} onVisitUser={onVisitUser} />
+            {visible.map((g, i) => (
+              <GuestbookEntryItem key={i} entry={g.entry} count={g.count} onVisitUser={onVisitUser} />
             ))}
           </div>
         )}
