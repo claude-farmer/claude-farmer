@@ -102,16 +102,16 @@ const ShareCanvas = forwardRef<ShareCanvasHandle, ShareCanvasProps>(function Sha
     // ── 하단: 닉네임 + 통계 + 상태 ──
     const bottomY = 130 + THUMB_DRAWN + 40;
 
-    // 닉네임 + Lv
+    // 닉네임
     ctx.fillStyle = '#e5e7eb';
     ctx.font = 'bold 36px -apple-system, "Segoe UI", "Apple SD Gothic Neo", sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(nickname, 48, bottomY);
+    const nickW = ctx.measureText(nickname).width;
 
-    // Lv 칩
+    // Lv 칩 (닉네임 측정 후 폰트 변경)
     ctx.fillStyle = '#9ca3af';
     ctx.font = '24px -apple-system, "Segoe UI", "Apple SD Gothic Neo", sans-serif';
-    const nickW = ctx.measureText(nickname).width;
     ctx.fillText(`Lv.${level}`, 48 + nickW + 16, bottomY);
 
     // 통계 row
