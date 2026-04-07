@@ -133,40 +133,24 @@ export async function GET(
             background: 'linear-gradient(135deg, #1a1d27 0%, #0f1117 100%)',
           }}
         >
-          {/* 상단: 브랜드 + 말풍선 (있을 때만) */}
+          {/* 상단: 말풍선 (있을 때만) */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', fontSize: 22, color: '#6b7280', fontWeight: 700, marginBottom: 28 }}>
-              CLAUDE FARMER
-            </div>
             {status && (
-              <div style={{ display: 'flex', position: 'relative' }}>
-                {/* Tail (좌측, 썸네일 향함) */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: -16,
-                    top: 28,
-                    width: 22,
-                    height: 26,
-                    display: 'flex',
-                    backgroundColor: '#ffffff',
-                    clipPath: 'polygon(100% 0%, 100% 100%, 0% 50%)',
-                  }}
-                />
-                {/* 본체 */}
-                <div
-                  style={{
-                    display: 'flex',
-                    maxWidth: RIGHT_W - 96,
-                    backgroundColor: '#ffffff',
-                    color: '#0f1117',
-                    borderRadius: 24,
-                    padding: '24px 30px',
-                  }}
-                >
-                  <div style={{ display: 'flex', fontSize: 32, color: '#0f1117', lineHeight: 1.35 }}>
-                    {status}
-                  </div>
+              <div
+                style={{
+                  display: 'flex',
+                  maxWidth: RIGHT_W - 96,
+                  backgroundColor: '#ffffff',
+                  color: '#0f1117',
+                  borderTopLeftRadius: 0,
+                  borderTopRightRadius: 28,
+                  borderBottomLeftRadius: 28,
+                  borderBottomRightRadius: 28,
+                  padding: '24px 30px',
+                }}
+              >
+                <div style={{ display: 'flex', fontSize: 32, color: '#0f1117', lineHeight: 1.35 }}>
+                  {status}
                 </div>
               </div>
             )}
