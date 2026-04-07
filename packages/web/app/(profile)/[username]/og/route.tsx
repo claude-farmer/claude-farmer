@@ -125,7 +125,7 @@ export async function GET(
           ))}
         </div>
 
-        {/* 우측 상단: 말풍선 (썸네일 상단 정렬) */}
+        {/* 우측 상단: 말풍선 (썸네일 상단 정렬, 좌측 tail) */}
         {status && (
           <div
             style={{
@@ -134,14 +134,46 @@ export async function GET(
               top: THUMB_Y,
               maxWidth: RIGHT_W,
               display: 'flex',
-              backgroundColor: '#1a1d27',
-              border: '2px solid #fbbf24',
-              borderRadius: 24,
-              padding: '24px 32px',
             }}
           >
-            <div style={{ display: 'flex', fontSize: 28, color: '#e5e7eb', lineHeight: 1.3 }}>
-              &ldquo;{status}&rdquo;
+            {/* Tail (썸네일 쪽으로 향함) */}
+            <div
+              style={{
+                position: 'absolute',
+                left: -18,
+                top: 36,
+                width: 22,
+                height: 28,
+                display: 'flex',
+                backgroundColor: '#fbbf24',
+                clipPath: 'polygon(0% 50%, 100% 0%, 100% 100%)',
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                left: -14,
+                top: 38,
+                width: 20,
+                height: 24,
+                display: 'flex',
+                backgroundColor: '#1a1d27',
+                clipPath: 'polygon(0% 50%, 100% 0%, 100% 100%)',
+              }}
+            />
+            {/* 본체 */}
+            <div
+              style={{
+                display: 'flex',
+                backgroundColor: '#1a1d27',
+                border: '2px solid #fbbf24',
+                borderRadius: 32,
+                padding: '32px 40px',
+              }}
+            >
+              <div style={{ display: 'flex', fontSize: 42, color: '#e5e7eb', lineHeight: 1.3 }}>
+                {status}
+              </div>
             </div>
           </div>
         )}
@@ -157,11 +189,11 @@ export async function GET(
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-end',
-            padding: '24px 0',
+            padding: '24px 40px',
             background: 'linear-gradient(to bottom, rgba(15,17,23,0) 0%, rgba(15,17,23,0.85) 40%, rgba(15,17,23,1) 100%)',
           }}
         >
-          <div style={{ display: 'flex', fontSize: 56, fontWeight: 900, color: '#e5e7eb', letterSpacing: '-0.01em' }}>
+          <div style={{ display: 'flex', fontSize: 56, fontWeight: 900, color: '#e5e7eb' }}>
             {nickname}
           </div>
           <div style={{ display: 'flex', fontSize: 26, color: '#9ca3af', marginTop: 8 }}>
