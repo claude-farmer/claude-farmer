@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useLocale } from '@/lib/locale-context';
+import Icon from './Icon';
 
 interface AboutModalProps {
   onClose: () => void;
@@ -29,9 +30,19 @@ export default function AboutModal({ onClose }: AboutModalProps) {
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border)]">
-          <span className="font-bold text-sm">🌱 {locale === 'ko' ? '소개' : 'About'}</span>
-          <button onClick={onClose} className="text-xs opacity-40 hover:opacity-100">✕</button>
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)]">
+          <span className="h-8 flex items-center gap-2 text-sm font-bold flex-1 min-w-0">
+            <Icon name="info" size={18} />
+            {locale === 'ko' ? '소개' : 'About'}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="shrink-0 h-8 w-8 flex items-center justify-center border border-[var(--border)] rounded-lg hover:bg-[var(--card)] hover:border-[var(--accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          >
+            <Icon name="close" size={18} />
+          </button>
         </div>
 
         {/* Hero */}
