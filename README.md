@@ -8,6 +8,8 @@ An idle pixel-art farming game powered by Claude Code. You write code, crops pop
 [![VSCode Marketplace](https://img.shields.io/visual-studio-marketplace/v/doribear.claude-farmer-vscode)](https://marketplace.visualstudio.com/items?itemName=doribear.claude-farmer-vscode)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
+[![A random farm from claudefarmer.com](https://claudefarmer.com/api/og/random)](https://claudefarmer.com)
+
 ## Wait, What?
 
 You install it. You code. A farm appears. That's it.
