@@ -43,29 +43,41 @@ claude-farmer/
 │   │       └── sync/          → Server sync (claudefarmer.com API)
 │   ├── web/             → @claude-farmer/web (Next.js, claudefarmer.com)
 │   │   ├── app/               → Next.js App Router pages
-│   │   │   ├── page.tsx       → Landing page (subscribe form, EN/KO toggle)
-│   │   │   ├── farm/          → /farm app (real data when logged in, demo otherwise)
-│   │   │   ├── og/            → Dynamic OG image generation
+│   │   │   ├── page.tsx       → Landing page (subscribe form, EN/KO toggle, SearchModal CTA)
+│   │   │   ├── farm/          → /farm redirects to /@me for logged-in users
+│   │   │   ├── (profile)/[username]/
+│   │   │   │   ├── layout.tsx → Server: generateMetadata + ProfilePage JSON-LD
+│   │   │   │   ├── page.tsx   → Profile page (Card-based, modals, replaces old tabs)
+│   │   │   │   └── og/route.tsx → Per-user OG image (Satori, edge runtime)
+│   │   │   ├── og/            → Site-wide default OG image
+│   │   │   ├── sitemap.ts     → Dynamic sitemap incl. active profiles from Redis
+│   │   │   ├── robots.ts      → robots.txt + sitemap reference
+│   │   │   ├── not-found.tsx  → 404 → redirect to home
 │   │   │   └── api/
 │   │   │       ├── auth/      → login, callback (GitHub OAuth), session, logout
-│   │   │       ├── farm/      → sync, status, [id] (profile+footprints), [id]/notifications, [id]/visit
-│   │   │       ├── water/     → Watering (5-min cooldown, optional crop_slot)
+│   │   │       ├── farm/      → sync, status, [id] (profile+footprints), [id]/notifications, [id]/visit, [id]/guestbook, [id]/rankings
+│   │   │       ├── water/     → Watering (5-min cooldown), water/cooldown (GET remaining)
 │   │   │       ├── gift/      → Gift gacha items to other farms
-│   │   │       ├── explore/   → Random user discovery + wave surf
+│   │   │       ├── bookmarks/ → List/toggle bookmarks
+│   │   │       ├── explore/   → Random + recent user discovery + wave surf + search
 │   │   │       └── subscribe/ → Email subscription (Resend)
-│   │   ├── components/        → FarmView, BagView, ExploreView, TabBar, FarmCanvas, GuestbookPanel, GiftPicker
+│   │   ├── middleware.ts      → Rewrites /@username → /[username]
+│   │   ├── components/        → Card primitive, FarmCanvas, FarmThumbnail, GuestbookPanel, GuestbookModal, RankingsModal, ShareCanvas, ShareModal, SearchModal, AboutModal, StatusEditModal, MenuDropdown, GiftPicker, BagView, DiscoverCarousel, CharacterEditor, Icon
 │   │   ├── hooks/
 │   │   │   └── usePolling.ts  → 30s polling hook (visibility-aware)
 │   │   ├── canvas/            → Pixel art rendering engine
 │   │   │   ├── palette.ts     → Color palette
 │   │   │   ├── sprites.ts     → 16×16 sprite data (defined in code)
-│   │   │   └── renderer.ts    → FarmRenderer class (Canvas 2D, footprints, water anims)
+│   │   │   ├── character.ts   → composeCharacterSprite (pure)
+│   │   │   ├── renderer.ts    → FarmRenderer class (FarmCanvas, footprints, water anims)
+│   │   │   ├── thumbnailScene.ts → 64×64 thumbnail pure draw fn (shared by FarmThumbnail + ShareCanvas)
+│   │   │   └── thumbnailRects.ts → CanvasRecorder shim → rect list (used by Satori OG route)
 │   │   └── lib/
-│   │       ├── redis.ts       → Upstash Redis client (lazy init)
-│   │       ├── api.ts         → Client API functions (session, farm, water, etc.)
+│   │       ├── redis.ts       → Upstash Redis client (lazy init) + key namespaces
+│   │       ├── session.ts     → HMAC-signed session sign/verify + extractUserId
+│   │       ├── api.ts         → Client API functions (session, farm, water, rankings, etc.)
 │   │       ├── i18n.ts        → Web-specific translation dict + detectLocale()
-│   │       ├── locale-context.tsx → React context provider + useLocale() hook
-│   │       └── mock-data.ts   → Dev/demo mock data
+│   │       └── locale-context.tsx → React context provider + useLocale() hook
 │   └── vscode/          → claude-farmer-vscode (VSCode Marketplace)
 │       ├── src/extension.ts   → FarmViewProvider (Webview), editor activity detection, OAuth URI handler
 │       ├── icon.png           → Marketplace icon (128×128)
@@ -160,12 +172,28 @@ Collecting duplicates of the same item triggers automatic evolution tiers:
 - **CLI**: Auto-detect via `$LANG` env var + `claude-farmer config --lang ko|en`
 - Shared translation module: `shared/src/i18n.ts`
 
-## Web UI Screens (4)
+## Web UI (Profile-Page Centric)
 
-1. **Farm** — Canvas 2D pixel art (256×192, 4× scale), time-based background, notifications
-2. **Codex** — Rarity-grouped progress bars + item grid (obtained/locked)
-3. **Explore** — Neighbors (mutual bookmarks) + bookmarks + random visit + user search
-4. **Farm Visit** — View another user's farm, water (5-min cooldown), gift items, guestbook, wave surf, bookmark
+The web app is built around a single profile page at `/@username` (rewritten via middleware to `/(profile)/[username]`). Old tab-based UI removed in favor of one scrollable Card-based page + bottom-sheet modals.
+
+### Profile Page Cards (Header / Body / Footer pattern)
+1. **Today** (own farm only, top, conditional) — input chars / harvests / water given
+2. **Profile Card** — header: 농부 칭호 + 🔥 streak / right: carved-out 🔖 bookmark · body: chat-style status bubble (avatar + nickname · time + rounded bubble + link footer) · footer: ✏️ edit (own) or none
+3. **Records** — 4-col stats row (Harvests / Codex % / Visitors / Watered)
+4. **Compact Codex** (own only) — single-line emoji preview + "View all"
+5. **Guestbook** — chat-style entries (max 5, grouped consecutive same-user) · header right: count chips (🎁 / 💧 / ✍️) → modal · footer: 💧 water + 🎁 gift (visit only) · body hint
+6. **DiscoverCarousel** — Neighbors / Discover thumbnails
+
+### Bottom-Sheet Modals
+- **SearchModal** — Recent (3) / Discover (6) / Neighbors / search by GitHub ID or nickname
+- **ShareModal** — Client-side `<ShareCanvas>` (800×800 PNG) + copy/save/share
+- **GuestbookModal** — Full scrollable entry list
+- **RankingsModal** — Per-user water/gift cumulative ranking (tabs)
+- **AboutModal**, **StatusEditModal**, **CharacterEditor**, **GiftPicker**, **BagView** (codex)
+
+### Header Navigation (h-8 GitHub-style outline)
+- Left: hamburger (app menu: About, Language) + visited profile (avatar + nickname + Lv)
+- Right: search · share · my-account avatar (account menu: Edit, Character, Logout) or Login button
 
 ## VSCode Extension Screens (2 tabs)
 
@@ -182,18 +210,23 @@ Collecting duplicates of the same item triggers automatic evolution tiers:
 | `/api/auth/logout` | POST | Delete session cookie |
 | `/api/farm/sync` | POST | CLI → server full profile sync (inventory, activity, stats) |
 | `/api/farm/status` | POST | Update own status message (session/body auth) |
-| `/api/farm/[id]` | GET | Public profile lookup (includes footprints) |
+| `/api/farm/[id]` | GET | Public profile lookup (incl. footprints, total_visitors/bookmarks/water) |
 | `/api/farm/[id]/notifications` | GET | Farm notifications (visitors, water received) |
-| `/api/farm/[id]/visit` | POST | Record farm visit (session auth) |
-| `/api/water` | POST | Water a user's farm (5-min cooldown, optional crop_slot) |
-| `/api/gift` | POST | Gift a gacha item to another farm |
-| `/api/explore` | GET | Random user discovery |
+| `/api/farm/[id]/visit` | POST | Record farm visit (always increments visit count) |
+| `/api/farm/[id]/guestbook` | GET | Guestbook entries + total_water + total_gifts received |
+| `/api/farm/[id]/rankings` | GET | Per-user water/gift cumulative ranking (top 20) |
+| `/api/water` | POST | Water a user's farm (5-min cooldown, sender link snapshot) |
+| `/api/water/cooldown` | GET | Current user's water cooldown remaining seconds |
+| `/api/gift` | POST | Gift a gacha item (sender link snapshot, gift count incr) |
+| `/api/bookmarks` | GET | List bookmarked profiles + neighbor flag (session auth) |
+| `/api/bookmarks` | POST | Add/remove bookmark + total_bookmarks counter |
+| `/api/explore` | GET | User discovery (`?sort=random` or `?sort=recent`, default random) |
 | `/api/explore/search` | GET | Search users by GitHub ID or nickname |
 | `/api/explore/wave` | GET | Wave surf: random bookmark from target user |
-| `/api/farm/[id]/guestbook` | GET | Farm guestbook entries (visit/water/gift records) |
-| `/api/bookmarks` | GET | List bookmarked user profiles + neighbor status (session auth) |
-| `/api/bookmarks` | POST | Add/remove bookmark (session auth) |
 | `/api/subscribe` | POST | Email subscription + welcome email |
+| `/[username]/og` | GET | Per-user OG card (Satori, edge runtime, ASCII-safe text + pixel art via CanvasRecorder shim) |
+
+All API routes (web/CLI/VSCode) use `extractUserId(request, bodyFrom?)` from `lib/session.ts` — verifies HMAC-signed `cf_session` cookie first, falls back to body `from`/`github_id` for CLI/VSCode.
 
 ## Social System ("Ghost Visits")
 
@@ -203,7 +236,21 @@ Collecting duplicates of the same item triggers automatic evolution tiers:
 - **Water bonus**: Water log recorded server-side, actual growth applied on CLI's next turn (no sync conflict)
 - **Notifications**: CLI shows social notifications on `claude-farmer farm`; Web polls `/notifications`
 - **Hover tooltip**: Mouse over footprints shows visitor nickname + time
-- **Redis keys**: `farm:{id}:visitors` (sorted set), `farm:{id}:footprints` (hash), `farm:{id}:water_detail:{date}` (sorted set), `farm:{id}:guestbook` (sorted set, max 100), `farm:{id}:total_water_received` (integer), `farm:{id}:gifts` (hash), `user:{id}:water_cooldown` (string, 5min TTL)
+- **Redis keys**:
+  - `farm:{id}:visitors` (sorted set, 24h)
+  - `farm:{id}:footprints` (hash, 24h)
+  - `farm:{id}:water_detail:{date}` (sorted set, daily)
+  - `farm:{id}:guestbook` (sorted set, max 100, includes link snapshot)
+  - `farm:{id}:total_visitors` (counter, increments every visit)
+  - `farm:{id}:total_water_received` (counter)
+  - `farm:{id}:total_gifts_received` (counter)
+  - `farm:{id}:total_bookmarks` (counter, ±1 on bookmark add/remove)
+  - `farm:{id}:water_by_user` (sorted set, member=user_id score=count, ranking)
+  - `farm:{id}:gifts_by_user` (sorted set, member=user_id score=count, ranking)
+  - `farm:{id}:gifts` (hash, item_id → count)
+  - `user:{id}:bookmarks` (set)
+  - `user:{id}:water_cooldown` (string, 5min TTL)
+  - `global:recent_active` (sorted set, score=last_active timestamp, used by sitemap & explore)
 - **Nickname index**: `global:nickname_index` (hash, `nickname_lowercase → github_id`) — updated on sync, used for user search
 
 ## Farmer Title (Activity Badge)
@@ -255,13 +302,23 @@ Web reads from server on login and polls every 30s. VSCode reads local state dir
 
 ## Guestbook (방명록)
 
-- Chat-like log of visit/water/gift records on each farm
-- Entries created automatically when visiting, watering, or gifting
-- Stores visitor's status_message as speech bubble
+- Chat-style log of visit/water/gift records, rendered with avatar + name·time + speech bubble
+- Each entry stores a snapshot of visitor's `status_message.text` AND `status_message.link` at action time (`GuestbookEntry.message` + `link?`)
+- Card body limited to 5 entries; full list via `GuestbookModal` opened from header `✍️ N` chip
+- Header right also shows `🎁 N` (total gifts) and `💧 M` (total water) chips → opens `RankingsModal`
+- Consecutive same-user same-content entries grouped: type counts shown as `🎁 ×3 · 💧 ×2`
+- Body footer: `💧 water` + `🎁 gift` action buttons (visit + logged-in)
+- Body bottom hint encouraging visit/water/gift interaction
 - Redis: `farm:{id}:guestbook` (sorted set, max 100 entries, newest first)
-- API: `GET /api/farm/[id]/guestbook` returns entries + total water received
-- Shown on both FarmVisitView and FarmView (own farm)
-- Visit records deduped per visitor per hour
+- API: `GET /api/farm/[id]/guestbook` returns entries + `total_water_received` + `total_gifts_received`
+
+## Per-User Rankings
+
+- Cumulative water/gift contributions tracked in sorted sets (`farm:{id}:water_by_user`, `farm:{id}:gifts_by_user`)
+- `ZINCRBY` on each water/gift action
+- `GET /api/farm/[id]/rankings` returns top 20 contributors per category with profile enrichment
+- `RankingsModal` (water/gifts tabs) accessible from guestbook count chips
+- Spirit: thank-you wall, not competitive leaderboard (see INVARIANTS decision log)
 
 ## Gift System (선물)
 
@@ -304,6 +361,41 @@ Web reads from server on login and polls every 30s. VSCode reads local state dir
 - Purely visual — no gameplay effects
 - Helper: `getFarmWeather()` in `shared/src/constants.ts`
 
+## Share / OG Image System
+
+Two parallel rendering paths share the same 64×64 pixel-art scene logic but target different runtimes:
+
+### `canvas/thumbnailScene.ts` (pure)
+- `prepareThumbnailScene(opts)` + `renderThumbnailFrame(ctx, scene, frame)`
+- Draws character + background + items + decorations + tier border using `fillRect` calls
+- Reused by `FarmThumbnail.tsx`, `ShareCanvas.tsx`, and indirectly by `thumbnailRects.ts`
+
+### Client-side share image (`components/ShareCanvas.tsx`)
+- 800×800 PNG generated in browser via Canvas2D
+- 64×64 thumbnail rendered offscreen, then 8× nearest-neighbor blit (512×512) onto the share canvas
+- Adds nickname/stats/URL with system fonts (CJK/emoji safe)
+- Exposes `getBlob()` via `useImperativeHandle` for `ShareModal` download / `navigator.share({files})`
+
+### Server-side OG image (`app/(profile)/[username]/og/route.tsx`)
+- Edge runtime + `next/og` ImageResponse (Satori under the hood)
+- Satori cannot run Canvas2D, has fragile CSS support, and silently fails on CJK text / external `<img>` / `filter: blur()` / italic / letterSpacing
+- **Workaround**: `canvas/thumbnailRects.ts` defines a `CanvasRecorder` shim with the same interface as `CanvasRenderingContext2D` (`fillStyle`/`fillRect`/`clearRect`/`globalAlpha`/`createLinearGradient`). `renderThumbnailFrame()` is run against this recorder, accumulating ~200-400 `{x,y,w,h,color,opacity}` rects. The route then renders each rect as an absolute-positioned `<div>` in the Satori JSX
+- ASCII-safe text (`asciiSafe()` strips non-ASCII), no external images, all div with explicit `display: 'flex'`
+- Cache-Control short TTL (1 hour, not 1 year) so any failure self-heals; cache-buster `?v={last_active}` in metadata URL
+- Fallback handler returns a generic Claude Farmer card if profile is missing
+- Layout: 550×550 rounded-square thumbnail card on the right, left text group (nickname 1.5× / @username 1.3× / blockquote-style status 1× with yellow left border), bottom-left URL, sky-theme gradient background
+- See [docs/PROFILE_REDESIGN_LOG.md](docs/PROFILE_REDESIGN_LOG.md) for the full iteration history and Satori failure modes
+
+### Profile Page Metadata (`app/(profile)/[username]/layout.tsx`)
+- Server component exporting `generateMetadata` with per-user title (50–60 chars) / description (110–160 chars) / `openGraph` / `twitter` cards
+- Default export injects ProfilePage JSON-LD (`mainEntity: Person { name, image, identifier }` + `primaryImageOfPage`) for Google Search thumbnail signal
+- `og:image` URL: `/{username}/og?v={last_active timestamp}`
+
+### Sitemap (`app/sitemap.ts`)
+- Pulls top 1000 active users from `global:recent_active` sorted set
+- Emits `/@{id}` entries with `lastModified = last_active`
+- 1-hour `revalidate`
+
 ## Visual Effects System (Canvas)
 
 The FarmRenderer exposes trigger methods for rich visual feedback:
@@ -326,15 +418,16 @@ FarmCanvas exposes these via `forwardRef`/`useImperativeHandle` so parent compon
 ## Documentation
 
 ```text
-CLAUDE.md                       → LLM context (this file, must stay at root)
-README.md                       → Project overview & install guide (must stay at root)
+CLAUDE.md                          → LLM context (this file, must stay at root)
+README.md                          → Project overview & install guide (must stay at root)
 docs/
-├── PIXEL_ART_STYLE_GUIDE.md   → Visual consistency rules for sprites & canvas rendering
-├── CONTRIBUTING.md             → Contribution guidelines, PR process, code style
-├── INVARIANTS.md               → System invariants & assumptions that must not be broken
-└── SECURITY.md                 → Security policy & vulnerability reporting
+├── PIXEL_ART_STYLE_GUIDE.md      → Visual consistency rules for sprites & canvas rendering
+├── CONTRIBUTING.md                → Contribution guidelines, PR process, code style
+├── INVARIANTS.md                  → System invariants & assumptions that must not be broken
+├── PROFILE_REDESIGN_LOG.md        → Iteration log for profile/share/OG redesign + Satori workarounds
+└── SECURITY.md                    → Security policy & vulnerability reporting
 .private/
-└── claude-farmer-spec.md       → Internal design spec (not committed to public repo)
+└── claude-farmer-spec.md          → Internal design spec (not committed to public repo)
 ```
 
 ## Deployment

@@ -56,7 +56,7 @@ Because this project generates zero revenue, **infrastructure costs must stay ne
 
 ### Design
 - **Zero effort**: The game must work without any user interaction beyond initial setup.
-- **Cozy, not competitive**: No leaderboards, no rankings, no pressure. Warm pixel art, gentle animations.
+- **Cozy, not competitive**: No global leaderboards, no public rankings of all users, no pressure. Per-farm "thank-you walls" (top contributors who watered/gifted that specific farm) are allowed because they celebrate generosity, not winners. See decision log.
 - **Lightweight social**: Status bubbles, watering, bookmarks, ghost visits. Nothing that creates obligation or FOMO.
 
 ## Decision Log
@@ -65,4 +65,4 @@ When a principle above is bent or extended, document it here with date and reaso
 
 | Date | Decision | Reason |
 |------|----------|--------|
-| — | — | — |
+| 2026-04-07 | Per-farm contributor rankings (water/gift) added via `RankingsModal` and `/api/farm/[id]/rankings` | Bends "no rankings" rule. Justification: it's a per-farm thank-you wall, not a global leaderboard. Lists who has watered/gifted *this specific farm*, celebrating generosity toward the owner. No global "best player" anywhere. Accessed only by clicking the count chip in the guestbook header — not surfaced by default. |
