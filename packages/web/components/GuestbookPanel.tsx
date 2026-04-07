@@ -6,14 +6,17 @@ import { useLocale } from '@/lib/locale-context';
 import Icon from './Icon';
 import Card from './Card';
 import type { GuestbookEntry } from '@claude-farmer/shared';
+import type { ReactNode } from 'react';
 
 interface GuestbookPanelProps {
   farmId: string;
   refreshKey?: number;
   onVisitUser?: (userId: string) => void;
+  footer?: ReactNode;
+  hint?: ReactNode;
 }
 
-export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: GuestbookPanelProps) {
+export default function GuestbookPanel({ farmId, refreshKey, onVisitUser, footer, hint }: GuestbookPanelProps) {
   const { t, locale } = useLocale();
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [totalWater, setTotalWater] = useState(0);
@@ -68,6 +71,7 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: Gues
         ) : null
       }
       bodyClassName=""
+      footer={footer}
     >
       <div className="max-h-80 overflow-y-auto px-3 py-3">
         {loading ? (
@@ -110,6 +114,11 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: Gues
                 </div>
               </div>
             ))}
+          </div>
+        )}
+        {hint && !loading && (
+          <div className="mt-4 pt-3 border-t border-dashed border-[var(--border)] text-center text-[11px] opacity-40 leading-snug">
+            {hint}
           </div>
         )}
       </div>

@@ -374,57 +374,32 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
         {/* 프로필 카드 — Identity + Status + Actions */}
         <div className="px-4 pt-3">
           <Card
-            header={<><span>{farmerTitle.emoji}</span><span>{locale === 'ko' ? farmerTitle.ko : farmerTitle.en}</span></>}
+            header={
+              <>
+                <span>{farmerTitle.emoji}</span>
+                <span>{locale === 'ko' ? farmerTitle.ko : farmerTitle.en}</span>
+                {(profile.streak_days ?? 0) > 0 && (
+                  <span className="ml-1 inline-flex items-center gap-0.5 text-orange-400">
+                    <Icon name="local_fire_department" size={12} filled />
+                    {profile.streak_days}{locale === 'ko' ? '일' : 'd'}
+                  </span>
+                )}
+              </>
+            }
             headerRight={
-              (profile.streak_days ?? 0) > 0 ? (
-                <span className="flex items-center gap-1 text-xs font-bold text-orange-400">
-                  <Icon name="local_fire_department" size={14} filled />
-                  {profile.streak_days}{locale === 'ko' ? '일' : 'd'}
-                </span>
+              !isOwn && isLoggedIn ? (
+                <button
+                  onClick={handleToggleBookmark}
+                  title={isBookmarked ? t.visitBookmarked : t.visitBookmark}
+                  className={`-my-2 -mr-3 ml-2 self-stretch px-3 flex items-center border-l border-[var(--border)] transition-colors ${
+                    isBookmarked ? 'text-[var(--accent)]' : 'opacity-60 hover:opacity-100 hover:bg-[var(--bg)]'
+                  }`}
+                >
+                  <Icon name="bookmark" size={16} filled={isBookmarked} />
+                </button>
               ) : null
             }
             bodyClassName="px-3 py-3"
-            footer={
-              !isOwn ? (
-                isLoggedIn ? (
-                  <div className="flex divide-x divide-[var(--border)]">
-                    <button
-                      onClick={handleWater}
-                      disabled={cooldownLeft > 0 || watering}
-                      className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-blue-400 hover:bg-[var(--bg)] disabled:opacity-40 transition-colors"
-                    >
-                      <Icon name="water_drop" size={16} filled />
-                      {cooldownLeft > 0
-                        ? `${Math.floor(cooldownLeft/60)}:${(cooldownLeft%60).toString().padStart(2,'0')}`
-                        : t.visitWater}
-                    </button>
-                    <button
-                      onClick={() => setModal('gift')}
-                      className="w-14 h-11 flex items-center justify-center hover:bg-[var(--bg)] transition-colors"
-                      title={locale === 'ko' ? '선물' : 'Gift'}
-                    >
-                      <Icon name="redeem" size={18} />
-                    </button>
-                    <button
-                      onClick={handleToggleBookmark}
-                      className={`w-14 h-11 flex items-center justify-center transition-colors ${
-                        isBookmarked ? 'bg-[var(--accent)] text-black' : 'hover:bg-[var(--bg)]'
-                      }`}
-                      title={isBookmarked ? t.visitBookmarked : t.visitBookmark}
-                    >
-                      <Icon name="bookmark" size={18} filled={isBookmarked} />
-                    </button>
-                  </div>
-                ) : (
-                  <a
-                    href="/api/auth/login"
-                    className="block h-11 leading-[44px] text-center text-xs font-bold bg-[var(--accent)] text-black"
-                  >
-                    {t.loginBtn}
-                  </a>
-                )
-              ) : null
-            }
           >
             <div
               className={`flex gap-2.5 items-start ${isOwn ? 'cursor-pointer' : ''}`}
@@ -561,6 +536,45 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
             farmId={username}
             refreshKey={guestbookKey}
             onVisitUser={(id) => router.push(`/@${id}`)}
+            hint={
+              !isOwn ? (
+                locale === 'ko'
+                  ? '물을 주거나 선물을 보내면 방명록에 흔적이 남아요'
+                  : 'Watering or gifting leaves a trace here'
+              ) : null
+            }
+            footer={
+              !isOwn ? (
+                isLoggedIn ? (
+                  <div className="flex divide-x divide-[var(--border)]">
+                    <button
+                      onClick={handleWater}
+                      disabled={cooldownLeft > 0 || watering}
+                      className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-blue-400 hover:bg-[var(--bg)] disabled:opacity-40 transition-colors"
+                    >
+                      <Icon name="water_drop" size={16} filled />
+                      {cooldownLeft > 0
+                        ? `${Math.floor(cooldownLeft/60)}:${(cooldownLeft%60).toString().padStart(2,'0')}`
+                        : t.visitWater}
+                    </button>
+                    <button
+                      onClick={() => setModal('gift')}
+                      className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold hover:bg-[var(--bg)] transition-colors"
+                    >
+                      <Icon name="redeem" size={16} />
+                      {locale === 'ko' ? '선물' : 'Gift'}
+                    </button>
+                  </div>
+                ) : (
+                  <a
+                    href="/api/auth/login"
+                    className="block h-11 leading-[44px] text-center text-xs font-bold bg-[var(--accent)] text-black"
+                  >
+                    {t.loginBtn}
+                  </a>
+                )
+              ) : null
+            }
           />
         </div>
 
