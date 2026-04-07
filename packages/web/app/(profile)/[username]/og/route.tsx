@@ -12,13 +12,35 @@ function asciiSafe(s: string | undefined | null, max = 80): string {
   return ascii.length > max ? ascii.slice(0, max) + '...' : ascii;
 }
 
+function pickFontSize(text: string, table: { maxLen: number; size: number }[]): number {
+  const len = text.length;
+  return (table.find(t => len <= t.maxLen) ?? table[table.length - 1]).size;
+}
+
+const NICK_SIZES = [
+  { maxLen: 10, size: 64 },
+  { maxLen: 14, size: 56 },
+  { maxLen: 20, size: 44 },
+  { maxLen: 99, size: 36 },
+];
+
+const URL_SIZES = [
+  { maxLen: 12, size: 30 },
+  { maxLen: 18, size: 26 },
+  { maxLen: 24, size: 22 },
+  { maxLen: 99, size: 20 },
+];
+
 const W = 1200;
 const H = 630;
+const PAD = 56;
 const THUMB_PX = 64;
-const THUMB_DRAWN = H; // 630
-const THUMB_SCALE = THUMB_DRAWN / THUMB_PX; // 9.84375
-const RIGHT_X = THUMB_DRAWN; // 630
-const RIGHT_W = W - RIGHT_X; // 570
+const THUMB_SIZE = 512;
+const THUMB_SCALE = THUMB_SIZE / THUMB_PX; // 8
+const THUMB_X = PAD;
+const THUMB_Y = (H - THUMB_SIZE) / 2; // 59
+const RIGHT_X = THUMB_X + THUMB_SIZE + 48; // 616
+const RIGHT_W = W - RIGHT_X - PAD; // 528
 
 function homeFallback() {
   return new ImageResponse(
@@ -31,7 +53,7 @@ function homeFallback() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#1a1d27',
+          background: '#0f1117',
           fontFamily: 'sans-serif',
         }}
       >
@@ -70,10 +92,11 @@ export async function GET(
   const harvests = profile.total_harvests ?? 0;
   const items = profile.unique_items ?? 0;
   const streak = profile.streak_days ?? 0;
-  const status = asciiSafe(profile.status_message?.text, 70);
+  const status = asciiSafe(profile.status_message?.text, 60);
+  const urlText = `claudefarmer.com/@${username}`;
 
-  // 말풍선 없으면 통계로 대체
-  const statsLine = `Lv.${level}  ·  ${harvests} Harvests  ·  ${items}/32 Codex` + (streak > 0 ? `  ·  ${streak}d Streak` : '');
+  const nickSize = pickFontSize(nickname, NICK_SIZES);
+  const urlSize = pickFontSize(urlText, URL_SIZES);
 
   const rects = getThumbnailRects({
     githubId: username,
@@ -83,6 +106,8 @@ export async function GET(
     streakDays: streak,
     inventory: profile.inventory ?? [],
   }, 16);
+
+  const statsLine = `Lv.${level}  ·  ${harvests} Harvests  ·  ${items}/32 Codex` + (streak > 0 ? `  ·  ${streak}d Streak` : '');
 
   return new ImageResponse(
     (
@@ -95,14 +120,18 @@ export async function GET(
           fontFamily: 'sans-serif',
         }}
       >
-        {/* LEFT: 썸네일 픽셀 아트 (630×630, 풀 높이) */}
+        {/* LEFT: 라운드 사각형 썸네일 (512×512, 수직 중앙) */}
         <div
           style={{
             display: 'flex',
-            position: 'relative',
-            width: THUMB_DRAWN,
-            height: THUMB_DRAWN,
+            position: 'absolute',
+            left: THUMB_X,
+            top: THUMB_Y,
+            width: THUMB_SIZE,
+            height: THUMB_SIZE,
             backgroundColor: '#000',
+            borderRadius: 32,
+            overflow: 'hidden',
           }}
         >
           {rects.map((r, i) => (
@@ -110,10 +139,10 @@ export async function GET(
               key={i}
               style={{
                 position: 'absolute',
-                left: Math.round(r.x * THUMB_SCALE),
-                top: Math.round(r.y * THUMB_SCALE),
-                width: Math.ceil(r.w * THUMB_SCALE) + 1,
-                height: Math.ceil(r.h * THUMB_SCALE) + 1,
+                left: r.x * THUMB_SCALE,
+                top: r.y * THUMB_SCALE,
+                width: r.w * THUMB_SCALE,
+                height: r.h * THUMB_SCALE,
                 backgroundColor: r.color,
                 opacity: r.opacity,
               }}
@@ -121,54 +150,68 @@ export async function GET(
           ))}
         </div>
 
-        {/* RIGHT: 텍스트 영역 (570×630) */}
+        {/* RIGHT: 텍스트 그룹 (수직 중앙 정렬, 좌측 정렬) */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between',
+            justifyContent: 'center',
+            alignItems: 'flex-start',
+            position: 'absolute',
+            left: RIGHT_X,
+            top: 0,
             width: RIGHT_W,
             height: H,
-            padding: '56px 48px',
-            background: 'linear-gradient(135deg, #1a1d27 0%, #0f1117 100%)',
           }}
         >
-          {/* 상단: 말풍선 (있을 때만) */}
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {status && (
-              <div
-                style={{
-                  display: 'flex',
-                  maxWidth: RIGHT_W - 96,
-                  backgroundColor: '#ffffff',
-                  color: '#0f1117',
-                  borderTopLeftRadius: 0,
-                  borderTopRightRadius: 28,
-                  borderBottomLeftRadius: 28,
-                  borderBottomRightRadius: 28,
-                  padding: '24px 30px',
-                }}
-              >
-                <div style={{ display: 'flex', fontSize: 32, color: '#0f1117', lineHeight: 1.35 }}>
-                  {status}
-                </div>
+          {status && (
+            <div
+              style={{
+                display: 'flex',
+                maxWidth: RIGHT_W,
+                backgroundColor: '#ffffff',
+                color: '#0f1117',
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 24,
+                borderBottomLeftRadius: 24,
+                borderBottomRightRadius: 24,
+                padding: '20px 26px',
+                marginBottom: 28,
+              }}
+            >
+              <div style={{ display: 'flex', fontSize: 26, color: '#0f1117', lineHeight: 1.35 }}>
+                {status}
               </div>
-            )}
+            </div>
+          )}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: nickSize,
+              fontWeight: 900,
+              color: '#ffffff',
+              lineHeight: 1.05,
+              maxWidth: RIGHT_W,
+            }}
+          >
+            {nickname}
           </div>
-
-          {/* 하단: 닉네임 + 통계(말풍선 없을 때) + URL */}
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', fontSize: 64, fontWeight: 900, color: '#ffffff' }}>
-              {nickname}
+          {!status && (
+            <div style={{ display: 'flex', fontSize: 20, color: '#9ca3af', marginTop: 14 }}>
+              {statsLine}
             </div>
-            {!status && (
-              <div style={{ display: 'flex', fontSize: 22, color: '#9ca3af', marginTop: 12 }}>
-                {statsLine}
-              </div>
-            )}
-            <div style={{ display: 'flex', fontSize: 28, color: '#fbbf24', fontWeight: 900, marginTop: 14 }}>
-              claudefarmer.com/@{username}
-            </div>
+          )}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: urlSize,
+              color: '#fbbf24',
+              fontWeight: 900,
+              marginTop: 16,
+              maxWidth: RIGHT_W,
+            }}
+          >
+            {urlText}
           </div>
         </div>
       </div>
