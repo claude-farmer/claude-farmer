@@ -34,7 +34,7 @@ const ITEM_EMOJI: Record<string, string> = {
   l01: '🌻', l02: '🦄', l03: '🌌', l04: '✨',
 };
 
-type ActiveModal = 'none' | 'menu' | 'search' | 'share' | 'codex' | 'character' | 'gift' | 'about' | 'edit';
+type ActiveModal = 'none' | 'menu-app' | 'menu-account' | 'search' | 'share' | 'codex' | 'character' | 'gift' | 'about' | 'edit';
 
 export default function FarmProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { t, locale } = useLocale();
@@ -216,64 +216,103 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[var(--bg)] border-b border-[var(--border)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center gap-2 px-3 py-2 relative">
-          {/* LEFT: 탐색 액션 (검색 + 공유) */}
-          <div className="flex items-center gap-0.5 shrink-0">
-            <button onClick={() => setModal('search')} aria-label={t.exploreTitle} className="p-1.5 opacity-60 hover:opacity-100">
-              <Icon name="search" size={20} />
-            </button>
-            <button onClick={() => setModal('share')} aria-label="Share" className="p-1.5 opacity-60 hover:opacity-100">
-              <Icon name="share" size={20} />
-            </button>
-          </div>
+          {/* LEFT: 햄버거(앱 메뉴) */}
+          <button
+            type="button"
+            onClick={() => setModal(modal === 'menu-app' ? 'none' : 'menu-app')}
+            aria-label={t.menuAriaLabel}
+            aria-expanded={modal === 'menu-app'}
+            className={`shrink-0 h-8 w-8 flex items-center justify-center border rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+              modal === 'menu-app'
+                ? 'bg-[var(--card)] border-[var(--accent)]'
+                : 'border-[var(--border)] hover:bg-[var(--card)] hover:border-[var(--accent)]'
+            }`}
+          >
+            <Icon name="menu" size={18} />
+          </button>
 
-          {/* CENTER: 방문 농장 프로필 (아바타 + 닉네임 + 배지) */}
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <img src={profile.avatar_url} alt="" className="w-9 h-9 rounded-full border border-[var(--border)] shrink-0" />
-            <div className="flex flex-col min-w-0 leading-tight">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-bold text-sm truncate">{profile.nickname}</span>
-                <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)] opacity-70">
-                  Lv.{profile.level}
+          {/* LEFT: 방문 농장 프로필 (아바타 + 닉네임 + 배지) */}
+          <div className="flex items-center gap-2 min-w-0 flex-1 h-8">
+            <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-lg border border-[var(--border)] shrink-0 object-cover" />
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-bold text-sm truncate">{profile.nickname}</span>
+              <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)] opacity-70">
+                Lv.{profile.level}
+              </span>
+              {isOwn && notifications && notifications.visitor_count > 0 && (
+                <span className="hidden sm:inline-flex shrink-0 items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--accent)]">
+                  <Icon name="directions_walk" size={11} />
+                  {notifications.visitor_count}+
                 </span>
-              </div>
-              {/* 자기 농장: 오늘 신규 배지 */}
-              {isOwn && notifications && (notifications.visitor_count > 0 || notifications.water_received_count > 0) && (
-                <div className="flex items-center gap-1 mt-0.5">
-                  {notifications.visitor_count > 0 && (
-                    <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--accent)]">
-                      <Icon name="directions_walk" size={11} />
-                      {notifications.visitor_count}+
-                    </span>
-                  )}
-                  {notifications.water_received_count > 0 && (
-                    <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)] text-blue-400">
-                      <Icon name="water_drop" size={11} filled />
-                      {notifications.water_received_count}+
-                    </span>
-                  )}
-                </div>
+              )}
+              {isOwn && notifications && notifications.water_received_count > 0 && (
+                <span className="hidden sm:inline-flex shrink-0 items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)] text-blue-400">
+                  <Icon name="water_drop" size={11} filled />
+                  {notifications.water_received_count}+
+                </span>
               )}
             </div>
           </div>
 
-          {/* RIGHT END: 계정 아바타 (메뉴 트리거) — GitHub 스타일 */}
+          {/* RIGHT: 검색 + 공유 */}
+          <button
+            type="button"
+            onClick={() => setModal('search')}
+            aria-label={t.exploreTitle}
+            className="shrink-0 h-8 w-8 flex items-center justify-center border border-[var(--border)] rounded-lg hover:bg-[var(--card)] hover:border-[var(--accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          >
+            <Icon name="search" size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setModal('share')}
+            aria-label={t.shareAriaLabel}
+            className="shrink-0 h-8 w-8 flex items-center justify-center border border-[var(--border)] rounded-lg hover:bg-[var(--card)] hover:border-[var(--accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          >
+            <Icon name="share" size={18} />
+          </button>
+
+          {/* RIGHT END: 내 아바타 (계정 메뉴) 또는 로그인 */}
           {isLoggedIn ? (
             <button
-              onClick={() => setModal(modal === 'menu' ? 'none' : 'menu')}
-              aria-label="Account"
-              className="shrink-0 p-0.5 rounded-full hover:opacity-80 ml-auto"
+              type="button"
+              onClick={() => setModal(modal === 'menu-account' ? 'none' : 'menu-account')}
+              aria-label={t.accountAriaLabel}
+              aria-expanded={modal === 'menu-account'}
+              className={`shrink-0 h-8 w-8 rounded-lg border overflow-hidden transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+                modal === 'menu-account' ? 'border-[var(--accent)]' : 'border-[var(--border)] hover:border-[var(--accent)]'
+              }`}
             >
-              <img src={myAvatarUrl || profile.avatar_url} alt="" className="w-8 h-8 rounded-full border border-[var(--border)]" />
+              <img src={myAvatarUrl || profile.avatar_url} alt="" className="w-full h-full object-cover" />
             </button>
           ) : (
-            <a href="/api/auth/login" className="shrink-0 text-[11px] bg-[var(--accent)] text-black px-2.5 py-1 rounded-full font-bold hover:opacity-90 ml-auto">
+            <a
+              href="/api/auth/login"
+              className="shrink-0 h-8 inline-flex items-center text-xs font-bold px-3 rounded-lg border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-black transition-colors"
+            >
               {t.loginBtn}
             </a>
           )}
 
-          {/* Menu Dropdown */}
-          {modal === 'menu' && currentUser && (
+          {/* App Menu Dropdown (좌측 햄버거) */}
+          {modal === 'menu-app' && (
             <MenuDropdown
+              variant="app"
+              anchor="left"
+              currentUser={currentUser ?? ''}
+              isOwnFarm={isOwn}
+              onClose={() => setModal('none')}
+              onOpenEdit={() => setModal('edit')}
+              onOpenCharacter={() => setModal('character')}
+              onOpenAbout={() => setModal('about')}
+            />
+          )}
+
+          {/* Account Menu Dropdown (우측 아바타) */}
+          {modal === 'menu-account' && currentUser && (
+            <MenuDropdown
+              variant="account"
+              anchor="right"
               currentUser={currentUser}
               isOwnFarm={isOwn}
               onClose={() => setModal('none')}
@@ -345,27 +384,9 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
           </div>
         )}
 
-        {/* Action Bar */}
+        {/* Action Bar — visit only (own-farm actions moved to header / codex card) */}
+        {!isOwn && (
         <div className="flex gap-2 px-4 py-3 border-b border-[var(--border)]">
-          {isOwn ? (
-            <>
-              <button
-                onClick={() => setModal('share')}
-                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
-              >
-                <Icon name="share" size={16} />
-                {locale === 'ko' ? '공유' : 'Share'}
-              </button>
-              <button
-                onClick={() => setModal('codex')}
-                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
-              >
-                <Icon name="menu_book" size={16} />
-                {locale === 'ko' ? '도감' : 'Codex'} {uniqueItems}/32
-              </button>
-            </>
-          ) : (
-            <>
               <button
                 onClick={handleWater}
                 disabled={cooldownLeft > 0 || watering || !isLoggedIn}
@@ -403,9 +424,8 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
                   {t.loginBtn}
                 </a>
               )}
-            </>
-          )}
         </div>
+        )}
 
         {/* Identity strip — 농부 칭호 + 스트릭 */}
         <div className="px-4 pt-3">

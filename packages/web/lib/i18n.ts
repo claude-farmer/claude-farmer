@@ -59,6 +59,15 @@ const dict = {
     logoutBtn: 'Logout',
     loading: 'Loading farm...',
 
+    // Header / menu
+    menuAriaLabel: 'Open menu',
+    accountAriaLabel: 'Account menu',
+    shareAriaLabel: 'Share',
+    aboutMenuItem: 'About',
+    editProfileMenuItem: 'Edit Profile',
+    characterMenuItem: 'Character',
+    myFarmMenuItem: 'My Farm',
+
     // Farm view
     greeting_morning: 'Good morning!',
     greeting_afternoon: 'Good afternoon!',
@@ -197,6 +206,14 @@ const dict = {
     loginBtn: 'GitHub 로그인',
     logoutBtn: '로그아웃',
     loading: '농장 불러오는 중...',
+
+    menuAriaLabel: '메뉴 열기',
+    accountAriaLabel: '계정 메뉴',
+    shareAriaLabel: '공유',
+    aboutMenuItem: '소개',
+    editProfileMenuItem: '정보 수정',
+    characterMenuItem: '캐릭터',
+    myFarmMenuItem: '내 농장',
 
     greeting_morning: '좋은 아침이에요!',
     greeting_afternoon: '좋은 오후에요!',

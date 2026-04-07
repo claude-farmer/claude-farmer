@@ -13,10 +13,12 @@ interface MenuDropdownProps {
   onOpenEdit: () => void;
   onOpenCharacter: () => void;
   onOpenAbout: () => void;
+  variant?: 'app' | 'account';
+  anchor?: 'left' | 'right';
 }
 
-export default function MenuDropdown({ currentUser, isOwnFarm, onClose, onOpenEdit, onOpenCharacter, onOpenAbout }: MenuDropdownProps) {
-  const { locale, setLocale } = useLocale();
+export default function MenuDropdown({ currentUser, isOwnFarm, onClose, onOpenEdit, onOpenCharacter, onOpenAbout, variant = 'account', anchor = 'right' }: MenuDropdownProps) {
+  const { locale, setLocale, t } = useLocale();
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -46,58 +48,42 @@ export default function MenuDropdown({ currentUser, isOwnFarm, onClose, onOpenEd
   // 메뉴 항목 빌더
   const items: Array<{ icon: string; label: string; onClick: () => void; danger?: boolean; divider?: boolean }> = [];
 
-  if (isOwnFarm) {
-    // 자기 농장: 정보 수정 + 캐릭터 + 소개 + 언어 + 로그아웃
+  if (variant === 'app') {
+    items.push({ icon: 'info', label: t.aboutMenuItem, onClick: onOpenAbout });
     items.push({
-      icon: 'edit',
-      label: locale === 'ko' ? '정보 수정' : 'Edit Profile',
-      // onOpenEdit이 setModal('edit')을 호출 → 메뉴는 자동으로 닫힘 (modal !== 'menu')
-      onClick: onOpenEdit,
-    });
-    items.push({
-      icon: 'face',
-      label: locale === 'ko' ? '캐릭터' : 'Character',
-      onClick: onOpenCharacter,
+      icon: 'language',
+      label: locale === 'ko' ? 'English' : '한국어',
+      onClick: () => setLocale(locale === 'ko' ? 'en' : 'ko'),
     });
   } else {
-    // 방문 시: 내 농장 + 소개 + 언어 + 로그아웃
+    if (isOwnFarm) {
+      items.push({ icon: 'edit', label: t.editProfileMenuItem, onClick: onOpenEdit });
+      items.push({ icon: 'face', label: t.characterMenuItem, onClick: onOpenCharacter });
+    } else {
+      items.push({
+        icon: 'home',
+        label: t.myFarmMenuItem,
+        onClick: () => { router.push(`/@${currentUser}`); onClose(); },
+      });
+    }
     items.push({
-      icon: 'home',
-      label: locale === 'ko' ? '내 농장' : 'My Farm',
-      onClick: () => { router.push(`/@${currentUser}`); onClose(); },
+      icon: 'logout',
+      label: t.logoutBtn,
+      onClick: handleLogout,
+      divider: true,
+      danger: true,
     });
   }
-
-  items.push({
-    icon: 'info',
-    label: locale === 'ko' ? '소개' : 'About',
-    onClick: onOpenAbout,
-    divider: true,
-  });
-
-  items.push({
-    icon: 'language',
-    label: locale === 'ko' ? 'English' : '한국어',
-    // 언어 토글은 메뉴를 닫지 않고 그대로 둠
-    onClick: () => setLocale(locale === 'ko' ? 'en' : 'ko'),
-  });
-
-  items.push({
-    icon: 'logout',
-    label: locale === 'ko' ? '로그아웃' : 'Logout',
-    onClick: handleLogout,
-    divider: true,
-    danger: true,
-  });
 
   return (
     <div
       ref={ref}
-      className="absolute top-full right-2 mt-1 w-48 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-2xl overflow-hidden z-50"
+      className={`absolute top-full mt-1 w-48 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-2xl overflow-hidden z-50 ${anchor === 'left' ? 'left-2' : 'right-2'}`}
     >
       {items.map((item, i) => (
         <button
           key={i}
+          type="button"
           onClick={item.onClick}
           className={`flex items-center gap-3 w-full text-left px-3 py-2.5 text-sm hover:bg-[var(--bg)] transition-colors ${
             item.divider ? 'border-t border-[var(--border)]' : ''
