@@ -30,7 +30,7 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
         setBookmarks(bm);
       }
       const [randoms, recents] = await Promise.all([
-        fetchExplore(currentUser ?? '', 9),
+        fetchExplore(currentUser ?? '', 6),
         fetchExplore(currentUser ?? '', 3, 'recent'),
       ]);
       setRandomFarms(randoms);
@@ -50,7 +50,7 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
   }, [onClose]);
 
   const handleRefresh = async () => {
-    const farms = await fetchExplore(currentUser ?? '', 9);
+    const farms = await fetchExplore(currentUser ?? '', 6);
     setRandomFarms(farms);
   };
 
@@ -112,6 +112,23 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
               </button>
             </div>
           </div>
+
+          {/* 비로그인 안내 */}
+          {!currentUser && searchResults === null && (
+            <div className="px-4 py-3 border-b border-[var(--border)]">
+              <a
+                href="/api/auth/login"
+                className="flex items-center justify-between gap-2 bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] rounded-lg px-3 py-2.5 transition-colors"
+              >
+                <span className="text-xs opacity-70 leading-snug">
+                  {locale === 'ko' ? '로그인하면 이웃 농장과 북마크를 모을 수 있어요' : 'Log in to bookmark farms and find neighbors'}
+                </span>
+                <span className="shrink-0 text-[11px] font-bold text-[var(--accent)]">
+                  {t.loginBtn} →
+                </span>
+              </a>
+            </div>
+          )}
 
           {/* Search Results */}
           {searchResults !== null && (
