@@ -2,7 +2,7 @@ import { PALETTE } from './palette';
 import { CROP_SPRITES, drawSprite } from './sprites';
 import { composeCharacterSprite, drawGhostCharacter, drawMiniCharacter } from './character';
 import type { CropSlot, Footprint, CharacterAppearance } from '@claude-farmer/shared';
-import { getTimeOfDay, isBoostTime, getFarmWeather, type TimeOfDay, type FarmWeather, GRID_SIZE, GRID_COLS } from '@claude-farmer/shared';
+import { getTimeOfDay, isBoostTime, getFarmWeather, generateDefaultAppearance, type TimeOfDay, type FarmWeather, GRID_SIZE, GRID_COLS } from '@claude-farmer/shared';
 import { type CameraState, DEFAULT_CAMERA, lerpCamera, clampCamera } from './camera';
 
 // 캔버스 설정: 256×192px 기본, 4× 스케일
@@ -1129,7 +1129,8 @@ export class FarmRenderer {
       const id = fp.github_id;
       activeIds.add(id);
       // visitorProfiles에서 또는 footprint에서 직접 character/avatar 가져오기
-      const profileChar = this.currentState?.visitorProfiles?.get(id)?.character ?? fp.character;
+      // 캐릭터 미설정 시 per-user deterministic 기본 캐릭터로 폴백 (썸네일과 동일)
+      const profileChar = this.currentState?.visitorProfiles?.get(id)?.character ?? fp.character ?? generateDefaultAppearance(id);
       const profileAvatar = this.currentState?.visitorProfiles?.get(id)?.avatarUrl ?? fp.avatar_url;
 
       if (!this.ghosts.has(id)) {
@@ -1151,7 +1152,7 @@ export class FarmRenderer {
       } else {
         // 기존 고스트: character/avatar 업데이트
         const ghost = this.ghosts.get(id)!;
-        if (profileChar && !ghost.character) ghost.character = profileChar;
+        if (!ghost.character) ghost.character = profileChar;
         if (profileAvatar && !ghost.avatarUrl) ghost.avatarUrl = profileAvatar;
       }
     }
