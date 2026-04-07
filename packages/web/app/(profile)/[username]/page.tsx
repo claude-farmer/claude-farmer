@@ -16,7 +16,7 @@ import StatusEditModal from '@/components/StatusEditModal';
 import DiscoverCarousel from '@/components/DiscoverCarousel';
 import Icon from '@/components/Icon';
 import {
-  fetchSession, fetchFarmWithFootprints, waterUser, visitFarm, sendGift, waveSurf,
+  fetchSession, fetchFarmWithFootprints, waterUser, visitFarm, sendGift,
   fetchBookmarks, toggleBookmark, updateStatus, updateCharacter,
 } from '@/lib/api';
 import usePolling from '@/hooks/usePolling';
@@ -216,20 +216,17 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[var(--bg)] border-b border-[var(--border)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center gap-2 px-3 py-2 relative">
-          {/* 1. NavIconButton — 자기 아바타 (메뉴 트리거) */}
-          {isLoggedIn ? (
-            <button
-              onClick={() => setModal(modal === 'menu' ? 'none' : 'menu')}
-              aria-label="Menu"
-              className="shrink-0 p-0.5 rounded-full hover:opacity-80"
-            >
-              <img src={myAvatarUrl || profile.avatar_url} alt="" className="w-8 h-8 rounded-full border border-[var(--border)]" />
+          {/* LEFT: 탐색 액션 (검색 + 공유) */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            <button onClick={() => setModal('search')} aria-label={t.exploreTitle} className="p-1.5 opacity-60 hover:opacity-100">
+              <Icon name="search" size={20} />
             </button>
-          ) : (
-            <div className="w-9 shrink-0" />
-          )}
+            <button onClick={() => setModal('share')} aria-label="Share" className="p-1.5 opacity-60 hover:opacity-100">
+              <Icon name="share" size={20} />
+            </button>
+          </div>
 
-          {/* 2. Profile group — 방문 농장의 아바타 + 닉네임 + 배지 */}
+          {/* CENTER: 방문 농장 프로필 (아바타 + 닉네임 + 배지) */}
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <img src={profile.avatar_url} alt="" className="w-9 h-9 rounded-full border border-[var(--border)] shrink-0" />
             <div className="flex flex-col min-w-0 leading-tight">
@@ -259,32 +256,20 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
             </div>
           </div>
 
-          {/* 3. Right: Actions */}
-          <div className="flex items-center gap-0.5 shrink-0">
-            <button onClick={() => setModal('search')} aria-label={t.exploreTitle} className="p-1.5 opacity-60 hover:opacity-100">
-              <Icon name="search" size={20} />
+          {/* RIGHT END: 계정 아바타 (메뉴 트리거) — GitHub 스타일 */}
+          {isLoggedIn ? (
+            <button
+              onClick={() => setModal(modal === 'menu' ? 'none' : 'menu')}
+              aria-label="Account"
+              className="shrink-0 p-0.5 rounded-full hover:opacity-80 ml-auto"
+            >
+              <img src={myAvatarUrl || profile.avatar_url} alt="" className="w-8 h-8 rounded-full border border-[var(--border)]" />
             </button>
-            {isLoggedIn && !isOwn && (
-              <button
-                onClick={async () => {
-                  const next = await waveSurf(username, currentUser!);
-                  if (next) router.push(`/@${next}`);
-                }}
-                aria-label="Wave Surf"
-                className="p-1.5 opacity-60 hover:opacity-100"
-              >
-                <Icon name="waves" size={20} />
-              </button>
-            )}
-            <button onClick={() => setModal('share')} aria-label="Share" className="p-1.5 opacity-60 hover:opacity-100">
-              <Icon name="share" size={20} />
-            </button>
-            {!isLoggedIn && (
-              <a href="/api/auth/login" className="text-[11px] bg-[var(--accent)] text-black px-2.5 py-1 rounded-full font-bold hover:opacity-90 ml-1">
-                {t.loginBtn}
-              </a>
-            )}
-          </div>
+          ) : (
+            <a href="/api/auth/login" className="shrink-0 text-[11px] bg-[var(--accent)] text-black px-2.5 py-1 rounded-full font-bold hover:opacity-90 ml-auto">
+              {t.loginBtn}
+            </a>
+          )}
 
           {/* Menu Dropdown */}
           {modal === 'menu' && currentUser && (
@@ -504,14 +489,6 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
           </div>
         )}
 
-        {/* Discover Carousel */}
-        <DiscoverCarousel
-          currentUser={currentUser}
-          viewedUsername={username}
-          isOwn={isOwn}
-          onOpenSearch={() => setModal('search')}
-        />
-
         {/* Compact Codex — 카드 */}
         {isOwn && (profile.inventory ?? []).length > 0 && (
           <div className="px-4 pb-3">
@@ -539,11 +516,21 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
         )}
 
         {/* Guestbook */}
-        <div className="px-4 pb-3">
+        <div className="px-4 pt-3 pb-3">
           <GuestbookPanel
             farmId={username}
             refreshKey={guestbookKey}
             onVisitUser={(id) => router.push(`/@${id}`)}
+          />
+        </div>
+
+        {/* 다른 농장 (방명록 다음) */}
+        <div className="pb-4">
+          <DiscoverCarousel
+            currentUser={currentUser}
+            viewedUsername={username}
+            isOwn={isOwn}
+            onOpenSearch={() => setModal('search')}
           />
         </div>
       </div>

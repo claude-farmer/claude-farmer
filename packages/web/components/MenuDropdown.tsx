@@ -93,7 +93,7 @@ export default function MenuDropdown({ currentUser, isOwnFarm, onClose, onOpenEd
   return (
     <div
       ref={ref}
-      className="absolute top-full left-2 mt-1 w-48 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-2xl overflow-hidden z-50"
+      className="absolute top-full right-2 mt-1 w-48 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-2xl overflow-hidden z-50"
     >
       {items.map((item, i) => (
         <button
