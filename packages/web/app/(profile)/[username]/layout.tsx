@@ -4,17 +4,23 @@ import type { PublicProfile } from '@claude-farmer/shared';
 
 const SITE = 'https://claudefarmer.com';
 
+async function loadProfile(username: string) {
+  return redis.get<PublicProfile>(keys.user(username)).catch(() => null);
+}
+
+function ogUrlFor(username: string, profile: PublicProfile | null) {
+  const v = profile?.last_active ? new Date(profile.last_active).getTime() : Date.now();
+  return `${SITE}/${encodeURIComponent(username)}/og?v=${v}`;
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  const profile = await redis.get<PublicProfile>(keys.user(username)).catch(() => null);
-
-  // 캐시 버스터: 프로필 갱신 시간 반영 (없으면 username만)
-  const v = profile?.last_active ? new Date(profile.last_active).getTime() : Date.now();
-  const ogUrl = `${SITE}/${encodeURIComponent(username)}/og?v=${v}`;
+  const profile = await loadProfile(username);
+  const ogUrl = ogUrlFor(username, profile);
 
   if (!profile) {
     const title = `@${username}'s Farm — Claude Farmer · Code Grows a Farm`;
@@ -65,6 +71,62 @@ export async function generateMetadata({
   };
 }
 
-export default function ProfileLayout({ children }: { children: React.ReactNode }) {
-  return children;
+export default async function ProfileLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ username: string }>;
+}) {
+  const { username } = await params;
+  const profile = await loadProfile(username);
+  const ogUrl = ogUrlFor(username, profile);
+  const profileUrl = `${SITE}/@${username}`;
+
+  const jsonLd = profile
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'ProfilePage',
+        url: profileUrl,
+        dateCreated: profile.last_active,
+        dateModified: profile.last_active,
+        mainEntity: {
+          '@type': 'Person',
+          name: profile.nickname,
+          alternateName: `@${username}`,
+          url: profileUrl,
+          image: ogUrl,
+          identifier: username,
+        },
+        image: ogUrl,
+        primaryImageOfPage: {
+          '@type': 'ImageObject',
+          url: ogUrl,
+          width: 1200,
+          height: 630,
+        },
+      }
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'ProfilePage',
+        url: profileUrl,
+        mainEntity: {
+          '@type': 'Person',
+          name: username,
+          alternateName: `@${username}`,
+          url: profileUrl,
+          image: ogUrl,
+        },
+        image: ogUrl,
+      };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {children}
+    </>
+  );
 }

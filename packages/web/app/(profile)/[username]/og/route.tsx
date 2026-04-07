@@ -24,13 +24,12 @@ const FS_HANDLE = Math.round(FS_BASE * 1.3); // 47 (1.3×)
 const FS_NICK = Math.round(FS_BASE * 1.5); // 54 (1.5×)
 const FS_URL = 30;
 
-// 우측 카드 썸네일 (텍스트 영역과 동일 높이, 살짝 더 크게)
-const TOP_PAD = 40;
-const BOTTOM_RESERVED = 100; // 하단 로고 영역
-const CARD_SIZE = H - TOP_PAD - BOTTOM_RESERVED; // 490
-const CARD_X = W - CARD_SIZE - 40; // 670
-const CARD_Y = TOP_PAD; // 40
-const CARD_SCALE = CARD_SIZE / THUMB_PX; // ~7.66
+// 우측 카드 썸네일 (위/아래 패딩 동일, 가능한 한 크게)
+const VERT_PAD = 40;
+const CARD_SIZE = H - VERT_PAD * 2; // 550
+const CARD_X = W - CARD_SIZE - VERT_PAD; // 610
+const CARD_Y = VERT_PAD; // 40
+const CARD_SCALE = CARD_SIZE / THUMB_PX; // ~8.59
 
 function homeFallback() {
   return new ImageResponse(
@@ -167,16 +166,16 @@ export async function GET(
           ))}
         </div>
 
-        {/* 좌측 상단 텍스트 그룹 (로고 침범 방지를 위해 height 제한, 우측 카드 침범 방지) */}
+        {/* 좌측 상단 텍스트 그룹 (카드 영역과 같은 vertical bound, 하단 로고 안전 영역 확보) */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             position: 'absolute',
             left: 56,
-            top: TOP_PAD,
+            top: VERT_PAD,
             width: CARD_X - 56 - 32,
-            maxHeight: CARD_SIZE,
+            maxHeight: CARD_SIZE - 80,
             overflow: 'hidden',
             justifyContent: 'flex-start',
           }}
@@ -204,13 +203,13 @@ export async function GET(
           )}
         </div>
 
-        {/* 좌측 하단 로고 */}
+        {/* 좌측 하단 로고 (카드 bottom과 정렬) */}
         <div
           style={{
             display: 'flex',
             position: 'absolute',
             left: 56,
-            bottom: 48,
+            bottom: VERT_PAD,
             alignItems: 'center',
           }}
         >
