@@ -14,6 +14,7 @@ import ShareModal from '@/components/ShareModal';
 import AboutModal from '@/components/AboutModal';
 import StatusEditModal from '@/components/StatusEditModal';
 import RankingsModal from '@/components/RankingsModal';
+import GuestbookModal from '@/components/GuestbookModal';
 import DiscoverCarousel from '@/components/DiscoverCarousel';
 import Card from '@/components/Card';
 import Icon from '@/components/Icon';
@@ -36,7 +37,7 @@ const ITEM_EMOJI: Record<string, string> = {
   l01: '🌻', l02: '🦄', l03: '🌌', l04: '✨',
 };
 
-type ActiveModal = 'none' | 'menu-app' | 'menu-account' | 'search' | 'share' | 'codex' | 'character' | 'gift' | 'about' | 'edit' | 'rankings';
+type ActiveModal = 'none' | 'menu-app' | 'menu-account' | 'search' | 'share' | 'codex' | 'character' | 'gift' | 'about' | 'edit' | 'rankings' | 'guestbook';
 
 export default function FarmProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { t, locale } = useLocale();
@@ -582,6 +583,8 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
             refreshKey={guestbookKey}
             onVisitUser={(id) => router.push(`/@${id}`)}
             onOpenRankings={(tab) => { setRankingsTab(tab); setModal('rankings'); }}
+            onOpenAll={() => setModal('guestbook')}
+            limit={5}
             hint={
               !isOwn ? (
                 locale === 'ko'
@@ -689,6 +692,10 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
 
       {modal === 'rankings' && (
         <RankingsModal farmId={username} initialTab={rankingsTab} onClose={() => setModal('none')} />
+      )}
+
+      {modal === 'guestbook' && (
+        <GuestbookModal farmId={username} refreshKey={guestbookKey} onClose={() => setModal('none')} />
       )}
 
       {modal === 'edit' && isOwn && (
