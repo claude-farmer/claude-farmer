@@ -619,20 +619,27 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
       {/* Modals */}
       {modal === 'codex' && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={() => setModal('none')}>
-          <div className="bg-[var(--bg)] w-full max-w-md rounded-t-xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-            <div className="flex justify-center pt-2 pb-1">
+          <div className="bg-[var(--bg)] w-full max-w-md rounded-t-xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            <div className="shrink-0 flex justify-center pt-2 pb-1">
               <div className="w-10 h-1 rounded-full bg-[var(--border)]" />
             </div>
-            <div className="sticky top-0 bg-[var(--bg)] border-b border-[var(--border)] px-4 py-2 flex justify-between items-center">
-              <span className="font-bold text-sm flex items-center gap-2">
+            <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-[var(--border)]">
+              <span className="h-8 flex items-center gap-2 text-sm font-bold flex-1 min-w-0">
                 <Icon name="menu_book" size={18} />
                 {locale === 'ko' ? '도감' : 'Codex'}
               </span>
-              <button onClick={() => setModal('none')} className="opacity-40 hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => setModal('none')}
+                aria-label="Close"
+                className="shrink-0 h-8 w-8 flex items-center justify-center border border-[var(--border)] rounded-lg hover:bg-[var(--card)] hover:border-[var(--accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+              >
                 <Icon name="close" size={18} />
               </button>
             </div>
-            <BagView inventory={profile.inventory ?? []} />
+            <div className="flex-1 overflow-y-auto">
+              <BagView inventory={profile.inventory ?? []} />
+            </div>
           </div>
         </div>
       )}

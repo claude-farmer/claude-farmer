@@ -62,17 +62,17 @@ export default function ShareModal({ username, nickname, onClose }: ShareModalPr
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={onClose}>
       <div
-        className="bg-[var(--card)] w-full max-w-md rounded-t-xl max-h-[80vh] overflow-y-auto"
+        className="bg-[var(--card)] w-full max-w-md rounded-t-xl max-h-[80vh] flex flex-col"
         onClick={e => e.stopPropagation()}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {/* Drag handle */}
-        <div className="flex justify-center pt-2 pb-1">
+        <div className="flex justify-center pt-2 pb-1 shrink-0">
           <div className="w-10 h-1 rounded-full bg-[var(--border)]" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)]">
+        <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-[var(--border)]">
           <span className="h-8 flex items-center gap-2 text-sm font-bold flex-1 min-w-0">
             <Icon name="share" size={18} />
             {locale === 'ko' ? '공유' : 'Share'}
@@ -87,6 +87,7 @@ export default function ShareModal({ username, nickname, onClose }: ShareModalPr
           </button>
         </div>
 
+        <div className="flex-1 overflow-y-auto">
         {/* OG Preview (1200×630 비율 유지) */}
         <div className="px-4 py-2">
           <div
@@ -133,6 +134,7 @@ export default function ShareModal({ username, nickname, onClose }: ShareModalPr
             <Icon name="ios_share" size={20} />
             <span>{locale === 'ko' ? '공유' : 'Share'}</span>
           </button>
+        </div>
         </div>
       </div>
     </div>
