@@ -15,7 +15,7 @@ export default function ShareModal({ username, nickname, onClose }: ShareModalPr
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const url = `https://claudefarmer.com/@${username}`;
-  const ogUrl = `/@${username}/og`;
+  const ogUrl = `/${encodeURIComponent(username)}/og`;
 
   useEffect(() => {
     function handleEsc(e: KeyboardEvent) { if (e.key === 'Escape') onClose(); }

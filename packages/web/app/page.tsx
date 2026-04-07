@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
 import FarmThumbnail from '@/components/FarmThumbnail';
+import SearchModal from '@/components/SearchModal';
 import type { PublicProfile } from '@claude-farmer/shared';
 
 // ── 농장 카드 캐러셀 ──
@@ -86,6 +86,7 @@ export default function Landing() {
   const { locale, t, setLocale } = useLocale();
   const router = useRouter();
   const [farms, setFarms] = useState<(PublicProfile & { github_id: string })[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // 이전 페이지의 modal 스크롤 락이 남아있을 수 있으므로 reset
   useEffect(() => {
@@ -232,14 +233,17 @@ export default function Landing() {
           >
             npm install
           </a>
-          <Link
-            href="/farm"
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
             className="flex-1 bg-[var(--card)] border border-[var(--border)] text-[var(--text)] font-bold py-3 rounded-lg text-center text-sm hover:border-[var(--accent)] transition-colors"
           >
             {t.demoBtn}
-          </Link>
+          </button>
         </div>
       </div>
+
+      {searchOpen && <SearchModal currentUser={null} onClose={() => setSearchOpen(false)} />}
     </div>
   );
 }
