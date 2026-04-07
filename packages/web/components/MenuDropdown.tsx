@@ -51,12 +51,13 @@ export default function MenuDropdown({ currentUser, isOwnFarm, onClose, onOpenEd
     items.push({
       icon: 'edit',
       label: locale === 'ko' ? '정보 수정' : 'Edit Profile',
-      onClick: () => { onOpenEdit(); onClose(); },
+      // onOpenEdit이 setModal('edit')을 호출 → 메뉴는 자동으로 닫힘 (modal !== 'menu')
+      onClick: onOpenEdit,
     });
     items.push({
       icon: 'face',
       label: locale === 'ko' ? '캐릭터' : 'Character',
-      onClick: () => { onOpenCharacter(); onClose(); },
+      onClick: onOpenCharacter,
     });
   } else {
     // 방문 시: 내 농장 + 소개 + 언어 + 로그아웃
@@ -70,14 +71,15 @@ export default function MenuDropdown({ currentUser, isOwnFarm, onClose, onOpenEd
   items.push({
     icon: 'info',
     label: locale === 'ko' ? '소개' : 'About',
-    onClick: () => { onOpenAbout(); onClose(); },
+    onClick: onOpenAbout,
     divider: true,
   });
 
   items.push({
     icon: 'language',
     label: locale === 'ko' ? 'English' : '한국어',
-    onClick: () => { setLocale(locale === 'ko' ? 'en' : 'ko'); },
+    // 언어 토글은 메뉴를 닫지 않고 그대로 둠
+    onClick: () => setLocale(locale === 'ko' ? 'en' : 'ko'),
   });
 
   items.push({
