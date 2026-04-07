@@ -553,14 +553,21 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
                 </button>
               }
             >
-              <div className="flex flex-wrap gap-1.5">
-                {GACHA_ITEMS.filter(item => itemCounts.has(item.id)).slice(0, 16).map(item => (
-                  <span key={item.id} className="text-base" title={item.name}>
-                    {ITEM_EMOJI[item.id] ?? '?'}
-                  </span>
-                ))}
-                {uniqueItems > 16 && <span className="text-xs opacity-40 self-center">+{uniqueItems - 16}</span>}
-              </div>
+              {(() => {
+                const collected = GACHA_ITEMS.filter(item => itemCounts.has(item.id));
+                const visible = collected.slice(0, 10);
+                const overflow = uniqueItems - visible.length;
+                return (
+                  <div className="flex items-center gap-1.5 overflow-hidden whitespace-nowrap">
+                    {visible.map(item => (
+                      <span key={item.id} className="text-base shrink-0" title={item.name}>
+                        {ITEM_EMOJI[item.id] ?? '?'}
+                      </span>
+                    ))}
+                    {overflow > 0 && <span className="text-xs opacity-40 shrink-0">+{overflow}</span>}
+                  </div>
+                );
+              })()}
             </Card>
           </div>
         )}
