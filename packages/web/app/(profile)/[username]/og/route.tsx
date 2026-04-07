@@ -6,7 +6,7 @@ import type { PublicProfile } from '@claude-farmer/shared';
 
 export const runtime = 'edge';
 
-function asciiSafe(s: string | undefined | null, max = 32): string {
+function asciiSafe(s: string | undefined | null, max = 80): string {
   if (!s) return '';
   const ascii = s.replace(/[^\x20-\x7E]/g, '').trim();
   return ascii.length > max ? ascii.slice(0, max) + '...' : ascii;
@@ -15,7 +15,44 @@ function asciiSafe(s: string | undefined | null, max = 32): string {
 const W = 1200;
 const H = 630;
 const THUMB_PX = 64;
-const THUMB_SCALE = 7; // 64 → 448
+const THUMB_SCALE = 9; // 64 → 576
+const THUMB_SIZE = THUMB_PX * THUMB_SCALE; // 576
+const THUMB_X = (W - THUMB_SIZE) / 2; // 312
+const THUMB_Y = (H - THUMB_SIZE) / 2; // 27
+
+function homeFallback() {
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: W,
+          height: H,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#1a1d27',
+          fontFamily: 'sans-serif',
+        }}
+      >
+        <div style={{ display: 'flex', fontSize: 96, fontWeight: 900, color: '#fbbf24' }}>
+          Claude Farmer
+        </div>
+        <div style={{ display: 'flex', fontSize: 36, color: '#9ca3af', marginTop: 24 }}>
+          Your code grows a farm
+        </div>
+        <div style={{ display: 'flex', fontSize: 24, color: '#fbbf24', marginTop: 48, fontWeight: 700 }}>
+          claudefarmer.com
+        </div>
+      </div>
+    ),
+    {
+      width: W,
+      height: H,
+      headers: { 'Cache-Control': 'public, max-age=300, s-maxage=300' },
+    },
+  );
+}
 
 export async function GET(
   _request: NextRequest,
@@ -24,24 +61,24 @@ export async function GET(
   const { username } = await params;
   const profile = await redis.get<PublicProfile>(keys.user(username)).catch(() => null);
 
-  const nickname = asciiSafe(profile?.nickname, 24) || username;
-  const level = profile?.level ?? 0;
-  const harvests = profile?.total_harvests ?? 0;
-  const items = profile?.unique_items ?? 0;
-  const streak = profile?.streak_days ?? 0;
-  const stats = `Lv.${level}  ${harvests} Harvests  ${items}/32 Codex` + (streak > 0 ? `  ${streak}d Streak` : '');
+  if (!profile) {
+    return homeFallback();
+  }
 
-  // 썸네일 픽셀 아트 → 사각형 리스트
+  const nickname = asciiSafe(profile.nickname, 24) || username;
+  const level = profile.level ?? 0;
+  const items = profile.unique_items ?? 0;
+  const streak = profile.streak_days ?? 0;
+  const status = asciiSafe(profile.status_message?.text, 60);
+
   const rects = getThumbnailRects({
     githubId: username,
-    character: profile?.character,
+    character: profile.character,
     level,
     uniqueItems: items,
     streakDays: streak,
-    inventory: profile?.inventory ?? [],
+    inventory: profile.inventory ?? [],
   }, 16);
-
-  const thumbSize = THUMB_PX * THUMB_SCALE; // 448
 
   return new ImageResponse(
     (
@@ -50,20 +87,20 @@ export async function GET(
           width: W,
           height: H,
           display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          background: '#1a1d27',
+          position: 'relative',
+          background: '#0f1117',
           fontFamily: 'sans-serif',
-          padding: 60,
         }}
       >
-        {/* 좌측: 썸네일 픽셀 아트 */}
+        {/* 썸네일 픽셀 아트 (중앙) */}
         <div
           style={{
+            position: 'absolute',
+            left: THUMB_X,
+            top: THUMB_Y,
+            width: THUMB_SIZE,
+            height: THUMB_SIZE,
             display: 'flex',
-            position: 'relative',
-            width: thumbSize,
-            height: thumbSize,
             borderRadius: 16,
             border: '4px solid #fbbf24',
             overflow: 'hidden',
@@ -85,28 +122,51 @@ export async function GET(
           ))}
         </div>
 
-        {/* 우측: 텍스트 */}
+        {/* 말풍선 (썸네일 상단 정렬) */}
+        {status && (
+          <div
+            style={{
+              position: 'absolute',
+              left: THUMB_X + 20,
+              top: THUMB_Y + 20,
+              maxWidth: THUMB_SIZE - 40,
+              display: 'flex',
+              backgroundColor: 'rgba(15, 17, 23, 0.92)',
+              border: '2px solid #fbbf24',
+              borderRadius: 24,
+              padding: '20px 28px',
+            }}
+          >
+            <div style={{ display: 'flex', fontSize: 26, color: '#e5e7eb', lineHeight: 1.3 }}>
+              &ldquo;{status}&rdquo;
+            </div>
+          </div>
+        )}
+
+        {/* 하단 텍스트 그룹 (썸네일 하단 정렬, 그라데이션 배경) */}
         <div
           style={{
+            position: 'absolute',
+            left: THUMB_X,
+            top: THUMB_Y + THUMB_SIZE - 200,
+            width: THUMB_SIZE,
+            height: 200,
             display: 'flex',
             flexDirection: 'column',
-            marginLeft: 60,
-            flex: 1,
+            justifyContent: 'flex-end',
+            padding: '24px 32px',
+            background: 'linear-gradient(to bottom, rgba(15,17,23,0) 0%, rgba(15,17,23,0.85) 50%, rgba(15,17,23,0.95) 100%)',
+            borderBottomLeftRadius: 12,
+            borderBottomRightRadius: 12,
           }}
         >
-          <div style={{ display: 'flex', fontSize: 28, fontWeight: 700, color: '#fbbf24' }}>
-            Claude Farmer
-          </div>
-          <div style={{ display: 'flex', fontSize: 72, fontWeight: 900, color: '#e5e7eb', marginTop: 16 }}>
+          <div style={{ display: 'flex', fontSize: 44, fontWeight: 900, color: '#e5e7eb' }}>
             {nickname}
           </div>
-          <div style={{ display: 'flex', fontSize: 26, color: '#9ca3af', marginTop: 12 }}>
-            {stats}
+          <div style={{ display: 'flex', fontSize: 22, color: '#9ca3af', marginTop: 4 }}>
+            @{username}
           </div>
-          <div style={{ display: 'flex', fontSize: 24, color: '#1a1d27', backgroundColor: '#fbbf24', padding: '16px 32px', borderRadius: 12, marginTop: 32, fontWeight: 900 }}>
-            Visit and water this farm
-          </div>
-          <div style={{ display: 'flex', fontSize: 20, color: '#6b7280', marginTop: 24 }}>
+          <div style={{ display: 'flex', fontSize: 22, color: '#fbbf24', fontWeight: 900, marginTop: 4 }}>
             claudefarmer.com/@{username}
           </div>
         </div>

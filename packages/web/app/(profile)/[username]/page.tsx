@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import FarmCanvas, { type FarmCanvasHandle } from '@/components/FarmCanvas';
 import GuestbookPanel from '@/components/GuestbookPanel';
 import GiftPicker from '@/components/GiftPicker';
@@ -210,36 +209,10 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
     if (newIds.length > 0 || !willBookmark) setBookmarkIds(newIds);
   };
 
-  // ── Not Found ──
+  // ── Not Found → 홈으로 리다이렉트 ──
   if (notFound) {
-    return (
-      <div className="max-w-md mx-auto min-h-screen flex flex-col bg-[var(--bg)] shadow-2xl border-x border-[var(--border)]">
-        <header className="sticky top-0 z-50 bg-[var(--bg)] border-b border-[var(--border)] px-4 py-2">
-          <Link href="/" className="text-sm font-bold flex items-center gap-1.5">
-            <img src="/favicon.svg" alt="" className="w-5 h-5" />
-            Claude Farmer
-          </Link>
-        </header>
-        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
-          <div className="text-5xl">🌾</div>
-          <h1 className="text-xl font-bold">@{username}</h1>
-          <p className="text-sm opacity-50">{locale === 'ko' ? '아직 농장을 시작하지 않았어요' : 'hasn\'t started farming yet'}</p>
-          <button
-            onClick={() => {
-              const url = `https://claudefarmer.com/@${username}`;
-              if (navigator.share) navigator.share({ title: `@${username}'s Farm`, url });
-              else { navigator.clipboard.writeText(url); alert(locale === 'ko' ? '링크 복사됨!' : 'Link copied!'); }
-            }}
-            className="bg-[var(--accent)] text-black font-bold px-6 py-3 rounded-lg text-sm"
-          >
-            {locale === 'ko' ? '초대 링크 복사' : 'Copy invite link'}
-          </button>
-          <Link href="/" className="text-xs opacity-40 hover:opacity-70">
-            {locale === 'ko' ? '나도 농장 시작하기' : 'Start my own farm'}
-          </Link>
-        </div>
-      </div>
-    );
+    if (typeof window !== 'undefined') router.replace('/');
+    return null;
   }
 
   if (loading || !profile) {
