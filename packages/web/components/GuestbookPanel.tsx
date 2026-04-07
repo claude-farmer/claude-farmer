@@ -47,12 +47,12 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: Gues
 
   function typeLabel(type: string): string {
     if (locale === 'ko') {
-      if (type === 'water') return '물을 주고 갔어요';
-      if (type === 'gift') return '선물을 보냈어요';
-      return '방문했어요';
+      if (type === 'water') return '물주기';
+      if (type === 'gift') return '선물';
+      return '방문';
     }
     if (type === 'water') return 'watered';
-    if (type === 'gift') return 'sent a gift';
+    if (type === 'gift') return 'gifted';
     return 'visited';
   }
 
@@ -75,7 +75,7 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: Gues
         ) : entries.length === 0 ? (
           <div className="text-center py-4 opacity-40 text-sm">{t.guestbookEmpty}</div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {entries.map((entry, i) => (
               <div key={i} className="flex gap-2.5 items-start">
                 <button
@@ -87,21 +87,23 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: Gues
                   )}
                 </button>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-1.5 text-xs">
+                  <div className="flex items-center gap-1.5 text-xs flex-wrap">
                     <button
                       onClick={() => onVisitUser?.(entry.from_id)}
                       className="font-bold truncate hover:text-[var(--accent)] transition-colors"
                     >
                       {entry.from_nickname}
                     </button>
-                    <span className="opacity-40 flex-shrink-0">· {timeAgo(entry.at)}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] opacity-60 mt-0.5">
-                    <Icon name={typeIconName(entry.type)} size={11} filled={entry.type === 'water'} />
-                    <span>{typeLabel(entry.type)}</span>
+                    <span className="opacity-40">·</span>
+                    <span className="inline-flex items-center gap-0.5 opacity-60">
+                      <Icon name={typeIconName(entry.type)} size={11} filled={entry.type === 'water'} />
+                      {typeLabel(entry.type)}
+                    </span>
+                    <span className="opacity-40">·</span>
+                    <span className="opacity-40">{timeAgo(entry.at)}</span>
                   </div>
                   {entry.message && (
-                    <div className="mt-1.5 inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm px-3 py-1.5 text-xs break-words">
+                    <div className="mt-1.5 inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm px-3 py-2 text-xs break-words">
                       {entry.message}
                     </div>
                   )}

@@ -98,6 +98,17 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
   const isOwn = currentUser === username && currentUser !== null;
   const isLoggedIn = !!currentUser;
 
+  function timeAgo(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t.guestbookJustNow;
+    if (mins < 60) return `${mins}${t.guestbookMinAgo}`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}${t.guestbookHourAgo}`;
+    const days = Math.floor(hours / 24);
+    return `${days}${t.guestbookDayAgo}`;
+  }
+
   // 자기 농장 30s polling
   const { data: notifications } = usePolling<FarmNotifications>(
     isOwn ? `/api/farm/${username}/notifications` : null,
@@ -416,30 +427,45 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
             }
           >
             <div
-              className={`flex flex-col gap-1.5 text-sm ${isOwn ? 'cursor-pointer' : ''}`}
+              className={`flex gap-2.5 items-start ${isOwn ? 'cursor-pointer' : ''}`}
               onClick={() => { if (isOwn) setModal('edit'); }}
             >
-              <div className="flex items-start gap-2">
-                <Icon name="chat_bubble" size={16} className="opacity-50 mt-0.5 shrink-0" />
-                {profile.status_message?.text ? (
-                  <span className="flex-1 break-words">{profile.status_message.text}</span>
-                ) : (
-                  <span className="opacity-40 flex-1">{isOwn ? t.setBubble : (locale === 'ko' ? '소개가 없어요' : 'No bio')}</span>
-                )}
-                {isOwn && <Icon name="edit" size={14} className="opacity-30 shrink-0 mt-0.5" />}
+              <img
+                src={profile.avatar_url}
+                alt=""
+                className="w-9 h-9 rounded-full border border-[var(--border)] flex-shrink-0 object-cover"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 text-xs flex-wrap">
+                  <span className="font-bold truncate">{profile.nickname}</span>
+                  {profile.status_message?.updated_at && (
+                    <>
+                      <span className="opacity-40">·</span>
+                      <span className="opacity-40">{timeAgo(profile.status_message.updated_at)}</span>
+                    </>
+                  )}
+                  {isOwn && <Icon name="edit" size={12} className="opacity-30 ml-auto" />}
+                </div>
+                <div className="mt-1.5 inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm overflow-hidden text-xs">
+                  <div className="px-3 py-2 break-words">
+                    {profile.status_message?.text || (
+                      <span className="opacity-40">{isOwn ? t.setBubble : (locale === 'ko' ? '소개가 없어요' : 'No bio')}</span>
+                    )}
+                  </div>
+                  {profile.status_message?.link && /^https?:\/\//i.test(profile.status_message.link) && (
+                    <a
+                      href={profile.status_message.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1.5 px-3 py-1.5 border-t border-[var(--border)] text-[var(--accent)] hover:bg-[var(--card)] transition-colors"
+                    >
+                      <Icon name="open_in_new" size={12} className="shrink-0" />
+                      <span className="truncate">{profile.status_message.link.replace(/^https?:\/\//, '')}</span>
+                    </a>
+                  )}
+                </div>
               </div>
-              {profile.status_message?.link && /^https?:\/\//i.test(profile.status_message.link) && (
-                <a
-                  href={profile.status_message.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={e => e.stopPropagation()}
-                  className="flex items-center gap-2 text-xs text-[var(--accent)] hover:underline truncate"
-                >
-                  <Icon name="link" size={14} className="shrink-0" />
-                  <span className="truncate">{profile.status_message.link}</span>
-                </a>
-              )}
             </div>
           </Card>
         </div>
@@ -449,24 +475,32 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
           <Card header={<><Icon name="bar_chart" size={14} />{locale === 'ko' ? '기록' : 'Records'}</>}>
             <div className="grid grid-cols-4 gap-2 text-center">
               <div className="flex flex-col items-center gap-1">
-                <Icon name="agriculture" size={18} className="opacity-60" />
                 <div className="text-base font-bold leading-none">{profile.total_harvests}</div>
-                <div className="text-[10px] opacity-50">{locale === 'ko' ? '수확' : 'Harvests'}</div>
+                <div className="text-[10px] opacity-50 inline-flex items-center gap-0.5">
+                  <Icon name="agriculture" size={11} />
+                  {locale === 'ko' ? '수확' : 'Harvests'}
+                </div>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <Icon name="inventory_2" size={18} className="opacity-60" />
                 <div className="text-base font-bold leading-none">{uniqueItems}/32</div>
-                <div className="text-[10px] opacity-50">{locale === 'ko' ? '도감' : 'Codex'}</div>
+                <div className="text-[10px] opacity-50 inline-flex items-center gap-0.5">
+                  <Icon name="inventory_2" size={11} />
+                  {locale === 'ko' ? '도감' : 'Codex'}
+                </div>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <Icon name="groups" size={18} className="opacity-60" />
                 <div className="text-base font-bold leading-none">{profile.total_visitors ?? 0}</div>
-                <div className="text-[10px] opacity-50">{locale === 'ko' ? '방문자' : 'Visitors'}</div>
+                <div className="text-[10px] opacity-50 inline-flex items-center gap-0.5">
+                  <Icon name="groups" size={11} />
+                  {locale === 'ko' ? '방문자' : 'Visitors'}
+                </div>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <Icon name="water_drop" size={18} className="opacity-60 text-blue-400" filled />
                 <div className="text-base font-bold leading-none">{profile.total_water_received ?? 0}</div>
-                <div className="text-[10px] opacity-50">{locale === 'ko' ? '물' : 'Watered'}</div>
+                <div className="text-[10px] opacity-50 inline-flex items-center gap-0.5">
+                  <Icon name="water_drop" size={11} className="text-blue-400" filled />
+                  {locale === 'ko' ? '물' : 'Watered'}
+                </div>
               </div>
             </div>
           </Card>
