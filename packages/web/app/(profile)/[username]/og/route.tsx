@@ -75,17 +75,11 @@ export async function GET(
             <div style={{ fontSize: 24, color: '#9ca3af' }}>@{username}</div>
           </div>
 
-          {/* 중앙: 아바타 + 닉네임 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginTop: 80 }}>
-            <img
-              src={profile.avatar_url}
-              width={140}
-              height={140}
-              style={{ borderRadius: 70, border: '6px solid #fbbf24' }}
-            />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: 64, fontWeight: 900, color: '#e5e7eb' }}>{nickname}</div>
-              <div style={{ fontSize: 28, color: '#9ca3af', marginTop: 8 }}>Lv.{level}</div>
+          {/* 중앙: 닉네임 */}
+          <div style={{ display: 'flex', flexDirection: 'column', marginTop: 80 }}>
+            <div style={{ fontSize: 88, fontWeight: 900, color: '#e5e7eb', letterSpacing: '-0.02em' }}>{nickname}</div>
+            <div style={{ fontSize: 32, color: '#9ca3af', marginTop: 12 }}>
+              Code with Claude. Watch your pixel-art farm grow automatically.
             </div>
           </div>
 
@@ -107,15 +101,20 @@ export async function GET(
             )}
           </div>
 
-          {/* 하단: 상태 메시지 (있을 때만, ASCII만) + 사이트 */}
+          {/* 하단: 상태 + CTA */}
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flex: 1, marginTop: 40 }}>
-            {status ? (
-              <div style={{ fontSize: 26, color: '#9ca3af', maxWidth: 700, fontStyle: 'italic' }}>
-                &ldquo;{status}&rdquo;
+            <div style={{ display: 'flex', flexDirection: 'column', maxWidth: 700 }}>
+              {status && (
+                <div style={{ fontSize: 24, color: '#9ca3af', fontStyle: 'italic', marginBottom: 16 }}>
+                  &ldquo;{status}&rdquo;
+                </div>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ fontSize: 28, color: '#fbbf24', fontWeight: 900, padding: '12px 24px', background: '#1a1d27', borderRadius: 12, border: '2px solid #fbbf24' }}>
+                  Visit & Water →
+                </div>
               </div>
-            ) : (
-              <div />
-            )}
+            </div>
             <div style={{ fontSize: 26, color: '#fbbf24', fontWeight: 900 }}>claudefarmer.com</div>
           </div>
         </div>
