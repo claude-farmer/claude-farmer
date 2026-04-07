@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locale-context';
+import Icon from './Icon';
 
 interface ShareModalProps {
   username: string;
@@ -72,17 +73,25 @@ export default function ShareModal({ username, nickname, onClose }: ShareModalPr
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2">
-          <span className="font-bold text-sm">🔗 {locale === 'ko' ? '공유' : 'Share'}</span>
-          <button onClick={onClose} className="text-xs opacity-40 hover:opacity-100">✕</button>
+          <span className="font-bold text-sm flex items-center gap-2">
+            <Icon name="share" size={18} />
+            {locale === 'ko' ? '공유' : 'Share'}
+          </span>
+          <button onClick={onClose} className="opacity-40 hover:opacity-100">
+            <Icon name="close" size={18} />
+          </button>
         </div>
 
-        {/* OG Preview */}
+        {/* OG Preview (1200×630 비율 유지) */}
         <div className="px-4 py-2">
-          <div className="rounded-lg overflow-hidden border border-[var(--border)] bg-[var(--bg)]">
+          <div
+            className="rounded-lg overflow-hidden border border-[var(--border)] bg-[#1a1d27] w-full"
+            style={{ aspectRatio: '1200 / 630' }}
+          >
             <img
               src={ogUrl}
               alt={`${nickname}'s farm`}
-              className="w-full h-auto block"
+              className="w-full h-full object-contain block"
               loading="lazy"
             />
           </div>
@@ -99,25 +108,25 @@ export default function ShareModal({ username, nickname, onClose }: ShareModalPr
         <div className="px-4 py-3 grid grid-cols-3 gap-2">
           <button
             onClick={handleCopy}
-            className="bg-[var(--accent)] text-black font-bold py-3 rounded-lg text-xs hover:opacity-90 transition-opacity"
+            className="flex flex-col items-center gap-1 bg-[var(--accent)] text-black font-bold py-3 rounded-lg text-xs hover:opacity-90 transition-opacity"
           >
-            {copied ? '✓' : '📋'}
-            <div className="mt-0.5">{copied ? (locale === 'ko' ? '복사됨' : 'Copied') : (locale === 'ko' ? '복사' : 'Copy')}</div>
+            <Icon name={copied ? 'check' : 'content_copy'} size={20} />
+            <span>{copied ? (locale === 'ko' ? '복사됨' : 'Copied') : (locale === 'ko' ? '복사' : 'Copy')}</span>
           </button>
           <button
             onClick={handleDownload}
             disabled={downloading}
-            className="bg-[var(--card)] border border-[var(--border)] font-bold py-3 rounded-lg text-xs hover:border-[var(--accent)] transition-colors disabled:opacity-40"
+            className="flex flex-col items-center gap-1 bg-[var(--card)] border border-[var(--border)] font-bold py-3 rounded-lg text-xs hover:border-[var(--accent)] transition-colors disabled:opacity-40"
           >
-            ⬇️
-            <div className="mt-0.5">{locale === 'ko' ? '저장' : 'Save'}</div>
+            <Icon name="download" size={20} />
+            <span>{locale === 'ko' ? '저장' : 'Save'}</span>
           </button>
           <button
             onClick={handleNativeShare}
-            className="bg-[var(--card)] border border-[var(--border)] font-bold py-3 rounded-lg text-xs hover:border-[var(--accent)] transition-colors"
+            className="flex flex-col items-center gap-1 bg-[var(--card)] border border-[var(--border)] font-bold py-3 rounded-lg text-xs hover:border-[var(--accent)] transition-colors"
           >
-            📤
-            <div className="mt-0.5">{locale === 'ko' ? '공유' : 'Share'}</div>
+            <Icon name="ios_share" size={20} />
+            <span>{locale === 'ko' ? '공유' : 'Share'}</span>
           </button>
         </div>
       </div>

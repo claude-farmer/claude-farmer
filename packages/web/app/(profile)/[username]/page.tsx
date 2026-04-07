@@ -11,6 +11,9 @@ import CharacterEditor from '@/components/CharacterEditor';
 import MenuDropdown from '@/components/MenuDropdown';
 import SearchModal from '@/components/SearchModal';
 import ShareModal from '@/components/ShareModal';
+import AboutModal from '@/components/AboutModal';
+import StatusEditModal from '@/components/StatusEditModal';
+import Icon from '@/components/Icon';
 import {
   fetchSession, fetchFarmWithFootprints, waterUser, visitFarm, sendGift, waveSurf,
   fetchBookmarks, toggleBookmark, updateStatus, updateCharacter,
@@ -30,7 +33,7 @@ const ITEM_EMOJI: Record<string, string> = {
   l01: '🌻', l02: '🦄', l03: '🌌', l04: '✨',
 };
 
-type ActiveModal = 'none' | 'menu' | 'search' | 'share' | 'codex' | 'character' | 'gift';
+type ActiveModal = 'none' | 'menu' | 'search' | 'share' | 'codex' | 'character' | 'gift' | 'about' | 'edit';
 
 export default function FarmProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { t, locale } = useLocale();
@@ -50,11 +53,6 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
   const [modal, setModal] = useState<ActiveModal>('none');
   const [guestbookKey, setGuestbookKey] = useState(0);
   const [userInventory, setUserInventory] = useState<InventoryItem[]>([]);
-
-  // 상태 메시지 편집
-  const [editingStatus, setEditingStatus] = useState(false);
-  const [statusDraft, setStatusDraft] = useState('');
-  const [linkDraft, setLinkDraft] = useState('');
 
   useEffect(() => {
     params.then(p => setUsername(p.username));
@@ -143,14 +141,13 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
     }
   };
 
-  const handleStatusSave = async () => {
+  const handleStatusSave = async (text: string, link?: string) => {
     if (!isOwn) return;
-    const newStatus = statusDraft.trim()
-      ? { text: statusDraft.trim().slice(0, 200), link: linkDraft.trim() && /^https?:\/\//i.test(linkDraft.trim()) ? linkDraft.trim() : undefined, updated_at: new Date().toISOString() }
+    const newStatus = text.trim()
+      ? { text: text.trim().slice(0, 200), link, updated_at: new Date().toISOString() }
       : null;
     setProfile(p => p ? { ...p, status_message: newStatus } : p);
     await updateStatus(newStatus);
-    setEditingStatus(false);
   };
 
   const handleCharacterUpdate = async (character: CharacterAppearance) => {
@@ -224,7 +221,7 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
               <img src={profile.avatar_url} alt="" className="w-7 h-7 rounded-full border border-[var(--border)]" />
               <span className="font-bold">{profile.nickname}</span>
               <span className="text-xs opacity-30">Lv.{profile.level}</span>
-              <span className="text-xs opacity-40">⌄</span>
+              <Icon name="expand_more" size={16} className="opacity-50" />
             </button>
           ) : (
             <div className="flex items-center gap-2 text-sm">
@@ -235,23 +232,35 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
           )}
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-3">
-            <button onClick={() => setModal('search')} className="text-lg opacity-60 hover:opacity-100" title={t.exploreTitle}>🔍</button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setModal('search')}
+              className="opacity-60 hover:opacity-100 p-1"
+              title={t.exploreTitle}
+            >
+              <Icon name="search" size={22} />
+            </button>
             {isLoggedIn && !isOwn && (
               <button
                 onClick={async () => {
                   const next = await waveSurf(username, currentUser!);
                   if (next) router.push(`/@${next}`);
                 }}
-                className="text-lg opacity-60 hover:opacity-100"
+                className="opacity-60 hover:opacity-100 p-1"
                 title="Wave Surf"
               >
-                🌊
+                <Icon name="waves" size={22} />
               </button>
             )}
-            <button onClick={() => setModal('share')} className="text-lg opacity-60 hover:opacity-100" title="Share">🔗</button>
+            <button
+              onClick={() => setModal('share')}
+              className="opacity-60 hover:opacity-100 p-1"
+              title="Share"
+            >
+              <Icon name="share" size={22} />
+            </button>
             {!isLoggedIn && (
-              <a href="/api/auth/login" className="text-xs bg-[var(--accent)] text-black px-3 py-1 rounded-full font-bold hover:opacity-90">
+              <a href="/api/auth/login" className="text-xs bg-[var(--accent)] text-black px-3 py-1 rounded-full font-bold hover:opacity-90 ml-1">
                 {t.loginBtn}
               </a>
             )}
@@ -261,20 +270,29 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
           {modal === 'menu' && currentUser && (
             <MenuDropdown
               currentUser={currentUser}
+              isOwnFarm={isOwn}
               onClose={() => setModal('none')}
+              onOpenEdit={() => setModal('edit')}
               onOpenCharacter={() => setModal('character')}
+              onOpenAbout={() => setModal('about')}
             />
           )}
         </div>
 
         {/* 알림 배너 */}
         {isOwn && notifications && (notifications.visitor_count > 0 || notifications.water_received_count > 0) && (
-          <div className="px-4 py-1.5 border-t border-[var(--border)] text-xs flex items-center gap-3 bg-[var(--card)]">
+          <div className="px-4 py-1.5 border-t border-[var(--border)] text-xs flex items-center gap-4 bg-[var(--card)]">
             {notifications.visitor_count > 0 && (
-              <span>👣 <span className="font-bold">{notifications.visitor_count}</span></span>
+              <span className="flex items-center gap-1">
+                <Icon name="footprint" size={14} className="opacity-60" />
+                <span className="font-bold">{notifications.visitor_count}</span>
+              </span>
             )}
             {notifications.water_received_count > 0 && (
-              <span>💧 <span className="font-bold">{notifications.water_received_count}</span></span>
+              <span className="flex items-center gap-1">
+                <Icon name="water_drop" size={14} className="opacity-60" />
+                <span className="font-bold">{notifications.water_received_count}</span>
+              </span>
             )}
           </div>
         )}
@@ -312,67 +330,44 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
           </div>
         )}
 
-        {/* Status (editable for own farm) */}
+        {/* Status (read-only; edit via menu) */}
         <div className="px-4 py-2 border-b border-[var(--border)] text-sm">
-          {editingStatus ? (
-            <div className="flex flex-col gap-2">
-              <input
-                type="text"
-                value={statusDraft}
-                onChange={e => setStatusDraft(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleStatusSave(); if (e.key === 'Escape') setEditingStatus(false); }}
-                maxLength={200}
-                placeholder={t.setBubble}
-                autoFocus
-                className="bg-transparent border-b border-[var(--border)] outline-none text-sm py-1"
-              />
-              <input
-                type="url"
-                value={linkDraft}
-                onChange={e => setLinkDraft(e.target.value)}
-                placeholder="https://..."
-                className="bg-transparent border-b border-[var(--border)] outline-none text-xs py-1 opacity-70"
-              />
-              <div className="flex gap-2 justify-end">
-                <button onClick={() => setEditingStatus(false)} className="text-xs opacity-40 px-2">✕</button>
-                <button onClick={handleStatusSave} className="text-xs bg-[var(--accent)] text-black px-3 py-1 rounded font-bold">OK</button>
-              </div>
-            </div>
-          ) : (
-            <div
-              className={`flex items-center gap-2 ${isOwn ? 'cursor-pointer hover:opacity-80' : ''}`}
-              onClick={() => {
-                if (!isOwn) return;
-                setStatusDraft(profile.status_message?.text ?? '');
-                setLinkDraft(profile.status_message?.link ?? '');
-                setEditingStatus(true);
-              }}
-            >
-              <span>💬</span>
-              {profile.status_message?.text ? (
-                <span className="flex-1">{profile.status_message.text}</span>
-              ) : (
-                <span className="opacity-40 flex-1">{isOwn ? t.setBubble : ''}</span>
-              )}
-              {profile.status_message?.link && /^https?:\/\//i.test(profile.status_message.link) && (
-                <a href={profile.status_message.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-xs text-[var(--accent)] hover:underline">
-                  🔗
-                </a>
-              )}
-              {isOwn && <span className="text-xs opacity-30">✏️</span>}
-            </div>
-          )}
+          <div
+            className={`flex items-center gap-2 ${isOwn ? 'cursor-pointer hover:opacity-80' : ''}`}
+            onClick={() => { if (isOwn) setModal('edit'); }}
+          >
+            <Icon name="chat_bubble" size={16} className="opacity-50" />
+            {profile.status_message?.text ? (
+              <span className="flex-1">{profile.status_message.text}</span>
+            ) : (
+              <span className="opacity-40 flex-1">{isOwn ? t.setBubble : ''}</span>
+            )}
+            {profile.status_message?.link && /^https?:\/\//i.test(profile.status_message.link) && (
+              <a href={profile.status_message.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[var(--accent)]">
+                <Icon name="link" size={14} />
+              </a>
+            )}
+            {isOwn && <Icon name="edit" size={14} className="opacity-30" />}
+          </div>
         </div>
 
         {/* Action Bar */}
         <div className="flex gap-2 px-4 py-3 border-b border-[var(--border)]">
           {isOwn ? (
             <>
-              <button onClick={() => setModal('share')} className="flex-1 text-xs font-bold py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors">
-                🔗 {locale === 'ko' ? '공유' : 'Share'}
+              <button
+                onClick={() => setModal('share')}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+              >
+                <Icon name="share" size={16} />
+                {locale === 'ko' ? '공유' : 'Share'}
               </button>
-              <button onClick={() => setModal('codex')} className="flex-1 text-xs font-bold py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors">
-                📖 {locale === 'ko' ? '도감' : 'Codex'} {uniqueItems}/32
+              <button
+                onClick={() => setModal('codex')}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+              >
+                <Icon name="menu_book" size={16} />
+                {locale === 'ko' ? '도감' : 'Codex'} {uniqueItems}/32
               </button>
             </>
           ) : (
@@ -380,29 +375,37 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
               <button
                 onClick={handleWater}
                 disabled={cooldownLeft > 0 || watering || !isLoggedIn}
-                className="flex-1 text-xs font-bold py-2 rounded-lg bg-blue-500 text-white disabled:opacity-40 transition-all"
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 rounded-lg bg-blue-500 text-white disabled:opacity-40 transition-all"
               >
-                {cooldownLeft > 0 ? `💧 ${Math.floor(cooldownLeft/60)}:${(cooldownLeft%60).toString().padStart(2,'0')}` : `💧 ${t.visitWater}`}
+                <Icon name="water_drop" size={16} filled />
+                {cooldownLeft > 0
+                  ? `${Math.floor(cooldownLeft/60)}:${(cooldownLeft%60).toString().padStart(2,'0')}`
+                  : t.visitWater}
               </button>
               {isLoggedIn && (
                 <>
-                  <button onClick={() => setModal('gift')} className="text-xs font-bold py-2 px-3 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-pink-400 transition-colors">
-                    🎁
+                  <button
+                    onClick={() => setModal('gift')}
+                    className="text-xs font-bold py-2.5 px-3 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-pink-400 transition-colors"
+                    title={locale === 'ko' ? '선물' : 'Gift'}
+                  >
+                    <Icon name="redeem" size={18} />
                   </button>
                   <button
                     onClick={handleToggleBookmark}
-                    className={`text-xs font-bold py-2 px-3 rounded-lg border transition-colors ${
+                    className={`text-xs font-bold py-2.5 px-3 rounded-lg border transition-colors ${
                       isBookmarked
                         ? 'bg-[var(--accent)] text-black border-[var(--accent)]'
                         : 'bg-[var(--card)] border-[var(--border)] hover:border-[var(--accent)]'
                     }`}
+                    title={isBookmarked ? t.visitBookmarked : t.visitBookmark}
                   >
-                    {isBookmarked ? '⭐' : '🔖'}
+                    <Icon name="bookmark" size={18} filled={isBookmarked} />
                   </button>
                 </>
               )}
               {!isLoggedIn && (
-                <a href="/api/auth/login" className="flex-1 text-xs font-bold py-2 rounded-lg bg-[var(--accent)] text-black text-center">
+                <a href="/api/auth/login" className="flex-1 text-xs font-bold py-2.5 rounded-lg bg-[var(--accent)] text-black text-center">
                   {t.loginBtn}
                 </a>
               )}
@@ -412,19 +415,23 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2 px-4 py-3 text-xs">
-          <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)]">
-            <span className="opacity-50">📦</span> <span className="font-bold">{uniqueItems}/32</span>
+          <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)] flex items-center gap-2">
+            <Icon name="inventory_2" size={16} className="opacity-50" />
+            <span className="font-bold">{uniqueItems}/32</span>
           </div>
-          <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)]">
-            <span className="opacity-50">🪙</span> <span className="font-bold">{profile.total_harvests}</span>
+          <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)] flex items-center gap-2">
+            <Icon name="agriculture" size={16} className="opacity-50" />
+            <span className="font-bold">{profile.total_harvests}</span>
           </div>
           {(profile.streak_days ?? 0) > 0 && (
-            <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)]">
-              <span className="opacity-50">🔥</span> <span className="font-bold">{profile.streak_days}{locale === 'ko' ? '일' : 'd'}</span>
+            <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)] flex items-center gap-2">
+              <Icon name="local_fire_department" size={16} className="opacity-50" />
+              <span className="font-bold">{profile.streak_days}{locale === 'ko' ? '일' : 'd'}</span>
             </div>
           )}
-          <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)]">
-            <span>{farmerTitle.emoji}</span> <span className="font-bold">{locale === 'ko' ? farmerTitle.ko : farmerTitle.en}</span>
+          <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)] flex items-center gap-2">
+            <span>{farmerTitle.emoji}</span>
+            <span className="font-bold truncate">{locale === 'ko' ? farmerTitle.ko : farmerTitle.en}</span>
           </div>
         </div>
 
@@ -488,6 +495,18 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
           current={profile.character}
           onSave={handleCharacterUpdate}
           onCancel={() => setModal('none')}
+        />
+      )}
+
+      {modal === 'about' && (
+        <AboutModal onClose={() => setModal('none')} />
+      )}
+
+      {modal === 'edit' && isOwn && (
+        <StatusEditModal
+          current={profile.status_message}
+          onSave={handleStatusSave}
+          onClose={() => setModal('none')}
         />
       )}
     </div>

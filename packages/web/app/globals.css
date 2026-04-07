@@ -25,6 +25,24 @@ canvas {
   image-rendering: crisp-edges;
 }
 
+/* Material Symbols icons */
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  user-select: none;
+}
+
 /* 캔버스 픽셀아트 선명도: GPU 합성 레이어에서 서브픽셀 블러 방지 */
 canvas.rounded-lg {
   -webkit-backface-visibility: hidden;
