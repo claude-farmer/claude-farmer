@@ -34,11 +34,8 @@ export async function POST(
 
     const now = Date.now();
 
-    // 누적 방문자 카운트 (중복 방문 제외 — 24h 내 같은 방문자는 카운트 안 함)
-    const existingScore = await redis.zscore(keys.visitors(farmOwnerId), visitorId);
-    if (existingScore === null || existingScore === undefined) {
-      await redis.incr(keys.totalVisitors(farmOwnerId));
-    }
+    // 누적 방문자 카운트 (방문할 때마다 증가)
+    await redis.incr(keys.totalVisitors(farmOwnerId));
 
     // 방문자 sorted set에 추가 (중복 방문은 timestamp 갱신)
     await redis.zadd(keys.visitors(farmOwnerId), { score: now, member: visitorId });

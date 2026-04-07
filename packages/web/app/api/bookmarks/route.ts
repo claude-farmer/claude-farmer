@@ -63,10 +63,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot bookmark yourself' }, { status: 400 });
     }
 
-    if (action === 'add') {
+    // 멱등성: 이미 같은 상태면 카운터 변경 없음
+    const isMember = await redis.sismember(keys.bookmarks(userId), target_id);
+    if (action === 'add' && !isMember) {
       await redis.sadd(keys.bookmarks(userId), target_id);
-    } else {
+      await redis.incr(keys.totalBookmarks(target_id));
+    } else if (action === 'remove' && isMember) {
       await redis.srem(keys.bookmarks(userId), target_id);
+      const newCount = await redis.decr(keys.totalBookmarks(target_id));
+      if (newCount < 0) await redis.set(keys.totalBookmarks(target_id), 0);
     }
 
     const bookmarkIds = await redis.smembers(keys.bookmarks(userId));

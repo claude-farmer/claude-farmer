@@ -132,6 +132,14 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
     }
   }, [farmPolled]);
 
+  // 모달 열렸을 때 배경 스크롤 락
+  useEffect(() => {
+    if (modal === 'none') return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [modal]);
+
   // 쿨다운 타이머
   useEffect(() => {
     if (cooldownLeft <= 0) return;
@@ -181,9 +189,16 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
 
   const handleToggleBookmark = async () => {
     if (!isLoggedIn) return;
-    const action = bookmarkIds.includes(username) ? 'remove' : 'add';
-    const newIds = await toggleBookmark(username, action);
-    setBookmarkIds(newIds);
+    const willBookmark = !bookmarkIds.includes(username);
+    // 낙관적 업데이트
+    setBookmarkIds(prev =>
+      willBookmark ? [...prev, username] : prev.filter(id => id !== username)
+    );
+    setProfile(p =>
+      p ? { ...p, total_bookmarks: Math.max(0, (p.total_bookmarks ?? 0) + (willBookmark ? 1 : -1)) } : p
+    );
+    const newIds = await toggleBookmark(username, willBookmark ? 'add' : 'remove');
+    if (newIds.length > 0 || !willBookmark) setBookmarkIds(newIds);
   };
 
   // ── Not Found ──
@@ -397,12 +412,18 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
                 <button
                   onClick={handleToggleBookmark}
                   title={isBookmarked ? t.visitBookmarked : t.visitBookmark}
-                  className={`-my-2 -mr-3 ml-2 self-stretch px-3 flex items-center border-l border-[var(--border)] transition-colors ${
+                  className={`-my-2 -mr-3 ml-2 self-stretch h-full px-3 flex items-center gap-1 border-l border-[var(--border)] transition-colors ${
                     isBookmarked ? 'text-[var(--accent)]' : 'opacity-60 hover:opacity-100 hover:bg-[var(--bg)]'
                   }`}
                 >
                   <Icon name="bookmark" size={16} filled={isBookmarked} />
+                  <span className="text-[11px] font-bold tabular-nums">{profile.total_bookmarks ?? 0}</span>
                 </button>
+              ) : (profile.total_bookmarks ?? 0) > 0 ? (
+                <span className="flex items-center gap-1 opacity-60">
+                  <Icon name="bookmark" size={14} filled />
+                  <span className="text-[11px] font-bold tabular-nums">{profile.total_bookmarks}</span>
+                </span>
               ) : null
             }
             bodyClassName="px-3 py-3"
@@ -463,7 +484,7 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
                 </div>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <div className="text-base font-bold leading-none">{uniqueItems}/32</div>
+                <div className="text-base font-bold leading-none">{Math.round((uniqueItems / 32) * 100)}%</div>
                 <div className="text-[10px] opacity-50 inline-flex items-center gap-0.5">
                   <Icon name="inventory_2" size={11} />
                   {locale === 'ko' ? '도감' : 'Codex'}

@@ -106,11 +106,22 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser, footer
                     <span className="opacity-40">·</span>
                     <span className="opacity-40">{timeAgo(entry.at)}</span>
                   </div>
-                  {entry.message && (
-                    <div className="mt-1.5 inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm px-3 py-2 text-xs break-words">
-                      {entry.message}
-                    </div>
-                  )}
+                  {(() => {
+                    let bubbleText: string | null = null;
+                    if (entry.type === 'gift' && entry.message) {
+                      bubbleText = locale === 'ko' ? `${entry.message} 선물` : `gifted ${entry.message}`;
+                    } else if (entry.type === 'water') {
+                      bubbleText = entry.message
+                        || (locale === 'ko' ? '물을 주고 갔어요' : 'left some water');
+                    } else if (entry.message) {
+                      bubbleText = entry.message;
+                    }
+                    return bubbleText ? (
+                      <div className="mt-1.5 inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm px-3 py-2 text-xs break-words">
+                        {bubbleText}
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
             ))}

@@ -106,6 +106,7 @@ export interface PublicProfile {
   // 누적 소셜 카운터 (서버에서 합산)
   total_visitors?: number;
   total_water_received?: number;
+  total_bookmarks?: number;
 }
 
 // ── 소셜: 발자국 ──

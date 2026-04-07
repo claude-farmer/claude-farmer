@@ -40,6 +40,8 @@ export const keys = {
   // 선물
   gifts: (id: string) => `farm:${id}:gifts`,
   totalGiftsReceived: (id: string) => `farm:${id}:total_gifts_received`,
+  // 북마크 카운터 (이 농장을 북마크한 유저 수)
+  totalBookmarks: (id: string) => `farm:${id}:total_bookmarks`,
 };
 
 function todayKey(): string {
