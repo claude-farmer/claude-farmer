@@ -49,9 +49,9 @@ export async function searchUser(query: string): Promise<(PublicProfile & { gith
   }
 }
 
-export async function fetchExplore(exclude: string, count = 10): Promise<(PublicProfile & { github_id: string })[]> {
+export async function fetchExplore(exclude: string, count = 10, sort: 'random' | 'recent' = 'random'): Promise<(PublicProfile & { github_id: string })[]> {
   try {
-    const res = await fetch(`${BASE}/api/explore?exclude=${exclude}&count=${count}`);
+    const res = await fetch(`${BASE}/api/explore?exclude=${exclude}&count=${count}&sort=${sort}`);
     if (!res.ok) return [];
     return await res.json();
   } catch {
