@@ -1,21 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocale } from '@/lib/locale-context';
 import Icon from './Icon';
+import ShareCanvas, { type ShareCanvasHandle } from './ShareCanvas';
+import type { CharacterAppearance, InventoryItem } from '@claude-farmer/shared';
 
 interface ShareModalProps {
   username: string;
   nickname: string;
+  level: number;
+  totalHarvests: number;
+  uniqueItems: number;
+  streakDays: number;
+  inventory: InventoryItem[];
+  character?: CharacterAppearance;
+  statusText?: string;
   onClose: () => void;
 }
 
-export default function ShareModal({ username, nickname, onClose }: ShareModalProps) {
+export default function ShareModal({
+  username, nickname, level, totalHarvests, uniqueItems, streakDays, inventory, character, statusText, onClose,
+}: ShareModalProps) {
   const { locale } = useLocale();
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const url = `https://claudefarmer.com/@${username}`;
-  const ogUrl = `/${encodeURIComponent(username)}/og?v=2`;
+  const shareCanvasRef = useRef<ShareCanvasHandle>(null);
 
   useEffect(() => {
     function handleEsc(e: KeyboardEvent) { if (e.key === 'Escape') onClose(); }
@@ -31,9 +42,8 @@ export default function ShareModal({ username, nickname, onClose }: ShareModalPr
 
   const handleDownload = async () => {
     setDownloading(true);
-    try {
-      const res = await fetch(ogUrl);
-      const blob = await res.blob();
+    const blob = await shareCanvasRef.current?.getBlob();
+    if (blob) {
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
@@ -42,14 +52,21 @@ export default function ShareModal({ username, nickname, onClose }: ShareModalPr
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
-    } catch {
-      // fallback: open in new tab
-      window.open(ogUrl, '_blank');
     }
     setDownloading(false);
   };
 
   const handleNativeShare = async () => {
+    const blob = await shareCanvasRef.current?.getBlob();
+    if (blob && typeof navigator.canShare === 'function') {
+      const file = new File([blob], `${username}-farm.png`, { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ title: `${nickname}'s Farm — Claude Farmer`, url, files: [file] });
+          return;
+        } catch {}
+      }
+    }
     if (navigator.share) {
       try {
         await navigator.share({ title: `${nickname}'s Farm — Claude Farmer`, url });
@@ -88,53 +105,54 @@ export default function ShareModal({ username, nickname, onClose }: ShareModalPr
         </div>
 
         <div className="flex-1 overflow-y-auto">
-        {/* OG Preview (1200×630 비율 유지) */}
-        <div className="px-4 py-2">
-          <div
-            className="rounded-lg overflow-hidden border border-[var(--border)] bg-[#1a1d27] w-full"
-            style={{ aspectRatio: '1200 / 630' }}
-          >
-            <img
-              src={ogUrl}
-              alt={`${nickname}'s farm`}
-              className="w-full h-full object-contain block"
-              loading="lazy"
+          {/* Share preview (client canvas) */}
+          <div className="px-4 py-2">
+            <ShareCanvas
+              ref={shareCanvasRef}
+              username={username}
+              nickname={nickname}
+              level={level}
+              totalHarvests={totalHarvests}
+              uniqueItems={uniqueItems}
+              streakDays={streakDays}
+              inventory={inventory}
+              character={character}
+              statusText={statusText}
             />
           </div>
-        </div>
 
-        {/* URL */}
-        <div className="px-4 py-2">
-          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs font-mono opacity-70 truncate">
-            {url}
+          {/* URL */}
+          <div className="px-4 py-2">
+            <div className="bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs font-mono opacity-70 truncate">
+              {url}
+            </div>
           </div>
-        </div>
 
-        {/* Action buttons */}
-        <div className="px-4 py-3 grid grid-cols-3 gap-2">
-          <button
-            onClick={handleCopy}
-            className="flex flex-col items-center gap-1 bg-[var(--accent)] text-black font-bold py-3 rounded-lg text-xs hover:opacity-90 transition-opacity"
-          >
-            <Icon name={copied ? 'check' : 'content_copy'} size={20} />
-            <span>{copied ? (locale === 'ko' ? '복사됨' : 'Copied') : (locale === 'ko' ? '복사' : 'Copy')}</span>
-          </button>
-          <button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="flex flex-col items-center gap-1 bg-[var(--card)] border border-[var(--border)] font-bold py-3 rounded-lg text-xs hover:border-[var(--accent)] transition-colors disabled:opacity-40"
-          >
-            <Icon name="download" size={20} />
-            <span>{locale === 'ko' ? '저장' : 'Save'}</span>
-          </button>
-          <button
-            onClick={handleNativeShare}
-            className="flex flex-col items-center gap-1 bg-[var(--card)] border border-[var(--border)] font-bold py-3 rounded-lg text-xs hover:border-[var(--accent)] transition-colors"
-          >
-            <Icon name="ios_share" size={20} />
-            <span>{locale === 'ko' ? '공유' : 'Share'}</span>
-          </button>
-        </div>
+          {/* Action buttons */}
+          <div className="px-4 py-3 grid grid-cols-3 gap-2">
+            <button
+              onClick={handleCopy}
+              className="flex flex-col items-center gap-1 bg-[var(--accent)] text-black font-bold py-3 rounded-lg text-xs hover:opacity-90 transition-opacity"
+            >
+              <Icon name={copied ? 'check' : 'content_copy'} size={20} />
+              <span>{copied ? (locale === 'ko' ? '복사됨' : 'Copied') : (locale === 'ko' ? '복사' : 'Copy')}</span>
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="flex flex-col items-center gap-1 bg-[var(--card)] border border-[var(--border)] font-bold py-3 rounded-lg text-xs hover:border-[var(--accent)] transition-colors disabled:opacity-40"
+            >
+              <Icon name="download" size={20} />
+              <span>{locale === 'ko' ? '저장' : 'Save'}</span>
+            </button>
+            <button
+              onClick={handleNativeShare}
+              className="flex flex-col items-center gap-1 bg-[var(--card)] border border-[var(--border)] font-bold py-3 rounded-lg text-xs hover:border-[var(--accent)] transition-colors"
+            >
+              <Icon name="ios_share" size={20} />
+              <span>{locale === 'ko' ? '공유' : 'Share'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -675,7 +675,18 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
       )}
 
       {modal === 'share' && (
-        <ShareModal username={username} nickname={profile.nickname} onClose={() => setModal('none')} />
+        <ShareModal
+          username={username}
+          nickname={profile.nickname}
+          level={profile.level}
+          totalHarvests={profile.total_harvests}
+          uniqueItems={uniqueItems}
+          streakDays={profile.streak_days ?? 0}
+          inventory={profile.inventory ?? []}
+          character={profile.character ?? generateDefaultAppearance(username)}
+          statusText={profile.status_message?.text}
+          onClose={() => setModal('none')}
+        />
       )}
 
       {modal === 'character' && isOwn && (
