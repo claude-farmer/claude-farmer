@@ -37,7 +37,7 @@ claude-farmer init         # Set up (GitHub OAuth)
 claude-farmer status "msg" # Set a status bubble ("looking for collab!")
 claude-farmer bag          # See your collection
 claude-farmer open         # Open the web UI
-claude-farmer water @user  # Water a friend's farm (3x/day)
+claude-farmer water @user  # Water a friend's farm (5-min cooldown)
 claude-farmer watch        # Background mode — detects Claude Code activity
 claude-farmer config       # Settings (language, etc.)
 ```
@@ -71,13 +71,27 @@ claude-farmer config --lang en   # Back to English
 💧 Water received today: 2
 ```
 
-## Social (Just 3 Things)
+## Your Profile on the Web
 
-We kept it simple:
+Every farmer gets a public page at `claudefarmer.com/@yourname` — pixel-art canvas, status, stats, guestbook, the works. Share the link anywhere and you'll get a custom preview card with your farm rendered as actual pixel art (not just text), so messengers and search results show off your character, level, and current status.
 
-- **💬 Status Bubble** — one-line message for the world to see
-- **💧 Watering** — 3x per day, boosts their crops (be a good neighbor!)
-- **🔖 Bookmarks** — save farms you vibe with
+- **Profile page**: card-based layout — status bubble, records, today's activity, codex, guestbook, neighbors carousel
+- **Share card**: in-app share modal generates an 800×800 PNG you can save or share natively
+- **OG / link previews**: per-user 1200×630 server-rendered card with your pixel-art thumbnail, auto-updates when you sync
+- **Google search**: profile pages are in the sitemap with `ProfilePage` schema + `og:image`
+
+## Social
+
+Lightweight, low-pressure social — built around generosity, not competition.
+
+- **💬 Status bubble** — one-liner with optional link
+- **💧 Watering** — 5-minute cooldown, boosts a friend's crops
+- **🎁 Gifting** — send gacha items from your inventory
+- **🔖 Bookmarks** — save farms you vibe with; mutual bookmarks = 🏡 neighbors
+- **✍️ Guestbook** — chat-style log of every visit, water, and gift
+- **🏆 Thank-you wall** — per-farm ranking of who watered/gifted you the most (not a global leaderboard)
+- **👣 Ghost visits** — visitors leave fading footprints on your farm (24h)
+- **🌊 Wave surf** — jump to a random bookmark from any farm you visit
 
 Visit other developers' farms at [claudefarmer.com](https://claudefarmer.com)
 
