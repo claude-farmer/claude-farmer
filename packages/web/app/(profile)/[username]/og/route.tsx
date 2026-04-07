@@ -5,7 +5,6 @@ import type { PublicProfile } from '@claude-farmer/shared';
 
 export const runtime = 'edge';
 
-// 비-ASCII 문자 제거 (CJK/이모지가 폰트 누락으로 ImageResponse를 깨뜨리는 것 방지)
 function asciiSafe(s: string | undefined | null, max = 32): string {
   if (!s) return '';
   const ascii = s.replace(/[^\x20-\x7E]/g, '').trim();
@@ -15,117 +14,56 @@ function asciiSafe(s: string | undefined | null, max = 32): string {
 const W = 1200;
 const H = 630;
 
-function fallbackResponse(label: string) {
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ username: string }> }
+) {
+  const { username } = await params;
+  const profile = await redis.get<PublicProfile>(keys.user(username)).catch(() => null);
+
+  const nickname = asciiSafe(profile?.nickname, 24) || username;
+  const level = profile?.level ?? 0;
+  const harvests = profile?.total_harvests ?? 0;
+  const items = profile?.unique_items ?? 0;
+  const streak = profile?.streak_days ?? 0;
+  const stats = `Lv.${level}  ${harvests} Harvests  ${items}/32 Codex` + (streak > 0 ? `  ${streak}d Streak` : '');
+
   return new ImageResponse(
     (
       <div
         style={{
-          width: W, height: H, display: 'flex',
+          width: W,
+          height: H,
+          display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          background: 'linear-gradient(135deg, #1a1d27 0%, #232736 50%, #2a3a4a 100%)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#1a1d27',
           fontFamily: 'sans-serif',
+          padding: 80,
         }}
       >
-        <div style={{ fontSize: 80, fontWeight: 900, color: '#fbbf24' }}>Claude Farmer</div>
-        <div style={{ fontSize: 36, color: '#9ca3af', marginTop: 16 }}>{label}</div>
+        <div style={{ display: 'flex', fontSize: 32, fontWeight: 700, color: '#fbbf24' }}>
+          Claude Farmer
+        </div>
+        <div style={{ display: 'flex', fontSize: 96, fontWeight: 900, color: '#e5e7eb', marginTop: 24 }}>
+          {nickname}
+        </div>
+        <div style={{ display: 'flex', fontSize: 32, color: '#9ca3af', marginTop: 16 }}>
+          {stats}
+        </div>
+        <div style={{ display: 'flex', fontSize: 28, color: '#1a1d27', backgroundColor: '#fbbf24', padding: '20px 40px', borderRadius: 12, marginTop: 56, fontWeight: 900 }}>
+          Visit and water this farm
+        </div>
+        <div style={{ display: 'flex', fontSize: 22, color: '#6b7280', marginTop: 32 }}>
+          claudefarmer.com/@{username}
+        </div>
       </div>
     ),
     {
       width: W,
       height: H,
-      headers: { 'Cache-Control': 'public, max-age=300, s-maxage=300' },
+      headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=3600' },
     },
   );
-}
-
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ username: string }> }
-) {
-  let username = '';
-  try {
-    const p = await params;
-    username = p.username;
-    const profile = await redis.get<PublicProfile>(keys.user(username));
-
-    if (!profile) {
-      return fallbackResponse('Your code grows a farm');
-    }
-
-    const nickname = asciiSafe(profile.nickname, 24) || username;
-    const level = profile.level ?? 1;
-    const harvests = profile.total_harvests ?? 0;
-    const items = profile.unique_items ?? 0;
-    const streak = profile.streak_days ?? 0;
-    const status = asciiSafe(profile.status_message?.text, 80);
-
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            width: W, height: H, display: 'flex', flexDirection: 'column',
-            background: 'linear-gradient(135deg, #1a1d27 0%, #232736 50%, #2a3a4a 100%)',
-            fontFamily: 'sans-serif', padding: 60,
-          }}
-        >
-          {/* 상단: 브랜드 + URL */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 32, fontWeight: 900, color: '#fbbf24' }}>Claude Farmer</div>
-            <div style={{ fontSize: 24, color: '#9ca3af' }}>@{username}</div>
-          </div>
-
-          {/* 중앙: 닉네임 */}
-          <div style={{ display: 'flex', flexDirection: 'column', marginTop: 80 }}>
-            <div style={{ fontSize: 88, fontWeight: 900, color: '#e5e7eb', letterSpacing: '-0.02em' }}>{nickname}</div>
-            <div style={{ fontSize: 32, color: '#9ca3af', marginTop: 12 }}>
-              Code with Claude. Watch your pixel-art farm grow automatically.
-            </div>
-          </div>
-
-          {/* 통계 카드 */}
-          <div style={{ display: 'flex', gap: 24, marginTop: 60 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#232736', borderRadius: 20, padding: '24px 40px', border: '2px solid #2a2d3a' }}>
-              <div style={{ fontSize: 44, fontWeight: 900, color: '#fbbf24' }}>{harvests}</div>
-              <div style={{ fontSize: 18, color: '#9ca3af', marginTop: 4 }}>Harvests</div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#232736', borderRadius: 20, padding: '24px 40px', border: '2px solid #2a2d3a' }}>
-              <div style={{ fontSize: 44, fontWeight: 900, color: '#4ade80' }}>{items}/32</div>
-              <div style={{ fontSize: 18, color: '#9ca3af', marginTop: 4 }}>Codex</div>
-            </div>
-            {streak > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#232736', borderRadius: 20, padding: '24px 40px', border: '2px solid #2a2d3a' }}>
-                <div style={{ fontSize: 44, fontWeight: 900, color: '#ef4444' }}>{streak}d</div>
-                <div style={{ fontSize: 18, color: '#9ca3af', marginTop: 4 }}>Streak</div>
-              </div>
-            )}
-          </div>
-
-          {/* 하단: 상태 + CTA */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flex: 1, marginTop: 40 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', maxWidth: 700 }}>
-              {status && (
-                <div style={{ fontSize: 24, color: '#9ca3af', fontStyle: 'italic', marginBottom: 16 }}>
-                  &ldquo;{status}&rdquo;
-                </div>
-              )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ fontSize: 28, color: '#fbbf24', fontWeight: 900, padding: '12px 24px', background: '#1a1d27', borderRadius: 12, border: '2px solid #fbbf24' }}>
-                  Visit & Water →
-                </div>
-              </div>
-            </div>
-            <div style={{ fontSize: 26, color: '#fbbf24', fontWeight: 900 }}>claudefarmer.com</div>
-          </div>
-        </div>
-      ),
-      {
-        width: W,
-        height: H,
-        headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=3600' },
-      },
-    );
-  } catch {
-    return fallbackResponse(username ? `@${username}` : 'Your code grows a farm');
-  }
 }
