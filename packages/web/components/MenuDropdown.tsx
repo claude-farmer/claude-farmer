@@ -76,6 +76,8 @@ export default function MenuDropdown({ currentUser, isOwnFarm, onClose, onOpenEd
   }
 
   return (
+    <>
+      <div className="fixed inset-0 z-40 backdrop-blur-sm bg-black/20" onClick={onClose} />
     <div
       ref={ref}
       className={`absolute top-full mt-1 w-48 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-2xl overflow-hidden z-50 ${anchor === 'left' ? 'left-2' : 'right-2'}`}
@@ -94,5 +96,6 @@ export default function MenuDropdown({ currentUser, isOwnFarm, onClose, onOpenEd
         </button>
       ))}
     </div>
+    </>
   );
 }

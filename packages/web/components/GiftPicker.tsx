@@ -27,7 +27,7 @@ export default function GiftPicker({ inventory, onGift, onClose }: GiftPickerPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
         className="bg-[var(--card)] rounded-t-xl w-full max-w-md p-4 max-h-[60vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}

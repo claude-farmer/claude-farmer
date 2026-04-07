@@ -398,7 +398,7 @@ const FarmCanvas = forwardRef<FarmCanvasHandle, FarmCanvasProps>(function FarmCa
       )}
       {/* 방문자 목록 모달 */}
       {showVisitorModal && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-10">
           <div className="bg-[#232736] border border-[#2a2d3a] rounded-lg p-3 max-w-[200px] w-full max-h-[70%] overflow-y-auto">
             <div className="flex justify-between items-center mb-2">
               <span className="text-white text-sm font-bold">Visitors</span>

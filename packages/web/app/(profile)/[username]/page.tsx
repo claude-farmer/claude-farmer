@@ -640,7 +640,7 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
 
       {/* Modals */}
       {modal === 'codex' && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={() => setModal('none')}>
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end justify-center" onClick={() => setModal('none')}>
           <div className="bg-[var(--bg)] w-full max-w-md rounded-t-xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
             <div className="shrink-0 flex justify-center pt-2 pb-1">
               <div className="w-10 h-1 rounded-full bg-[var(--border)]" />

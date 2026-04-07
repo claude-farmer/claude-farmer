@@ -36,7 +36,7 @@ export default function RankingsModal({ farmId, initialTab, onClose }: RankingsM
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end justify-center" onClick={onClose}>
       <div
         className="bg-[var(--bg)] w-full max-w-md rounded-t-xl max-h-[80vh] flex flex-col"
         onClick={e => e.stopPropagation()}
