@@ -14,12 +14,11 @@ import ShareModal from '@/components/ShareModal';
 import AboutModal from '@/components/AboutModal';
 import StatusEditModal from '@/components/StatusEditModal';
 import DiscoverCarousel from '@/components/DiscoverCarousel';
-import FarmThumbnail from '@/components/FarmThumbnail';
 import Card from '@/components/Card';
 import Icon from '@/components/Icon';
 import {
   fetchSession, fetchFarmWithFootprints, waterUser, visitFarm, sendGift,
-  fetchBookmarks, toggleBookmark, updateStatus, updateCharacter, fetchExplore,
+  fetchBookmarks, toggleBookmark, updateStatus, updateCharacter,
 } from '@/lib/api';
 import usePolling from '@/hooks/usePolling';
 import { useLocale } from '@/lib/locale-context';
@@ -57,7 +56,6 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
   const [modal, setModal] = useState<ActiveModal>('none');
   const [guestbookKey, setGuestbookKey] = useState(0);
   const [userInventory, setUserInventory] = useState<InventoryItem[]>([]);
-  const [recentFarms, setRecentFarms] = useState<(PublicProfile & { github_id: string })[]>([]);
 
   useEffect(() => {
     params.then(p => setUsername(p.username));
@@ -96,15 +94,6 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
     }
     init();
   }, [username]);
-
-  // 최근 접속 농장 (3명, 본인/방문 대상 제외)
-  useEffect(() => {
-    if (!username) return;
-    fetchExplore(username, 6, 'recent').then(list => {
-      const filtered = list.filter(f => f.github_id !== currentUser).slice(0, 3);
-      setRecentFarms(filtered);
-    });
-  }, [username, currentUser]);
 
   const isOwn = currentUser === username && currentUser !== null;
   const isLoggedIn = !!currentUser;
@@ -598,38 +587,6 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
             onOpenSearch={() => setModal('search')}
           />
         </div>
-
-        {/* 최근 접속 (3명) */}
-        {recentFarms.length > 0 && (
-          <div className="px-4 pb-4">
-            <Card header={<><Icon name="schedule" size={14} />{locale === 'ko' ? '최근 접속' : 'Recent'}</>}>
-              <div className="grid grid-cols-3 gap-2">
-                {recentFarms.map(farm => (
-                  <button
-                    key={farm.github_id}
-                    onClick={() => router.push(`/@${farm.github_id}`)}
-                    className="bg-[var(--bg)] border border-[var(--border)] rounded-lg overflow-hidden hover:border-[var(--accent)] transition-all active:scale-95"
-                  >
-                    <FarmThumbnail
-                      githubId={farm.github_id}
-                      character={farm.character}
-                      level={farm.level}
-                      totalHarvests={farm.total_harvests}
-                      uniqueItems={farm.unique_items}
-                      streakDays={farm.streak_days}
-                      inventory={farm.inventory}
-                      className="w-full"
-                    />
-                    <div className="px-1 py-0.5 text-center">
-                      <span className="text-[10px] font-bold truncate block">{farm.nickname}</span>
-                      <span className="text-[9px] opacity-40">{timeAgo(farm.last_active)}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </Card>
-          </div>
-        )}
       </div>
 
       {/* Modals */}

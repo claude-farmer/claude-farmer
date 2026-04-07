@@ -18,6 +18,7 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
   const router = useRouter();
   const [bookmarks, setBookmarks] = useState<(PublicProfile & { github_id: string })[]>([]);
   const [randomFarms, setRandomFarms] = useState<(PublicProfile & { github_id: string })[]>([]);
+  const [recentFarms, setRecentFarms] = useState<(PublicProfile & { github_id: string })[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<(PublicProfile & { github_id: string })[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -28,8 +29,12 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
         const bm = await fetchBookmarks();
         setBookmarks(bm);
       }
-      const farms = await fetchExplore(currentUser ?? '', 9);
-      setRandomFarms(farms);
+      const [randoms, recents] = await Promise.all([
+        fetchExplore(currentUser ?? '', 9),
+        fetchExplore(currentUser ?? '', 3, 'recent'),
+      ]);
+      setRandomFarms(randoms);
+      setRecentFarms(recents);
     }
     init();
   }, [currentUser]);
@@ -139,6 +144,24 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
                   <button key={farm.github_id} onClick={() => handleVisit(farm.github_id)} className="flex flex-col items-center shrink-0">
                     <img src={farm.avatar_url} alt="" className="w-12 h-12 rounded-full border-2 border-[var(--border)] hover:border-[var(--accent)] transition-colors" />
                     <span className="text-xs mt-1 truncate max-w-[48px]">{farm.nickname}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent (3 most-recently-active) */}
+          {recentFarms.length > 0 && searchResults === null && (
+            <div className="px-4 py-3 border-b border-[var(--border)]">
+              <h3 className="text-xs font-bold opacity-50 mb-2 flex items-center gap-1.5">
+                <Icon name="schedule" size={14} />
+                {locale === 'ko' ? '최근 접속' : 'Recent'}
+              </h3>
+              <div className="grid grid-cols-3 gap-2">
+                {recentFarms.map(farm => (
+                  <button key={farm.github_id} onClick={() => handleVisit(farm.github_id)} className="bg-[var(--card)] border border-[var(--border)] rounded-lg overflow-hidden hover:border-[var(--accent)] transition-all active:scale-95">
+                    <FarmThumbnail githubId={farm.github_id} character={farm.character} level={farm.level} totalHarvests={farm.total_harvests} uniqueItems={farm.unique_items} streakDays={farm.streak_days} inventory={farm.inventory} className="w-full" />
+                    <div className="px-1.5 py-1 text-center"><span className="text-xs font-bold truncate block">{farm.nickname}</span></div>
                   </button>
                 ))}
               </div>
