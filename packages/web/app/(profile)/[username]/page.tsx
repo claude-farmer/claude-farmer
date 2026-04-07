@@ -380,7 +380,7 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
                     <button
                       onClick={handleWater}
                       disabled={cooldownLeft > 0 || watering}
-                      className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold bg-blue-500 text-white disabled:opacity-40 transition-all"
+                      className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-blue-400 hover:bg-[var(--bg)] disabled:opacity-40 transition-colors"
                     >
                       <Icon name="water_drop" size={16} filled />
                       {cooldownLeft > 0
