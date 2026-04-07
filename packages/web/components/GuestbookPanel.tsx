@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { fetchGuestbook } from '@/lib/api';
 import { useLocale } from '@/lib/locale-context';
 import Icon from './Icon';
+import Card from './Card';
 import type { GuestbookEntry } from '@claude-farmer/shared';
 
 interface GuestbookPanelProps {
@@ -13,7 +14,7 @@ interface GuestbookPanelProps {
 }
 
 export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: GuestbookPanelProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [totalWater, setTotalWater] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -41,54 +42,67 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: Gues
   function typeIconName(type: string): string {
     if (type === 'water') return 'water_drop';
     if (type === 'gift') return 'redeem';
-    return 'footprint';
+    return 'directions_walk';
+  }
+
+  function typeLabel(type: string): string {
+    if (locale === 'ko') {
+      if (type === 'water') return '물을 주고 갔어요';
+      if (type === 'gift') return '선물을 보냈어요';
+      return '방문했어요';
+    }
+    if (type === 'water') return 'watered';
+    if (type === 'gift') return 'sent a gift';
+    return 'visited';
   }
 
   return (
-    <div className="bg-[var(--card)] rounded-lg border border-[var(--border)] overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)]">
-        <span className="text-sm font-bold flex items-center gap-1.5">
-          <Icon name="edit_note" size={16} />
-          {t.guestbookTitle}
-        </span>
-        {totalWater > 0 && (
-          <span className="text-xs opacity-60 flex items-center gap-1">
+    <Card
+      header={<><Icon name="edit_note" size={14} />{t.guestbookTitle}</>}
+      headerRight={
+        totalWater > 0 ? (
+          <span className="opacity-60 flex items-center gap-1">
             <Icon name="water_drop" size={12} />
-            {t.guestbookTotalWater}: {totalWater}
+            {totalWater}
           </span>
-        )}
-      </div>
-
-      {/* Entries */}
-      <div className="max-h-64 overflow-y-auto">
+        ) : null
+      }
+      bodyClassName=""
+    >
+      <div className="max-h-80 overflow-y-auto px-3 py-3">
         {loading ? (
           <div className="text-center py-4 opacity-40 text-sm">{t.loading}</div>
         ) : entries.length === 0 ? (
           <div className="text-center py-4 opacity-40 text-sm">{t.guestbookEmpty}</div>
         ) : (
-          <div className="divide-y divide-[var(--border)]">
+          <div className="space-y-3">
             {entries.map((entry, i) => (
-              <div key={i} className="px-3 py-2 flex gap-2 items-start">
-                {/* Avatar — 클릭하면 해당 유저 농장 방문 */}
+              <div key={i} className="flex gap-2.5 items-start">
                 <button
                   onClick={() => onVisitUser?.(entry.from_id)}
-                  className="w-7 h-7 rounded-full bg-[var(--border)] flex-shrink-0 overflow-hidden mt-0.5 hover:ring-2 hover:ring-[var(--accent)] transition-all cursor-pointer"
+                  className="w-9 h-9 rounded-full bg-[var(--border)] flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-[var(--accent)] transition-all cursor-pointer"
                 >
                   {entry.from_avatar_url && (
-                    <img src={entry.from_avatar_url} alt="" className="w-full h-full" />
+                    <img src={entry.from_avatar_url} alt="" className="w-full h-full object-cover" />
                   )}
                 </button>
-                {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <Icon name={typeIconName(entry.type)} size={12} className="opacity-60" />
-                    <button onClick={() => onVisitUser?.(entry.from_id)} className="text-sm font-bold truncate hover:text-[var(--accent)] transition-colors">{entry.from_nickname}</button>
-                    <span className="text-xs opacity-40 flex-shrink-0">{timeAgo(entry.at)}</span>
+                  <div className="flex items-baseline gap-1.5 text-xs">
+                    <button
+                      onClick={() => onVisitUser?.(entry.from_id)}
+                      className="font-bold truncate hover:text-[var(--accent)] transition-colors"
+                    >
+                      {entry.from_nickname}
+                    </button>
+                    <span className="opacity-40 flex-shrink-0">· {timeAgo(entry.at)}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] opacity-60 mt-0.5">
+                    <Icon name={typeIconName(entry.type)} size={11} filled={entry.type === 'water'} />
+                    <span>{typeLabel(entry.type)}</span>
                   </div>
                   {entry.message && (
-                    <div className="text-xs opacity-70 mt-0.5 bg-[var(--bg)] rounded px-2 py-1 inline-block">
-                      &ldquo;{entry.message}&rdquo;
+                    <div className="mt-1.5 inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm px-3 py-1.5 text-xs break-words">
+                      {entry.message}
                     </div>
                   )}
                 </div>
@@ -97,6 +111,6 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: Gues
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

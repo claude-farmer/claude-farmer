@@ -14,6 +14,7 @@ import ShareModal from '@/components/ShareModal';
 import AboutModal from '@/components/AboutModal';
 import StatusEditModal from '@/components/StatusEditModal';
 import DiscoverCarousel from '@/components/DiscoverCarousel';
+import Card from '@/components/Card';
 import Icon from '@/components/Icon';
 import {
   fetchSession, fetchFarmWithFootprints, waterUser, visitFarm, sendGift,
@@ -349,148 +350,135 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
 
         {/* Empty Farm Card */}
         {isEmpty && (
-          <div className="px-4 py-3 border-b border-[var(--border)]">
-            <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3">
-              <div className="text-sm font-bold mb-1 flex items-center gap-1.5">
-                <Icon name="rocket_launch" size={16} />
-                {locale === 'ko' ? '농장 시작하기' : 'Get started'}
-              </div>
+          <div className="px-4 pt-3">
+            <Card
+              header={<><Icon name="rocket_launch" size={14} />{locale === 'ko' ? '농장 시작하기' : 'Get started'}</>}
+            >
               <p className="text-xs opacity-60 mb-2">{locale === 'ko' ? 'CLI를 설치하고 Claude Code를 쓰면 자동으로 자라요' : 'Install the CLI and code with Claude — your farm grows automatically'}</p>
               <code className="text-xs bg-[var(--bg)] rounded px-2 py-1 block">npm i -g claude-farmer && claude-farmer init</code>
-            </div>
+            </Card>
           </div>
         )}
 
-        {/* Status — 카드 형태 */}
-        {(profile.status_message?.text || isOwn) && (
-          <div className="px-4 pt-3">
+        {/* 프로필 카드 — Identity + Status + Actions */}
+        <div className="px-4 pt-3">
+          <Card
+            header={<><span>{farmerTitle.emoji}</span><span>{locale === 'ko' ? farmerTitle.ko : farmerTitle.en}</span></>}
+            headerRight={
+              (profile.streak_days ?? 0) > 0 ? (
+                <span className="flex items-center gap-1 text-xs font-bold text-orange-400">
+                  <Icon name="local_fire_department" size={14} filled />
+                  {profile.streak_days}{locale === 'ko' ? '일' : 'd'}
+                </span>
+              ) : null
+            }
+            bodyClassName="px-3 py-3"
+            footer={
+              !isOwn ? (
+                isLoggedIn ? (
+                  <div className="flex divide-x divide-[var(--border)]">
+                    <button
+                      onClick={handleWater}
+                      disabled={cooldownLeft > 0 || watering}
+                      className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold bg-blue-500 text-white disabled:opacity-40 transition-all"
+                    >
+                      <Icon name="water_drop" size={16} filled />
+                      {cooldownLeft > 0
+                        ? `${Math.floor(cooldownLeft/60)}:${(cooldownLeft%60).toString().padStart(2,'0')}`
+                        : t.visitWater}
+                    </button>
+                    <button
+                      onClick={() => setModal('gift')}
+                      className="w-14 h-11 flex items-center justify-center hover:bg-[var(--bg)] transition-colors"
+                      title={locale === 'ko' ? '선물' : 'Gift'}
+                    >
+                      <Icon name="redeem" size={18} />
+                    </button>
+                    <button
+                      onClick={handleToggleBookmark}
+                      className={`w-14 h-11 flex items-center justify-center transition-colors ${
+                        isBookmarked ? 'bg-[var(--accent)] text-black' : 'hover:bg-[var(--bg)]'
+                      }`}
+                      title={isBookmarked ? t.visitBookmarked : t.visitBookmark}
+                    >
+                      <Icon name="bookmark" size={18} filled={isBookmarked} />
+                    </button>
+                  </div>
+                ) : (
+                  <a
+                    href="/api/auth/login"
+                    className="block h-11 leading-[44px] text-center text-xs font-bold bg-[var(--accent)] text-black"
+                  >
+                    {t.loginBtn}
+                  </a>
+                )
+              ) : null
+            }
+          >
             <div
-              className={`bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 flex items-center gap-2 text-sm ${isOwn ? 'cursor-pointer hover:border-[var(--accent)] transition-colors' : ''}`}
+              className={`flex flex-col gap-1.5 text-sm ${isOwn ? 'cursor-pointer' : ''}`}
               onClick={() => { if (isOwn) setModal('edit'); }}
             >
-              <Icon name="chat_bubble" size={16} className="opacity-50" />
-              {profile.status_message?.text ? (
-                <span className="flex-1">{profile.status_message.text}</span>
-              ) : (
-                <span className="opacity-40 flex-1">{isOwn ? t.setBubble : ''}</span>
-              )}
+              <div className="flex items-start gap-2">
+                <Icon name="chat_bubble" size={16} className="opacity-50 mt-0.5 shrink-0" />
+                {profile.status_message?.text ? (
+                  <span className="flex-1 break-words">{profile.status_message.text}</span>
+                ) : (
+                  <span className="opacity-40 flex-1">{isOwn ? t.setBubble : (locale === 'ko' ? '소개가 없어요' : 'No bio')}</span>
+                )}
+                {isOwn && <Icon name="edit" size={14} className="opacity-30 shrink-0 mt-0.5" />}
+              </div>
               {profile.status_message?.link && /^https?:\/\//i.test(profile.status_message.link) && (
-                <a href={profile.status_message.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[var(--accent)]">
-                  <Icon name="link" size={14} />
+                <a
+                  href={profile.status_message.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="flex items-center gap-2 text-xs text-[var(--accent)] hover:underline truncate"
+                >
+                  <Icon name="link" size={14} className="shrink-0" />
+                  <span className="truncate">{profile.status_message.link}</span>
                 </a>
               )}
-              {isOwn && <Icon name="edit" size={14} className="opacity-30" />}
             </div>
-          </div>
-        )}
-
-        {/* Action Bar — visit only (own-farm actions moved to header / codex card) */}
-        {!isOwn && (
-        <div className="flex gap-2 px-4 py-3 border-b border-[var(--border)]">
-              <button
-                onClick={handleWater}
-                disabled={cooldownLeft > 0 || watering || !isLoggedIn}
-                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 rounded-lg bg-blue-500 text-white disabled:opacity-40 transition-all"
-              >
-                <Icon name="water_drop" size={16} filled />
-                {cooldownLeft > 0
-                  ? `${Math.floor(cooldownLeft/60)}:${(cooldownLeft%60).toString().padStart(2,'0')}`
-                  : t.visitWater}
-              </button>
-              {isLoggedIn && (
-                <>
-                  <button
-                    onClick={() => setModal('gift')}
-                    className="text-xs font-bold py-2.5 px-3 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-pink-400 transition-colors"
-                    title={locale === 'ko' ? '선물' : 'Gift'}
-                  >
-                    <Icon name="redeem" size={18} />
-                  </button>
-                  <button
-                    onClick={handleToggleBookmark}
-                    className={`text-xs font-bold py-2.5 px-3 rounded-lg border transition-colors ${
-                      isBookmarked
-                        ? 'bg-[var(--accent)] text-black border-[var(--accent)]'
-                        : 'bg-[var(--card)] border-[var(--border)] hover:border-[var(--accent)]'
-                    }`}
-                    title={isBookmarked ? t.visitBookmarked : t.visitBookmark}
-                  >
-                    <Icon name="bookmark" size={18} filled={isBookmarked} />
-                  </button>
-                </>
-              )}
-              {!isLoggedIn && (
-                <a href="/api/auth/login" className="flex-1 text-xs font-bold py-2.5 rounded-lg bg-[var(--accent)] text-black text-center">
-                  {t.loginBtn}
-                </a>
-              )}
-        </div>
-        )}
-
-        {/* Identity strip — 농부 칭호 + 스트릭 */}
-        <div className="px-4 pt-3">
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 flex items-center justify-between text-sm">
-            <span className="flex items-center gap-1.5">
-              <span>{farmerTitle.emoji}</span>
-              <span className="font-bold">{locale === 'ko' ? farmerTitle.ko : farmerTitle.en}</span>
-            </span>
-            {(profile.streak_days ?? 0) > 0 && (
-              <span className="flex items-center gap-1 text-xs">
-                <Icon name="local_fire_department" size={14} className="text-orange-400" filled />
-                <span className="font-bold">{profile.streak_days}{locale === 'ko' ? '일' : 'd'}</span>
-              </span>
-            )}
-          </div>
+          </Card>
         </div>
 
-        {/* Lifetime 카드 — 기록 */}
+        {/* Records 카드 — 4-col */}
         <div className="px-4 pt-3">
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3">
-            <div className="text-xs font-bold opacity-60 mb-2 flex items-center gap-1.5">
-              <Icon name="bar_chart" size={14} />
-              {locale === 'ko' ? '기록' : 'Records'}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-2">
-                <Icon name="agriculture" size={16} className="opacity-60" />
-                <div className="leading-tight">
-                  <div className="text-sm font-bold">{profile.total_harvests}</div>
-                  <div className="text-[10px] opacity-50">{locale === 'ko' ? '총 수확' : 'Harvests'}</div>
-                </div>
+          <Card header={<><Icon name="bar_chart" size={14} />{locale === 'ko' ? '기록' : 'Records'}</>}>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="flex flex-col items-center gap-1">
+                <Icon name="agriculture" size={18} className="opacity-60" />
+                <div className="text-base font-bold leading-none">{profile.total_harvests}</div>
+                <div className="text-[10px] opacity-50">{locale === 'ko' ? '수확' : 'Harvests'}</div>
               </div>
-              <div className="flex items-center gap-2">
-                <Icon name="inventory_2" size={16} className="opacity-60" />
-                <div className="leading-tight">
-                  <div className="text-sm font-bold">{uniqueItems}/32</div>
-                  <div className="text-[10px] opacity-50">{locale === 'ko' ? '도감' : 'Codex'}</div>
-                </div>
+              <div className="flex flex-col items-center gap-1">
+                <Icon name="inventory_2" size={18} className="opacity-60" />
+                <div className="text-base font-bold leading-none">{uniqueItems}/32</div>
+                <div className="text-[10px] opacity-50">{locale === 'ko' ? '도감' : 'Codex'}</div>
               </div>
-              <div className="flex items-center gap-2">
-                <Icon name="groups" size={16} className="opacity-60" />
-                <div className="leading-tight">
-                  <div className="text-sm font-bold">{profile.total_visitors ?? 0}</div>
-                  <div className="text-[10px] opacity-50">{locale === 'ko' ? '누적 방문자' : 'Visitors'}</div>
-                </div>
+              <div className="flex flex-col items-center gap-1">
+                <Icon name="groups" size={18} className="opacity-60" />
+                <div className="text-base font-bold leading-none">{profile.total_visitors ?? 0}</div>
+                <div className="text-[10px] opacity-50">{locale === 'ko' ? '방문자' : 'Visitors'}</div>
               </div>
-              <div className="flex items-center gap-2">
-                <Icon name="water_drop" size={16} className="opacity-60 text-blue-400" filled />
-                <div className="leading-tight">
-                  <div className="text-sm font-bold">{profile.total_water_received ?? 0}</div>
-                  <div className="text-[10px] opacity-50">{locale === 'ko' ? '누적 물' : 'Watered'}</div>
-                </div>
+              <div className="flex flex-col items-center gap-1">
+                <Icon name="water_drop" size={18} className="opacity-60 text-blue-400" filled />
+                <div className="text-base font-bold leading-none">{profile.total_water_received ?? 0}</div>
+                <div className="text-[10px] opacity-50">{locale === 'ko' ? '물' : 'Watered'}</div>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Today 카드 (자기 농장만, 활동 있을 때만) */}
         {isOwn && ((profile.today_input_chars ?? 0) > 0 || (profile.today_harvests ?? 0) > 0 || (profile.today_water_given ?? 0) > 0) && (
           <div className="px-4 pt-3">
-            <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3 border-l-4" style={{ borderLeftColor: 'var(--accent)' }}>
-              <div className="text-xs font-bold opacity-60 mb-2 flex items-center gap-1.5">
-                <Icon name="today" size={14} />
-                {locale === 'ko' ? '오늘' : 'Today'}
-              </div>
+            <Card
+              className="border-l-4 !border-l-[var(--accent)]"
+              header={<><Icon name="today" size={14} />{locale === 'ko' ? '오늘' : 'Today'}</>}
+            >
               <div className="flex items-center justify-around text-xs">
                 <div className="flex items-center gap-1.5">
                   <Icon name="keyboard" size={14} className="opacity-60" />
@@ -505,24 +493,22 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
                   <span className="font-bold">{profile.today_water_given ?? 0}</span>
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
         )}
 
         {/* Compact Codex — 카드 */}
         {isOwn && (profile.inventory ?? []).length > 0 && (
-          <div className="px-4 pb-3">
-            <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold opacity-60 flex items-center gap-1.5">
-                  <Icon name="inventory_2" size={14} />
-                  {locale === 'ko' ? '수집' : 'Collected'}
-                </span>
-                <button onClick={() => setModal('codex')} className="text-xs text-[var(--accent)] flex items-center gap-0.5">
+          <div className="px-4 pt-3">
+            <Card
+              header={<><Icon name="inventory_2" size={14} />{locale === 'ko' ? '수집' : 'Collected'}</>}
+              headerRight={
+                <button onClick={() => setModal('codex')} className="text-[var(--accent)] flex items-center gap-0.5">
                   {locale === 'ko' ? '전체보기' : 'View all'}
                   <Icon name="chevron_right" size={14} />
                 </button>
-              </div>
+              }
+            >
               <div className="flex flex-wrap gap-1.5">
                 {GACHA_ITEMS.filter(item => itemCounts.has(item.id)).slice(0, 16).map(item => (
                   <span key={item.id} className="text-base" title={item.name}>
@@ -531,7 +517,7 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
                 ))}
                 {uniqueItems > 16 && <span className="text-xs opacity-40 self-center">+{uniqueItems - 16}</span>}
               </div>
-            </div>
+            </Card>
           </div>
         )}
 

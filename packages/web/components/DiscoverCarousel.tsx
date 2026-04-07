@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchExplore, fetchBookmarks } from '@/lib/api';
 import FarmThumbnail from '@/components/FarmThumbnail';
+import Card from './Card';
 import Icon from './Icon';
 import { useLocale } from '@/lib/locale-context';
 import type { PublicProfile } from '@claude-farmer/shared';
@@ -57,17 +58,15 @@ export default function DiscoverCarousel({ currentUser, viewedUsername, isOwn, o
 
   return (
     <div className="px-4 pt-3">
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold opacity-60 flex items-center gap-1.5">
-            <Icon name={iconName} size={14} />
-            {title}
-          </span>
-          <button onClick={onOpenSearch} className="text-xs text-[var(--accent)] flex items-center gap-0.5">
+      <Card
+        header={<><Icon name={iconName} size={14} />{title}</>}
+        headerRight={
+          <button onClick={onOpenSearch} className="text-[var(--accent)] flex items-center gap-0.5">
             {locale === 'ko' ? '전체보기' : 'View all'}
             <Icon name="chevron_right" size={14} />
           </button>
-        </div>
+        }
+      >
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {farms.map(farm => (
             <button
@@ -91,7 +90,7 @@ export default function DiscoverCarousel({ currentUser, viewedUsername, isOwn, o
             </button>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
