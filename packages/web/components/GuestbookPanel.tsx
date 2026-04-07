@@ -128,7 +128,7 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser, footer
           </div>
         )}
         {hint && !loading && (
-          <div className="mt-3 pt-3 border-t border-[var(--border)] text-center text-[11px] opacity-40 leading-snug">
+          <div className="mt-3 pt-3 border-t border-white/15 text-center text-[11px] opacity-40 leading-snug">
             {hint}
           </div>
         )}
