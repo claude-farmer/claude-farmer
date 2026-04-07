@@ -19,11 +19,18 @@ const THUMB_SCALE = W / THUMB_PX; // 18.75 → 1200×1200 cover
 const THUMB_DRAWN = THUMB_PX * THUMB_SCALE; // 1200
 const THUMB_OFFSET_Y = (H - THUMB_DRAWN) / 2; // -285 (crop top/bottom)
 
-// 텍스트 base 32, 비율: nick 1.5, handle 1.3, status 1
-const FS_NICK = 64; // ~32 * 2
-const FS_HANDLE = 44; // ~32 * 1.3 (visually balanced)
-const FS_STATUS = 32;
+// 텍스트 비율 1 / 1.3 / 1.5 (base 36)
+const FS_BASE = 36;
+const FS_STATUS = FS_BASE; // 36 (1×)
+const FS_HANDLE = Math.round(FS_BASE * 1.3); // 47 (1.3×)
+const FS_NICK = Math.round(FS_BASE * 1.5); // 54 (1.5×)
 const FS_URL = 30;
+
+// 우측 카드 썸네일
+const CARD_SIZE = 380;
+const CARD_X = W - CARD_SIZE - 56; // 764
+const CARD_Y = (H - CARD_SIZE) / 2; // 125
+const CARD_SCALE = CARD_SIZE / THUMB_PX; // 5.9375
 
 function homeFallback() {
   return new ImageResponse(
@@ -125,6 +132,37 @@ export async function GET(
           ))}
         </div>
 
+        {/* 우측 카드 썸네일 (라운드 사각형, 노란 보더) */}
+        <div
+          style={{
+            display: 'flex',
+            position: 'absolute',
+            left: CARD_X,
+            top: CARD_Y,
+            width: CARD_SIZE,
+            height: CARD_SIZE,
+            backgroundColor: '#000',
+            borderRadius: 32,
+            border: '6px solid #fbbf24',
+            overflow: 'hidden',
+          }}
+        >
+          {rects.map((r, i) => (
+            <div
+              key={`card-${i}`}
+              style={{
+                position: 'absolute',
+                left: Math.round(r.x * CARD_SCALE),
+                top: Math.round(r.y * CARD_SCALE),
+                width: Math.ceil(r.w * CARD_SCALE) + 1,
+                height: Math.ceil(r.h * CARD_SCALE) + 1,
+                backgroundColor: r.color,
+                opacity: r.opacity,
+              }}
+            />
+          ))}
+        </div>
+
         {/* 우측 그라데이션 (텍스트 가독성 보장) */}
         <div
           style={{
@@ -151,7 +189,7 @@ export async function GET(
           }}
         />
 
-        {/* 좌측 상단 텍스트 그룹 (로고 침범 방지를 위해 height 제한) */}
+        {/* 좌측 상단 텍스트 그룹 (로고 침범 방지를 위해 height 제한, 우측 카드 침범 방지) */}
         <div
           style={{
             display: 'flex',
@@ -159,28 +197,28 @@ export async function GET(
             position: 'absolute',
             left: 56,
             top: 56,
-            right: 56,
+            width: CARD_X - 56 - 32,
             maxHeight: H - 56 - 120,
             overflow: 'hidden',
           }}
         >
-          <div style={{ display: 'flex', fontSize: FS_NICK, fontWeight: 900, color: '#ffffff', lineHeight: 1.05 }}>
+          <div style={{ display: 'flex', fontSize: FS_NICK, fontWeight: 900, color: '#ffffff', lineHeight: 1.1 }}>
             {nickname}
           </div>
-          <div style={{ display: 'flex', fontSize: FS_HANDLE, color: '#9ca3af', marginTop: 8 }}>
+          <div style={{ display: 'flex', fontSize: FS_HANDLE, color: '#9ca3af', marginTop: 20 }}>
             @{username}
           </div>
           {status && (
             <div
               style={{
                 display: 'flex',
-                marginTop: 24,
-                paddingLeft: 18,
+                marginTop: 40,
+                paddingLeft: 20,
                 borderLeft: '4px solid #fbbf24',
-                maxWidth: 760,
+                maxWidth: 640,
               }}
             >
-              <div style={{ display: 'flex', fontSize: FS_STATUS, color: '#d1d5db', lineHeight: 1.35 }}>
+              <div style={{ display: 'flex', fontSize: FS_STATUS, color: '#d1d5db', lineHeight: 1.4 }}>
                 {status}
               </div>
             </div>
