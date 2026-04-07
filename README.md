@@ -10,6 +10,8 @@ An idle pixel-art farming game powered by Claude Code. You write code, crops pop
 
 [![A random farm from claudefarmer.com](https://claudefarmer.com/api/og/random)](https://claudefarmer.com)
 
+<sub>↑ A random active farm, refreshed every 10 minutes. <a href="https://claudefarmer.com">Visit a real one →</a></sub>
+
 ## Wait, What?
 
 You install it. You code. A farm appears. That's it.

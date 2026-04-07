@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': upstream.headers.get('content-type') ?? 'image/png',
-        'Cache-Control': 'public, max-age=0, s-maxage=600, stale-while-revalidate=60',
+        'Cache-Control': 'public, max-age=600, s-maxage=600, stale-while-revalidate=300',
       },
     });
   } catch {
