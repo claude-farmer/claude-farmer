@@ -67,9 +67,13 @@ export async function GET(
 
   const nickname = asciiSafe(profile.nickname, 24) || username;
   const level = profile.level ?? 0;
+  const harvests = profile.total_harvests ?? 0;
   const items = profile.unique_items ?? 0;
   const streak = profile.streak_days ?? 0;
   const status = asciiSafe(profile.status_message?.text, 70);
+
+  // 말풍선 없으면 통계로 대체
+  const statsLine = `Lv.${level}  ·  ${harvests} Harvests  ·  ${items}/32 Codex` + (streak > 0 ? `  ·  ${streak}d Streak` : '');
 
   const rects = getThumbnailRects({
     githubId: username,
@@ -129,7 +133,7 @@ export async function GET(
             background: 'linear-gradient(135deg, #1a1d27 0%, #0f1117 100%)',
           }}
         >
-          {/* 상단: 브랜드 + 말풍선 */}
+          {/* 상단: 브랜드 + 말풍선 (있을 때만) */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', fontSize: 22, color: '#6b7280', fontWeight: 700, marginBottom: 28 }}>
               CLAUDE FARMER
@@ -168,11 +172,16 @@ export async function GET(
             )}
           </div>
 
-          {/* 하단: 닉네임 + URL */}
+          {/* 하단: 닉네임 + 통계(말풍선 없을 때) + URL */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', fontSize: 64, fontWeight: 900, color: '#ffffff' }}>
               {nickname}
             </div>
+            {!status && (
+              <div style={{ display: 'flex', fontSize: 22, color: '#9ca3af', marginTop: 12 }}>
+                {statsLine}
+              </div>
+            )}
             <div style={{ display: 'flex', fontSize: 28, color: '#fbbf24', fontWeight: 900, marginTop: 14 }}>
               claudefarmer.com/@{username}
             </div>
