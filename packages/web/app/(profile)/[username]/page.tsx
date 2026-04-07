@@ -435,29 +435,28 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
               ) : null
             }
             bodyClassName="px-3 py-3"
+            footer={
+              isOwn ? (
+                <button
+                  type="button"
+                  onClick={() => setModal('edit')}
+                  className="block w-full h-11 text-xs font-bold opacity-70 hover:opacity-100 hover:bg-[var(--bg)] transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="edit" size={14} />
+                  {locale === 'ko' ? '수정하기' : 'Edit'}
+                </button>
+              ) : null
+            }
           >
-            <div
-              className={`flex gap-2.5 items-start ${isOwn ? 'cursor-pointer' : ''}`}
-              onClick={() => { if (isOwn) setModal('edit'); }}
-            >
+            <div className="flex gap-2.5 items-start">
               <img
                 src={profile.avatar_url}
                 alt=""
                 className="w-9 h-9 rounded-full border border-[var(--border)] flex-shrink-0 object-cover"
               />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 text-xs flex-wrap">
-                  <span className="font-bold truncate">{profile.nickname}</span>
-                  {profile.status_message?.updated_at && (
-                    <>
-                      <span className="opacity-40">·</span>
-                      <span className="opacity-40">{timeAgo(profile.status_message.updated_at)}</span>
-                    </>
-                  )}
-                  {isOwn && <Icon name="edit" size={12} className="opacity-30 ml-auto" />}
-                </div>
-                <div className="mt-1.5 inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm overflow-hidden text-xs">
-                  <div className="px-3 py-2 break-words">
+                <div className="inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm overflow-hidden">
+                  <div className="px-4 py-3 break-words text-sm leading-relaxed">
                     {profile.status_message?.text || (
                       <span className="opacity-40">{isOwn ? t.setBubble : (locale === 'ko' ? '소개가 없어요' : 'No bio')}</span>
                     )}
@@ -467,14 +466,18 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
                       href={profile.status_message.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 border-t border-[var(--border)] text-[var(--accent)] hover:bg-[var(--card)] transition-colors"
+                      className="flex items-center gap-1.5 px-4 py-2.5 border-t border-[var(--border)] text-xs text-[var(--accent)] hover:bg-[var(--card)] transition-colors"
                     >
                       <Icon name="open_in_new" size={12} className="shrink-0" />
                       <span className="truncate">{profile.status_message.link.replace(/^https?:\/\//, '')}</span>
                     </a>
                   )}
                 </div>
+                {profile.status_message?.updated_at && (
+                  <div className="mt-1.5 ml-1 text-[10px] opacity-40">
+                    {timeAgo(profile.status_message.updated_at)}
+                  </div>
+                )}
               </div>
             </div>
           </Card>
