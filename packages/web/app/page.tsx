@@ -87,6 +87,11 @@ export default function Landing() {
   const router = useRouter();
   const [farms, setFarms] = useState<(PublicProfile & { github_id: string })[]>([]);
 
+  // 이전 페이지의 modal 스크롤 락이 남아있을 수 있으므로 reset
+  useEffect(() => {
+    document.body.style.overflow = '';
+  }, []);
+
   useEffect(() => {
     // 로그인 유저 → /farm으로 리다이렉트
     fetch('/api/auth/session')

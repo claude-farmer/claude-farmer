@@ -502,7 +502,9 @@ export default function FarmThumbnail({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [character, githubId, level, uniqueItems, streakDays, inventory]);
+    // inventory dep stabilized to id list to avoid restart on every parent re-render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [githubId, level, uniqueItems, streakDays, JSON.stringify(character ?? null), (inventory ?? []).map(i => i.id).join(',')]);
 
   return (
     <canvas

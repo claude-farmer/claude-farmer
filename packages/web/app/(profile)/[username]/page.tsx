@@ -140,10 +140,12 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
   // 모달 열렸을 때 배경 스크롤 락
   useEffect(() => {
     if (modal === 'none') return;
-    const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    return () => { document.body.style.overflow = ''; };
   }, [modal]);
+
+  // 페이지 unmount 시 보장: 잔존 락 제거
+  useEffect(() => () => { document.body.style.overflow = ''; }, []);
 
   // 쿨다운 타이머
   useEffect(() => {
