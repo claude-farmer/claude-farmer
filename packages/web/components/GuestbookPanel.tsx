@@ -103,9 +103,9 @@ export function GuestbookEntryItem({
                 {entry.message}
               </div>
             )}
-            {entry.link && /^https?:\/\//i.test(entry.link) && (
+            {entry.link && (
               <a
-                href={entry.link}
+                href={/^https?:\/\//i.test(entry.link) ? entry.link : `https://${entry.link}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-4 py-2.5 border-t border-[var(--border)] text-xs text-[var(--accent)] hover:bg-[var(--card)] transition-colors"

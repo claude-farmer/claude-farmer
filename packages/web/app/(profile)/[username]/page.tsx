@@ -487,9 +487,9 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
                       <span className="opacity-40">{isOwn ? t.setBubble : (locale === 'ko' ? '소개가 없어요' : 'No bio')}</span>
                     )}
                   </div>
-                  {profile.status_message?.link && /^https?:\/\//i.test(profile.status_message.link) && (
+                  {profile.status_message?.link && (
                     <a
-                      href={profile.status_message.link}
+                      href={/^https?:\/\//i.test(profile.status_message.link) ? profile.status_message.link : `https://${profile.status_message.link}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1.5 px-4 py-2.5 border-t border-[var(--border)] text-xs text-[var(--accent)] hover:bg-[var(--card)] transition-colors"
