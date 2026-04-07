@@ -14,11 +14,14 @@ function asciiSafe(s: string | undefined | null, max = 80): string {
 
 const W = 1200;
 const H = 630;
+const PAD = 60;
 const THUMB_PX = 64;
-const THUMB_SCALE = 9; // 64 → 576
-const THUMB_SIZE = THUMB_PX * THUMB_SCALE; // 576
-const THUMB_X = (W - THUMB_SIZE) / 2; // 312
-const THUMB_Y = (H - THUMB_SIZE) / 2; // 27
+const THUMB_SCALE = 7; // 64 → 448
+const THUMB_SIZE = THUMB_PX * THUMB_SCALE; // 448
+const THUMB_X = PAD;
+const THUMB_Y = (H - THUMB_SIZE) / 2; // 91
+const RIGHT_X = THUMB_X + THUMB_SIZE + 48; // 556
+const RIGHT_W = W - RIGHT_X - PAD; // 584
 
 function homeFallback() {
   return new ImageResponse(
@@ -122,51 +125,49 @@ export async function GET(
           ))}
         </div>
 
-        {/* 말풍선 (썸네일 상단 정렬) */}
+        {/* 우측 상단: 말풍선 (썸네일 상단 정렬) */}
         {status && (
           <div
             style={{
               position: 'absolute',
-              left: THUMB_X + 20,
-              top: THUMB_Y + 20,
-              maxWidth: THUMB_SIZE - 40,
+              left: RIGHT_X,
+              top: THUMB_Y,
+              maxWidth: RIGHT_W,
               display: 'flex',
-              backgroundColor: 'rgba(15, 17, 23, 0.92)',
+              backgroundColor: '#1a1d27',
               border: '2px solid #fbbf24',
               borderRadius: 24,
-              padding: '20px 28px',
+              padding: '24px 32px',
             }}
           >
-            <div style={{ display: 'flex', fontSize: 26, color: '#e5e7eb', lineHeight: 1.3 }}>
+            <div style={{ display: 'flex', fontSize: 28, color: '#e5e7eb', lineHeight: 1.3 }}>
               &ldquo;{status}&rdquo;
             </div>
           </div>
         )}
 
-        {/* 하단 텍스트 그룹 (썸네일 하단 정렬, 그라데이션 배경) */}
+        {/* 우측 하단: 텍스트 그룹 (썸네일 하단 정렬, 위쪽 그라데이션) */}
         <div
           style={{
             position: 'absolute',
-            left: THUMB_X,
-            top: THUMB_Y + THUMB_SIZE - 200,
-            width: THUMB_SIZE,
-            height: 200,
+            left: RIGHT_X,
+            top: THUMB_Y + THUMB_SIZE - 220,
+            width: RIGHT_W,
+            height: 220,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-end',
-            padding: '24px 32px',
-            background: 'linear-gradient(to bottom, rgba(15,17,23,0) 0%, rgba(15,17,23,0.85) 50%, rgba(15,17,23,0.95) 100%)',
-            borderBottomLeftRadius: 12,
-            borderBottomRightRadius: 12,
+            padding: '24px 0',
+            background: 'linear-gradient(to bottom, rgba(15,17,23,0) 0%, rgba(15,17,23,0.85) 40%, rgba(15,17,23,1) 100%)',
           }}
         >
-          <div style={{ display: 'flex', fontSize: 44, fontWeight: 900, color: '#e5e7eb' }}>
+          <div style={{ display: 'flex', fontSize: 56, fontWeight: 900, color: '#e5e7eb', letterSpacing: '-0.01em' }}>
             {nickname}
           </div>
-          <div style={{ display: 'flex', fontSize: 22, color: '#9ca3af', marginTop: 4 }}>
+          <div style={{ display: 'flex', fontSize: 26, color: '#9ca3af', marginTop: 8 }}>
             @{username}
           </div>
-          <div style={{ display: 'flex', fontSize: 22, color: '#fbbf24', fontWeight: 900, marginTop: 4 }}>
+          <div style={{ display: 'flex', fontSize: 26, color: '#fbbf24', fontWeight: 900, marginTop: 8 }}>
             claudefarmer.com/@{username}
           </div>
         </div>
