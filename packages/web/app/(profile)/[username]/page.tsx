@@ -24,7 +24,7 @@ import {
 import usePolling from '@/hooks/usePolling';
 import { useLocale } from '@/lib/locale-context';
 import {
-  WATER_COOLDOWN_SECONDS, GRID_SIZE, getFarmerTitle, GACHA_ITEMS, getItemCounts,
+  WATER_COOLDOWN_SECONDS, GRID_SIZE, getFarmerTitle, GACHA_ITEMS, getItemCounts, generateDefaultAppearance,
 } from '@claude-farmer/shared';
 import type { PublicProfile, Footprint, InventoryItem, CharacterAppearance, FarmNotifications } from '@claude-farmer/shared';
 
@@ -381,7 +381,7 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
             ownerStatusLink={profile.status_message?.link}
             ownerTotalHarvests={profile.total_harvests}
             ownerUniqueItems={uniqueItems}
-            ownerCharacter={profile.character}
+            ownerCharacter={profile.character ?? generateDefaultAppearance(username)}
             ownerAvatarUrl={profile.avatar_url}
             decorations={GACHA_ITEMS.filter(item => (itemCounts.get(item.id) ?? 0) > 0).map(item => ({ itemId: item.id, count: itemCounts.get(item.id) ?? 0, rarity: item.rarity }))}
             streakDays={profile.streak_days}

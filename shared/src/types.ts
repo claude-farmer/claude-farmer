@@ -124,7 +124,8 @@ export interface GuestbookEntry {
   from_nickname: string;
   from_avatar_url?: string;
   type: 'visit' | 'water' | 'gift';
-  message: string | null;  // visitor's status_message
+  message: string | null;  // visitor's status_message text snapshot
+  link?: string;           // visitor's status_message link snapshot
   item_id?: string;        // for gift type
   at: string;              // ISO timestamp
 }

@@ -86,6 +86,7 @@ export async function POST(
         from_avatar_url: visitorProfile?.avatar_url,
         type: 'visit',
         message: visitorProfile?.status_message?.text || null,
+        link: visitorProfile?.status_message?.link || undefined,
         at: new Date(now).toISOString(),
       });
       await redis.zadd(keys.guestbook(farmOwnerId), { score: now, member: guestbookEntry });

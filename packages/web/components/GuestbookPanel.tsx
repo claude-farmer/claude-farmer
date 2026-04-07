@@ -5,6 +5,7 @@ import { fetchGuestbook } from '@/lib/api';
 import { useLocale } from '@/lib/locale-context';
 import Icon from './Icon';
 import Card from './Card';
+import { GACHA_ITEMS } from '@claude-farmer/shared';
 import type { GuestbookEntry } from '@claude-farmer/shared';
 import type { ReactNode } from 'react';
 
@@ -51,14 +52,19 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser, onOpen
     return 'directions_walk';
   }
 
-  function typeLabel(type: string): string {
+  function typeLabel(entry: GuestbookEntry): string {
+    if (entry.type === 'gift' && entry.item_id) {
+      const item = GACHA_ITEMS.find(i => i.id === entry.item_id);
+      const name = item?.name ?? '';
+      return locale === 'ko' ? `${name} 선물` : `gifted ${name}`;
+    }
     if (locale === 'ko') {
-      if (type === 'water') return '물주기';
-      if (type === 'gift') return '선물';
+      if (entry.type === 'water') return '물주기';
+      if (entry.type === 'gift') return '선물';
       return '방문';
     }
-    if (type === 'water') return 'watered';
-    if (type === 'gift') return 'gifted';
+    if (entry.type === 'water') return 'watered';
+    if (entry.type === 'gift') return 'gifted';
     return 'visited';
   }
 
@@ -122,27 +128,31 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser, onOpen
                     <span className="opacity-40">·</span>
                     <span className="inline-flex items-center gap-0.5 opacity-60">
                       <Icon name={typeIconName(entry.type)} size={11} filled={entry.type === 'water'} />
-                      {typeLabel(entry.type)}
+                      {typeLabel(entry)}
                     </span>
                     <span className="opacity-40">·</span>
                     <span className="opacity-40">{timeAgo(entry.at)}</span>
                   </div>
-                  {(() => {
-                    let bubbleText: string | null = null;
-                    if (entry.type === 'gift' && entry.message) {
-                      bubbleText = locale === 'ko' ? `${entry.message} 선물` : `gifted ${entry.message}`;
-                    } else if (entry.type === 'water') {
-                      bubbleText = entry.message
-                        || (locale === 'ko' ? '물을 주고 갔어요' : 'left some water');
-                    } else if (entry.message) {
-                      bubbleText = entry.message;
-                    }
-                    return bubbleText ? (
-                      <div className="mt-1.5 inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm px-3 py-2 text-xs break-words">
-                        {bubbleText}
-                      </div>
-                    ) : null;
-                  })()}
+                  {(entry.message || entry.link) && (
+                    <div className="mt-1.5 inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm overflow-hidden">
+                      {entry.message && (
+                        <div className="px-4 py-3 break-words text-sm leading-relaxed">
+                          {entry.message}
+                        </div>
+                      )}
+                      {entry.link && /^https?:\/\//i.test(entry.link) && (
+                        <a
+                          href={entry.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-4 py-2.5 border-t border-[var(--border)] text-xs text-[var(--accent)] hover:bg-[var(--card)] transition-colors"
+                        >
+                          <Icon name="open_in_new" size={12} className="shrink-0" />
+                          <span className="truncate">{entry.link.replace(/^https?:\/\//, '')}</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

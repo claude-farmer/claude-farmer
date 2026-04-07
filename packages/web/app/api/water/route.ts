@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
       from_avatar_url: fromProfile.avatar_url,
       type: 'water',
       message: fromProfile.status_message?.text || null,
+      link: fromProfile.status_message?.link || undefined,
       at: new Date(now).toISOString(),
     });
     await redis.zadd(keys.guestbook(to), { score: now, member: guestbookEntry });
