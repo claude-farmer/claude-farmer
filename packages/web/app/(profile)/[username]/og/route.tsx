@@ -14,14 +14,11 @@ function asciiSafe(s: string | undefined | null, max = 80): string {
 
 const W = 1200;
 const H = 630;
-const PAD = 60;
 const THUMB_PX = 64;
-const THUMB_SCALE = 7; // 64 → 448
-const THUMB_SIZE = THUMB_PX * THUMB_SCALE; // 448
-const THUMB_X = PAD;
-const THUMB_Y = (H - THUMB_SIZE) / 2; // 91
-const RIGHT_X = THUMB_X + THUMB_SIZE + 48; // 556
-const RIGHT_W = W - RIGHT_X - PAD; // 584
+const THUMB_DRAWN = H; // 630
+const THUMB_SCALE = THUMB_DRAWN / THUMB_PX; // 9.84375
+const RIGHT_X = THUMB_DRAWN; // 630
+const RIGHT_W = W - RIGHT_X; // 570
 
 function homeFallback() {
   return new ImageResponse(
@@ -72,7 +69,7 @@ export async function GET(
   const level = profile.level ?? 0;
   const items = profile.unique_items ?? 0;
   const streak = profile.streak_days ?? 0;
-  const status = asciiSafe(profile.status_message?.text, 60);
+  const status = asciiSafe(profile.status_message?.text, 70);
 
   const rects = getThumbnailRects({
     githubId: username,
@@ -90,23 +87,18 @@ export async function GET(
           width: W,
           height: H,
           display: 'flex',
-          position: 'relative',
           background: '#0f1117',
           fontFamily: 'sans-serif',
         }}
       >
-        {/* 썸네일 픽셀 아트 (중앙) */}
+        {/* LEFT: 썸네일 픽셀 아트 (630×630, 풀 높이) */}
         <div
           style={{
-            position: 'absolute',
-            left: THUMB_X,
-            top: THUMB_Y,
-            width: THUMB_SIZE,
-            height: THUMB_SIZE,
             display: 'flex',
-            borderRadius: 16,
-            border: '4px solid #fbbf24',
-            overflow: 'hidden',
+            position: 'relative',
+            width: THUMB_DRAWN,
+            height: THUMB_DRAWN,
+            backgroundColor: '#000',
           }}
         >
           {rects.map((r, i) => (
@@ -114,10 +106,10 @@ export async function GET(
               key={i}
               style={{
                 position: 'absolute',
-                left: r.x * THUMB_SCALE,
-                top: r.y * THUMB_SCALE,
-                width: r.w * THUMB_SCALE,
-                height: r.h * THUMB_SCALE,
+                left: Math.round(r.x * THUMB_SCALE),
+                top: Math.round(r.y * THUMB_SCALE),
+                width: Math.ceil(r.w * THUMB_SCALE) + 1,
+                height: Math.ceil(r.h * THUMB_SCALE) + 1,
                 backgroundColor: r.color,
                 opacity: r.opacity,
               }}
@@ -125,82 +117,65 @@ export async function GET(
           ))}
         </div>
 
-        {/* 우측 상단: 말풍선 (썸네일 상단 정렬, 좌측 tail) */}
-        {status && (
-          <div
-            style={{
-              position: 'absolute',
-              left: RIGHT_X,
-              top: THUMB_Y,
-              maxWidth: RIGHT_W,
-              display: 'flex',
-            }}
-          >
-            {/* Tail (썸네일 쪽으로 향함) */}
-            <div
-              style={{
-                position: 'absolute',
-                left: -18,
-                top: 36,
-                width: 22,
-                height: 28,
-                display: 'flex',
-                backgroundColor: '#fbbf24',
-                clipPath: 'polygon(0% 50%, 100% 0%, 100% 100%)',
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                left: -14,
-                top: 38,
-                width: 20,
-                height: 24,
-                display: 'flex',
-                backgroundColor: '#1a1d27',
-                clipPath: 'polygon(0% 50%, 100% 0%, 100% 100%)',
-              }}
-            />
-            {/* 본체 */}
-            <div
-              style={{
-                display: 'flex',
-                backgroundColor: '#1a1d27',
-                border: '2px solid #fbbf24',
-                borderRadius: 32,
-                padding: '32px 40px',
-              }}
-            >
-              <div style={{ display: 'flex', fontSize: 42, color: '#e5e7eb', lineHeight: 1.3 }}>
-                {status}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 우측 하단: 텍스트 그룹 (썸네일 하단 정렬, 위쪽 그라데이션) */}
+        {/* RIGHT: 텍스트 영역 (570×630) */}
         <div
           style={{
-            position: 'absolute',
-            left: RIGHT_X,
-            top: THUMB_Y + THUMB_SIZE - 220,
-            width: RIGHT_W,
-            height: 220,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'flex-end',
-            padding: '24px 40px',
-            background: 'linear-gradient(to bottom, rgba(15,17,23,0) 0%, rgba(15,17,23,0.85) 40%, rgba(15,17,23,1) 100%)',
+            justifyContent: 'space-between',
+            width: RIGHT_W,
+            height: H,
+            padding: '56px 48px',
+            background: 'linear-gradient(135deg, #1a1d27 0%, #0f1117 100%)',
           }}
         >
-          <div style={{ display: 'flex', fontSize: 56, fontWeight: 900, color: '#e5e7eb' }}>
-            {nickname}
+          {/* 상단: 브랜드 + 말풍선 */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', fontSize: 22, color: '#6b7280', fontWeight: 700, marginBottom: 28 }}>
+              CLAUDE FARMER
+            </div>
+            {status && (
+              <div style={{ display: 'flex', position: 'relative' }}>
+                {/* Tail (좌측, 썸네일 향함) */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: -16,
+                    top: 28,
+                    width: 22,
+                    height: 26,
+                    display: 'flex',
+                    backgroundColor: '#ffffff',
+                    clipPath: 'polygon(100% 0%, 100% 100%, 0% 50%)',
+                  }}
+                />
+                {/* 본체 */}
+                <div
+                  style={{
+                    display: 'flex',
+                    maxWidth: RIGHT_W - 96,
+                    backgroundColor: '#ffffff',
+                    color: '#0f1117',
+                    borderRadius: 24,
+                    padding: '24px 30px',
+                  }}
+                >
+                  <div style={{ display: 'flex', fontSize: 32, color: '#0f1117', lineHeight: 1.35 }}>
+                    {status}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-          <div style={{ display: 'flex', fontSize: 26, color: '#9ca3af', marginTop: 8 }}>
-            @{username}
-          </div>
-          <div style={{ display: 'flex', fontSize: 26, color: '#fbbf24', fontWeight: 900, marginTop: 8 }}>
-            claudefarmer.com/@{username}
+
+          {/* 하단: 닉네임 + URL */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', fontSize: 64, fontWeight: 900, color: '#ffffff' }}>
+              {nickname}
+            </div>
+            <div style={{ display: 'flex', fontSize: 28, color: '#fbbf24', fontWeight: 900, marginTop: 14 }}>
+              claudefarmer.com/@{username}
+            </div>
           </div>
         </div>
       </div>
