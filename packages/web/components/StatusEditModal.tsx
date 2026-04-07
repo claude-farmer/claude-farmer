@@ -25,7 +25,10 @@ export default function StatusEditModal({ current, onSave, onClose }: StatusEdit
 
   const handleSave = async () => {
     setSaving(true);
-    const cleanLink = link.trim() && /^https?:\/\//i.test(link.trim()) ? link.trim() : undefined;
+    const trimmed = link.trim();
+    const cleanLink = trimmed
+      ? (/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`)
+      : undefined;
     await onSave(text, cleanLink);
     setSaving(false);
     onClose();

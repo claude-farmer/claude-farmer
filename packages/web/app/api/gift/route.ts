@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         from_avatar_url: senderProfile.avatar_url,
         type: 'gift',
         message: senderProfile.status_message?.text || null,
-        link: senderProfile.status_message?.link || undefined,
+        link: senderProfile.status_message?.link ?? null,
         item_id,
         at: new Date(now).toISOString(),
       });

@@ -180,8 +180,9 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
 
   const handleStatusSave = async (text: string, link?: string) => {
     if (!isOwn) return;
+    const cleanLink = link && link.trim() ? link.trim() : undefined;
     const newStatus = text.trim()
-      ? { text: text.trim().slice(0, 200), link, updated_at: new Date().toISOString() }
+      ? { text: text.trim().slice(0, 200), link: cleanLink, updated_at: new Date().toISOString() }
       : null;
     setProfile(p => p ? { ...p, status_message: newStatus } : p);
     await updateStatus(newStatus);
