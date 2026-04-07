@@ -107,18 +107,13 @@ const ShareCanvas = forwardRef<ShareCanvasHandle, ShareCanvasProps>(function Sha
     ctx.font = 'bold 36px -apple-system, "Segoe UI", "Apple SD Gothic Neo", sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(nickname, 48, bottomY);
-    const nickW = ctx.measureText(nickname).width;
 
-    // Lv 칩 (닉네임 측정 후 폰트 변경)
-    ctx.fillStyle = '#9ca3af';
-    ctx.font = '24px -apple-system, "Segoe UI", "Apple SD Gothic Neo", sans-serif';
-    ctx.fillText(`Lv.${level}`, 48 + nickW + 16, bottomY);
-
-    // 통계 row
+    // 통계 row (Lv 포함)
     const statY = bottomY + 44;
     ctx.fillStyle = '#9ca3af';
     ctx.font = '22px -apple-system, "Segoe UI", "Apple SD Gothic Neo", sans-serif';
     const stats = [
+      `Lv.${level}`,
       `Harvests ${totalHarvests}`,
       `Codex ${uniqueItems}/32`,
     ];
