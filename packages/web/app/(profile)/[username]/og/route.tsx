@@ -26,11 +26,13 @@ const FS_HANDLE = Math.round(FS_BASE * 1.3); // 47 (1.3×)
 const FS_NICK = Math.round(FS_BASE * 1.5); // 54 (1.5×)
 const FS_URL = 30;
 
-// 우측 카드 썸네일
-const CARD_SIZE = 380;
-const CARD_X = W - CARD_SIZE - 56; // 764
-const CARD_Y = (H - CARD_SIZE) / 2; // 125
-const CARD_SCALE = CARD_SIZE / THUMB_PX; // 5.9375
+// 우측 카드 썸네일 (텍스트 영역과 동일 높이)
+const TOP_PAD = 56;
+const BOTTOM_RESERVED = 120; // 하단 로고 영역
+const CARD_SIZE = H - TOP_PAD - BOTTOM_RESERVED; // 454
+const CARD_X = W - CARD_SIZE - 56; // 690
+const CARD_Y = TOP_PAD; // 56
+const CARD_SCALE = CARD_SIZE / THUMB_PX; // ~7.09
 
 function homeFallback() {
   return new ImageResponse(
@@ -105,7 +107,7 @@ export async function GET(
           overflow: 'hidden',
         }}
       >
-        {/* 풀 캔버스 썸네일 (cover-crop, 가운데 세로 정렬) */}
+        {/* 풀 캔버스 썸네일 (cover-crop + 블러 배경) */}
         <div
           style={{
             display: 'flex',
@@ -114,6 +116,7 @@ export async function GET(
             top: 0,
             width: W,
             height: H,
+            filter: 'blur(20px)',
           }}
         >
           {rects.map((r, i) => (
@@ -125,37 +128,6 @@ export async function GET(
                 top: Math.round(r.y * THUMB_SCALE + THUMB_OFFSET_Y),
                 width: Math.ceil(r.w * THUMB_SCALE) + 1,
                 height: Math.ceil(r.h * THUMB_SCALE) + 1,
-                backgroundColor: r.color,
-                opacity: r.opacity,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* 우측 카드 썸네일 (라운드 사각형, 노란 보더) */}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            left: CARD_X,
-            top: CARD_Y,
-            width: CARD_SIZE,
-            height: CARD_SIZE,
-            backgroundColor: '#000',
-            borderRadius: 32,
-            border: '6px solid #fbbf24',
-            overflow: 'hidden',
-          }}
-        >
-          {rects.map((r, i) => (
-            <div
-              key={`card-${i}`}
-              style={{
-                position: 'absolute',
-                left: Math.round(r.x * CARD_SCALE),
-                top: Math.round(r.y * CARD_SCALE),
-                width: Math.ceil(r.w * CARD_SCALE) + 1,
-                height: Math.ceil(r.h * CARD_SCALE) + 1,
                 backgroundColor: r.color,
                 opacity: r.opacity,
               }}
@@ -188,6 +160,37 @@ export async function GET(
             background: 'linear-gradient(to top, rgba(15,17,23,0.92) 0%, rgba(15,17,23,0.7) 15%, rgba(15,17,23,0) 35%)',
           }}
         />
+
+        {/* 우측 카드 썸네일 (그라데이션 위, 텍스트 영역과 동일 높이) */}
+        <div
+          style={{
+            display: 'flex',
+            position: 'absolute',
+            left: CARD_X,
+            top: CARD_Y,
+            width: CARD_SIZE,
+            height: CARD_SIZE,
+            backgroundColor: '#000',
+            borderRadius: 32,
+            border: '6px solid #fbbf24',
+            overflow: 'hidden',
+          }}
+        >
+          {rects.map((r, i) => (
+            <div
+              key={`card-${i}`}
+              style={{
+                position: 'absolute',
+                left: Math.round(r.x * CARD_SCALE),
+                top: Math.round(r.y * CARD_SCALE),
+                width: Math.ceil(r.w * CARD_SCALE) + 1,
+                height: Math.ceil(r.h * CARD_SCALE) + 1,
+                backgroundColor: r.color,
+                opacity: r.opacity,
+              }}
+            />
+          ))}
+        </div>
 
         {/* 좌측 상단 텍스트 그룹 (로고 침범 방지를 위해 height 제한, 우측 카드 침범 방지) */}
         <div
