@@ -388,6 +388,28 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
           />
         </div>
 
+        {/* Today 카드 (자기 농장만, 활동 있을 때만) — 최상단 */}
+        {isOwn && ((profile.today_input_chars ?? 0) > 0 || (profile.today_harvests ?? 0) > 0 || (profile.today_water_given ?? 0) > 0) && (
+          <div className="px-4 pt-3">
+            <Card header={<><Icon name="today" size={14} />{locale === 'ko' ? '오늘' : 'Today'}</>}>
+              <div className="flex items-center justify-around text-xs">
+                <div className="flex items-center gap-1.5">
+                  <Icon name="keyboard" size={14} className="opacity-60" />
+                  <span className="font-bold">{((profile.today_input_chars ?? 0) / 1000).toFixed(1)}k</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Icon name="eco" size={14} className="opacity-60" />
+                  <span className="font-bold">{profile.today_harvests ?? 0}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Icon name="water_drop" size={14} className="opacity-60" />
+                  <span className="font-bold">{profile.today_water_given ?? 0}</span>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         {/* Empty Farm Card */}
         {isEmpty && (
           <div className="px-4 pt-3">
@@ -518,31 +540,6 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
             </div>
           </Card>
         </div>
-
-        {/* Today 카드 (자기 농장만, 활동 있을 때만) */}
-        {isOwn && ((profile.today_input_chars ?? 0) > 0 || (profile.today_harvests ?? 0) > 0 || (profile.today_water_given ?? 0) > 0) && (
-          <div className="px-4 pt-3">
-            <Card
-              className="border-l-4 !border-l-[var(--accent)]"
-              header={<><Icon name="today" size={14} />{locale === 'ko' ? '오늘' : 'Today'}</>}
-            >
-              <div className="flex items-center justify-around text-xs">
-                <div className="flex items-center gap-1.5">
-                  <Icon name="keyboard" size={14} className="opacity-60" />
-                  <span className="font-bold">{((profile.today_input_chars ?? 0) / 1000).toFixed(1)}k</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Icon name="eco" size={14} className="opacity-60" />
-                  <span className="font-bold">{profile.today_harvests ?? 0}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Icon name="water_drop" size={14} className="opacity-60" />
-                  <span className="font-bold">{profile.today_water_given ?? 0}</span>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
 
         {/* Compact Codex — 카드 */}
         {isOwn && (profile.inventory ?? []).length > 0 && (
