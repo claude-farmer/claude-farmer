@@ -476,28 +476,28 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
         <div className="px-4 pt-3">
           <Card header={<><Icon name="bar_chart" size={14} />{locale === 'ko' ? '기록' : 'Records'}</>}>
             <div className="grid grid-cols-4 gap-2 text-center">
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-2">
                 <div className="text-base font-bold leading-none">{profile.total_harvests}</div>
                 <div className="text-[10px] opacity-50 inline-flex items-center gap-0.5">
                   <Icon name="agriculture" size={11} />
                   {locale === 'ko' ? '수확' : 'Harvests'}
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-2">
                 <div className="text-base font-bold leading-none">{Math.round((uniqueItems / 32) * 100)}%</div>
                 <div className="text-[10px] opacity-50 inline-flex items-center gap-0.5">
                   <Icon name="inventory_2" size={11} />
                   {locale === 'ko' ? '도감' : 'Codex'}
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-2">
                 <div className="text-base font-bold leading-none">{profile.total_visitors ?? 0}</div>
                 <div className="text-[10px] opacity-50 inline-flex items-center gap-0.5">
                   <Icon name="groups" size={11} />
                   {locale === 'ko' ? '방문자' : 'Visitors'}
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-2">
                 <div className="text-base font-bold leading-none">{profile.total_water_received ?? 0}</div>
                 <div className="text-[10px] opacity-50 inline-flex items-center gap-0.5">
                   <Icon name="water_drop" size={11} className="text-blue-400" filled />
