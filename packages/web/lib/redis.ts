@@ -42,6 +42,9 @@ export const keys = {
   totalGiftsReceived: (id: string) => `farm:${id}:total_gifts_received`,
   // 북마크 카운터 (이 농장을 북마크한 유저 수)
   totalBookmarks: (id: string) => `farm:${id}:total_bookmarks`,
+  // 누적 랭킹 (sorted set: member=user_id, score=누적 카운트)
+  waterByUser: (id: string) => `farm:${id}:water_by_user`,
+  giftsByUser: (id: string) => `farm:${id}:gifts_by_user`,
 };
 
 function todayKey(): string {

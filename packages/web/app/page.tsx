@@ -111,11 +111,14 @@ export default function Landing() {
     <div className="max-w-md mx-auto min-h-screen flex flex-col bg-[var(--bg)] shadow-2xl border-x border-[var(--border)]">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[var(--bg)] border-b border-[var(--border)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="flex items-center justify-between px-4 py-2">
-          <span className="font-bold text-sm">🌱 Claude Farmer</span>
+        <div className="flex items-center gap-2 px-3 py-2">
+          <span className="h-8 flex items-center gap-2 font-bold text-sm flex-1 min-w-0">
+            <img src="/favicon.svg" alt="" className="w-6 h-6" />
+            Claude Farmer
+          </span>
           <a
             href="/api/auth/login"
-            className="text-xs bg-[var(--accent)] text-black px-3 py-1 rounded-full font-bold hover:opacity-90"
+            className="shrink-0 h-8 inline-flex items-center text-xs font-bold px-3 rounded-lg border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-black transition-colors"
           >
             {t.loginBtn}
           </a>

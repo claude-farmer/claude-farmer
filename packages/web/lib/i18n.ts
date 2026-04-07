@@ -12,7 +12,7 @@ const dict = {
     // Landing - Hero
     heroTagline: 'Your code grows a farm.',
     heroDesc: 'An idle pixel-art farming game powered by Claude Code. Code to plant seeds, grow crops, and collect gacha items!',
-    demoBtn: 'Try Demo →',
+    demoBtn: 'Explore →',
 
     // Landing - Features
     feat1Title: 'Auto Growth',
@@ -166,7 +166,7 @@ const dict = {
   ko: {
     heroTagline: 'Your code grows a farm.',
     heroDesc: 'Claude Code를 쓰면 농장이 자동으로 자라는 방치형 픽셀아트 농장 게임. 코딩하면 씨앗이 심기고, 대화할수록 자라고, 수확하면 가챠!',
-    demoBtn: '데모 보기 →',
+    demoBtn: '탐색 하기 →',
 
     feat1Title: '자동 성장',
     feat1Desc: 'Claude Code를 쓰기만 하면 농장이 자동으로 자라요',

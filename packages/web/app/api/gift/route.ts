@@ -41,6 +41,9 @@ export async function POST(request: NextRequest) {
       await redis.hincrby(keys.gifts(to), item_id, 1);
       await redis.incr(keys.totalGiftsReceived(to));
 
+      // 사용자별 누적 선물 (랭킹용)
+      await redis.zincrby(keys.giftsByUser(to), 1, userId);
+
       // 방명록 기록
       const now = Date.now();
       const guestbookEntry = JSON.stringify({

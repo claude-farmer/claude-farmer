@@ -16,10 +16,17 @@ export async function GET(
       return entry;
     });
 
-    // 총 받은 물 수
-    const totalWater = (await redis.get<number>(keys.totalWaterReceived(id))) ?? 0;
+    // 누적 카운터
+    const [totalWater, totalGifts] = await Promise.all([
+      redis.get<number>(keys.totalWaterReceived(id)).catch(() => 0),
+      redis.get<number>(keys.totalGiftsReceived(id)).catch(() => 0),
+    ]);
 
-    return NextResponse.json({ entries, total_water_received: totalWater });
+    return NextResponse.json({
+      entries,
+      total_water_received: totalWater ?? 0,
+      total_gifts_received: totalGifts ?? 0,
+    });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

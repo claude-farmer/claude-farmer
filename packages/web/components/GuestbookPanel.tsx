@@ -12,14 +12,16 @@ interface GuestbookPanelProps {
   farmId: string;
   refreshKey?: number;
   onVisitUser?: (userId: string) => void;
+  onOpenRankings?: (tab: 'water' | 'gifts') => void;
   footer?: ReactNode;
   hint?: ReactNode;
 }
 
-export default function GuestbookPanel({ farmId, refreshKey, onVisitUser, footer, hint }: GuestbookPanelProps) {
+export default function GuestbookPanel({ farmId, refreshKey, onVisitUser, onOpenRankings, footer, hint }: GuestbookPanelProps) {
   const { t, locale } = useLocale();
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [totalWater, setTotalWater] = useState(0);
+  const [totalGifts, setTotalGifts] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +29,7 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser, footer
     fetchGuestbook(farmId).then(data => {
       setEntries(data.entries);
       setTotalWater(data.total_water_received);
+      setTotalGifts(data.total_gifts_received);
       setLoading(false);
     });
   }, [farmId, refreshKey]);
@@ -63,10 +66,28 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser, footer
     <Card
       header={<><Icon name="edit_note" size={14} />{t.guestbookTitle}</>}
       headerRight={
-        totalWater > 0 ? (
-          <span className="opacity-60 flex items-center gap-1">
-            <Icon name="water_drop" size={12} />
-            {totalWater}
+        (totalWater > 0 || totalGifts > 0) ? (
+          <span className="flex items-center gap-1">
+            {totalGifts > 0 && (
+              <button
+                type="button"
+                onClick={() => onOpenRankings?.('gifts')}
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded hover:bg-[var(--bg)] opacity-60 hover:opacity-100 transition-all"
+              >
+                <Icon name="redeem" size={12} />
+                {totalGifts}
+              </button>
+            )}
+            {totalWater > 0 && (
+              <button
+                type="button"
+                onClick={() => onOpenRankings?.('water')}
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded hover:bg-[var(--bg)] opacity-60 hover:opacity-100 transition-all"
+              >
+                <Icon name="water_drop" size={12} filled />
+                {totalWater}
+              </button>
+            )}
           </span>
         ) : null
       }

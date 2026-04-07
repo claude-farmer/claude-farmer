@@ -13,6 +13,7 @@ import SearchModal from '@/components/SearchModal';
 import ShareModal from '@/components/ShareModal';
 import AboutModal from '@/components/AboutModal';
 import StatusEditModal from '@/components/StatusEditModal';
+import RankingsModal from '@/components/RankingsModal';
 import DiscoverCarousel from '@/components/DiscoverCarousel';
 import Card from '@/components/Card';
 import Icon from '@/components/Icon';
@@ -35,7 +36,7 @@ const ITEM_EMOJI: Record<string, string> = {
   l01: '🌻', l02: '🦄', l03: '🌌', l04: '✨',
 };
 
-type ActiveModal = 'none' | 'menu-app' | 'menu-account' | 'search' | 'share' | 'codex' | 'character' | 'gift' | 'about' | 'edit';
+type ActiveModal = 'none' | 'menu-app' | 'menu-account' | 'search' | 'share' | 'codex' | 'character' | 'gift' | 'about' | 'edit' | 'rankings';
 
 export default function FarmProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { t, locale } = useLocale();
@@ -56,6 +57,7 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
   const [modal, setModal] = useState<ActiveModal>('none');
   const [guestbookKey, setGuestbookKey] = useState(0);
   const [userInventory, setUserInventory] = useState<InventoryItem[]>([]);
+  const [rankingsTab, setRankingsTab] = useState<'water' | 'gifts'>('water');
 
   useEffect(() => {
     params.then(p => setUsername(p.username));
@@ -90,7 +92,10 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
           const myFarm = await fetchFarmWithFootprints(session.github_id);
           if (myFarm?.inventory) setUserInventory(myFarm.inventory);
           if (myFarm?.avatar_url) setMyAvatarUrl(myFarm.avatar_url);
-          visitFarm(username);
+          // 방문 기록 + 낙관적 카운트 증가
+          visitFarm(username).then(ok => {
+            if (ok) setProfile(p => p ? { ...p, total_visitors: (p.total_visitors ?? 0) + 1 } : p);
+          });
         } else {
           setUserInventory(data.inventory ?? []);
           setMyAvatarUrl(data.avatar_url);
@@ -206,7 +211,10 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
     return (
       <div className="max-w-md mx-auto min-h-screen flex flex-col bg-[var(--bg)] shadow-2xl border-x border-[var(--border)]">
         <header className="sticky top-0 z-50 bg-[var(--bg)] border-b border-[var(--border)] px-4 py-2">
-          <Link href="/" className="text-sm font-bold">🌱 Claude Farmer</Link>
+          <Link href="/" className="text-sm font-bold flex items-center gap-1.5">
+            <img src="/favicon.svg" alt="" className="w-5 h-5" />
+            Claude Farmer
+          </Link>
         </header>
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
           <div className="text-5xl">🌾</div>
@@ -563,6 +571,7 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
             farmId={username}
             refreshKey={guestbookKey}
             onVisitUser={(id) => router.push(`/@${id}`)}
+            onOpenRankings={(tab) => { setRankingsTab(tab); setModal('rankings'); }}
             hint={
               !isOwn ? (
                 locale === 'ko'
@@ -666,6 +675,10 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
 
       {modal === 'about' && (
         <AboutModal onClose={() => setModal('none')} />
+      )}
+
+      {modal === 'rankings' && (
+        <RankingsModal farmId={username} initialTab={rankingsTab} onClose={() => setModal('none')} />
       )}
 
       {modal === 'edit' && isOwn && (

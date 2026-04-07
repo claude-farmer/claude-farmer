@@ -164,13 +164,36 @@ export async function sendGift(to: string, itemId: string): Promise<{ ok: boolea
   }
 }
 
-export async function fetchGuestbook(farmId: string): Promise<{ entries: GuestbookEntry[]; total_water_received: number }> {
+export interface RankingEntry {
+  github_id: string;
+  nickname: string;
+  avatar_url: string;
+  count: number;
+}
+
+export async function fetchRankings(farmId: string): Promise<{ water: RankingEntry[]; gifts: RankingEntry[] }> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/${farmId}/rankings`);
+    if (!res.ok) return { water: [], gifts: [] };
+    const data = await res.json();
+    return { water: data.water ?? [], gifts: data.gifts ?? [] };
+  } catch {
+    return { water: [], gifts: [] };
+  }
+}
+
+export async function fetchGuestbook(farmId: string): Promise<{ entries: GuestbookEntry[]; total_water_received: number; total_gifts_received: number }> {
   try {
     const res = await fetch(`${BASE}/api/farm/${farmId}/guestbook`);
-    if (!res.ok) return { entries: [], total_water_received: 0 };
-    return await res.json();
+    if (!res.ok) return { entries: [], total_water_received: 0, total_gifts_received: 0 };
+    const data = await res.json();
+    return {
+      entries: data.entries ?? [],
+      total_water_received: data.total_water_received ?? 0,
+      total_gifts_received: data.total_gifts_received ?? 0,
+    };
   } catch {
-    return { entries: [], total_water_received: 0 };
+    return { entries: [], total_water_received: 0, total_gifts_received: 0 };
   }
 }
 

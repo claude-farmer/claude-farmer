@@ -58,6 +58,9 @@ export async function POST(request: NextRequest) {
     // 총 받은 물 수 (영구)
     await redis.incr(keys.totalWaterReceived(to));
 
+    // 사용자별 누적 물 (랭킹용)
+    await redis.zincrby(keys.waterByUser(to), 1, userId);
+
     // 일별 준 횟수 (레거시 호환)
     const givenKey = `user:${userId}:water_given:${new Date().toISOString().slice(0, 10)}`;
     await redis.incr(givenKey);
