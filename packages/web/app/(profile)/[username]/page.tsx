@@ -18,7 +18,7 @@ import Card from '@/components/Card';
 import Icon from '@/components/Icon';
 import {
   fetchSession, fetchFarmWithFootprints, waterUser, visitFarm, sendGift,
-  fetchBookmarks, toggleBookmark, updateStatus, updateCharacter,
+  fetchBookmarks, toggleBookmark, updateStatus, updateCharacter, fetchWaterCooldown,
 } from '@/lib/api';
 import usePolling from '@/hooks/usePolling';
 import { useLocale } from '@/lib/locale-context';
@@ -77,6 +77,12 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
       setFootprints(data.footprints ?? []);
 
       if (session) {
+        // 기존 물주기 쿨다운 동기화 (다른 농장에서 이미 물 줬을 수 있음)
+        if (session.github_id !== username) {
+          fetchWaterCooldown().then(remaining => {
+            if (remaining > 0) setCooldownLeft(remaining);
+          });
+        }
         const bm = await fetchBookmarks();
         setBookmarkIds(bm.map(b => b.github_id));
 

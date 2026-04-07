@@ -49,6 +49,17 @@ export async function searchUser(query: string): Promise<(PublicProfile & { gith
   }
 }
 
+export async function fetchWaterCooldown(): Promise<number> {
+  try {
+    const res = await fetch(`${BASE}/api/water/cooldown`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.remaining ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function fetchExplore(exclude: string, count = 10, sort: 'random' | 'recent' = 'random'): Promise<(PublicProfile & { github_id: string })[]> {
   try {
     const res = await fetch(`${BASE}/api/explore?exclude=${exclude}&count=${count}&sort=${sort}`);
