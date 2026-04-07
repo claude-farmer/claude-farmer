@@ -103,6 +103,9 @@ export interface PublicProfile {
   farm_snapshot: Farm;
   last_active: string;
   character?: CharacterAppearance;
+  // 누적 소셜 카운터 (서버에서 합산)
+  total_visitors?: number;
+  total_water_received?: number;
 }
 
 // ── 소셜: 발자국 ──

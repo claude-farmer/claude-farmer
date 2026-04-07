@@ -13,6 +13,7 @@ import SearchModal from '@/components/SearchModal';
 import ShareModal from '@/components/ShareModal';
 import AboutModal from '@/components/AboutModal';
 import StatusEditModal from '@/components/StatusEditModal';
+import DiscoverCarousel from '@/components/DiscoverCarousel';
 import Icon from '@/components/Icon';
 import {
   fetchSession, fetchFarmWithFootprints, waterUser, visitFarm, sendGift, waveSurf,
@@ -47,6 +48,7 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
+  const [myAvatarUrl, setMyAvatarUrl] = useState<string>('');
 
   const [cooldownLeft, setCooldownLeft] = useState(0);
   const [watering, setWatering] = useState(false);
@@ -80,9 +82,11 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
         if (session.github_id !== username) {
           const myFarm = await fetchFarmWithFootprints(session.github_id);
           if (myFarm?.inventory) setUserInventory(myFarm.inventory);
+          if (myFarm?.avatar_url) setMyAvatarUrl(myFarm.avatar_url);
           visitFarm(username);
         } else {
           setUserInventory(data.inventory ?? []);
+          setMyAvatarUrl(data.avatar_url);
         }
       }
       setLoading(false);
@@ -211,34 +215,54 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
     <div className="max-w-md mx-auto min-h-screen flex flex-col bg-[var(--bg)] shadow-2xl border-x border-[var(--border)]">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[var(--bg)] border-b border-[var(--border)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="flex items-center justify-between px-4 py-2 relative">
-          {/* Left: Avatar + Name (with menu dropdown if logged in) */}
+        <div className="flex items-center gap-2 px-3 py-2 relative">
+          {/* 1. NavIconButton — 자기 아바타 (메뉴 트리거) */}
           {isLoggedIn ? (
             <button
               onClick={() => setModal(modal === 'menu' ? 'none' : 'menu')}
-              className="flex items-center gap-2 text-sm hover:opacity-80"
+              aria-label="Menu"
+              className="shrink-0 p-0.5 rounded-full hover:opacity-80"
             >
-              <img src={profile.avatar_url} alt="" className="w-7 h-7 rounded-full border border-[var(--border)]" />
-              <span className="font-bold">{profile.nickname}</span>
-              <span className="text-xs opacity-30">Lv.{profile.level}</span>
-              <Icon name="expand_more" size={16} className="opacity-50" />
+              <img src={myAvatarUrl || profile.avatar_url} alt="" className="w-8 h-8 rounded-full border border-[var(--border)]" />
             </button>
           ) : (
-            <div className="flex items-center gap-2 text-sm">
-              <img src={profile.avatar_url} alt="" className="w-7 h-7 rounded-full border border-[var(--border)]" />
-              <span className="font-bold">{profile.nickname}</span>
-              <span className="text-xs opacity-30">Lv.{profile.level}</span>
-            </div>
+            <div className="w-9 shrink-0" />
           )}
 
-          {/* Right: Actions */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setModal('search')}
-              className="opacity-60 hover:opacity-100 p-1"
-              title={t.exploreTitle}
-            >
-              <Icon name="search" size={22} />
+          {/* 2. Profile group — 방문 농장의 아바타 + 닉네임 + 배지 */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <img src={profile.avatar_url} alt="" className="w-9 h-9 rounded-full border border-[var(--border)] shrink-0" />
+            <div className="flex flex-col min-w-0 leading-tight">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="font-bold text-sm truncate">{profile.nickname}</span>
+                <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)] opacity-70">
+                  Lv.{profile.level}
+                </span>
+              </div>
+              {/* 자기 농장: 오늘 신규 배지 */}
+              {isOwn && notifications && (notifications.visitor_count > 0 || notifications.water_received_count > 0) && (
+                <div className="flex items-center gap-1 mt-0.5">
+                  {notifications.visitor_count > 0 && (
+                    <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--accent)]">
+                      <Icon name="directions_walk" size={11} />
+                      {notifications.visitor_count}+
+                    </span>
+                  )}
+                  {notifications.water_received_count > 0 && (
+                    <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)] text-blue-400">
+                      <Icon name="water_drop" size={11} filled />
+                      {notifications.water_received_count}+
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 3. Right: Actions */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            <button onClick={() => setModal('search')} aria-label={t.exploreTitle} className="p-1.5 opacity-60 hover:opacity-100">
+              <Icon name="search" size={20} />
             </button>
             {isLoggedIn && !isOwn && (
               <button
@@ -246,21 +270,17 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
                   const next = await waveSurf(username, currentUser!);
                   if (next) router.push(`/@${next}`);
                 }}
-                className="opacity-60 hover:opacity-100 p-1"
-                title="Wave Surf"
+                aria-label="Wave Surf"
+                className="p-1.5 opacity-60 hover:opacity-100"
               >
-                <Icon name="waves" size={22} />
+                <Icon name="waves" size={20} />
               </button>
             )}
-            <button
-              onClick={() => setModal('share')}
-              className="opacity-60 hover:opacity-100 p-1"
-              title="Share"
-            >
-              <Icon name="share" size={22} />
+            <button onClick={() => setModal('share')} aria-label="Share" className="p-1.5 opacity-60 hover:opacity-100">
+              <Icon name="share" size={20} />
             </button>
             {!isLoggedIn && (
-              <a href="/api/auth/login" className="text-xs bg-[var(--accent)] text-black px-3 py-1 rounded-full font-bold hover:opacity-90 ml-1">
+              <a href="/api/auth/login" className="text-[11px] bg-[var(--accent)] text-black px-2.5 py-1 rounded-full font-bold hover:opacity-90 ml-1">
                 {t.loginBtn}
               </a>
             )}
@@ -278,24 +298,6 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
             />
           )}
         </div>
-
-        {/* 알림 배너 */}
-        {isOwn && notifications && (notifications.visitor_count > 0 || notifications.water_received_count > 0) && (
-          <div className="px-4 py-1.5 border-t border-[var(--border)] text-xs flex items-center gap-4 bg-[var(--card)]">
-            {notifications.visitor_count > 0 && (
-              <span className="flex items-center gap-1">
-                <Icon name="footprint" size={14} className="opacity-60" />
-                <span className="font-bold">{notifications.visitor_count}</span>
-              </span>
-            )}
-            {notifications.water_received_count > 0 && (
-              <span className="flex items-center gap-1">
-                <Icon name="water_drop" size={14} className="opacity-60" />
-                <span className="font-bold">{notifications.water_received_count}</span>
-              </span>
-            )}
-          </div>
-        )}
       </header>
 
       {/* Content */}
@@ -420,27 +422,95 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
           )}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-2 px-4 py-3 text-xs">
-          <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)] flex items-center gap-2">
-            <Icon name="inventory_2" size={16} className="opacity-50" />
-            <span className="font-bold">{uniqueItems}/32</span>
-          </div>
-          <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)] flex items-center gap-2">
-            <Icon name="agriculture" size={16} className="opacity-50" />
-            <span className="font-bold">{profile.total_harvests}</span>
-          </div>
-          {(profile.streak_days ?? 0) > 0 && (
-            <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)] flex items-center gap-2">
-              <Icon name="local_fire_department" size={16} className="opacity-50" />
-              <span className="font-bold">{profile.streak_days}{locale === 'ko' ? '일' : 'd'}</span>
-            </div>
-          )}
-          <div className="bg-[var(--card)] rounded-lg p-2 border border-[var(--border)] flex items-center gap-2">
-            <span>{farmerTitle.emoji}</span>
-            <span className="font-bold truncate">{locale === 'ko' ? farmerTitle.ko : farmerTitle.en}</span>
+        {/* Identity strip — 농부 칭호 + 스트릭 */}
+        <div className="px-4 pt-3">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 flex items-center justify-between text-sm">
+            <span className="flex items-center gap-1.5">
+              <span>{farmerTitle.emoji}</span>
+              <span className="font-bold">{locale === 'ko' ? farmerTitle.ko : farmerTitle.en}</span>
+            </span>
+            {(profile.streak_days ?? 0) > 0 && (
+              <span className="flex items-center gap-1 text-xs">
+                <Icon name="local_fire_department" size={14} className="text-orange-400" filled />
+                <span className="font-bold">{profile.streak_days}{locale === 'ko' ? '일' : 'd'}</span>
+              </span>
+            )}
           </div>
         </div>
+
+        {/* Lifetime 카드 — 기록 */}
+        <div className="px-4 pt-3">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3">
+            <div className="text-xs font-bold opacity-60 mb-2 flex items-center gap-1.5">
+              <Icon name="bar_chart" size={14} />
+              {locale === 'ko' ? '기록' : 'Records'}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
+                <Icon name="agriculture" size={16} className="opacity-60" />
+                <div className="leading-tight">
+                  <div className="text-sm font-bold">{profile.total_harvests}</div>
+                  <div className="text-[10px] opacity-50">{locale === 'ko' ? '총 수확' : 'Harvests'}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Icon name="inventory_2" size={16} className="opacity-60" />
+                <div className="leading-tight">
+                  <div className="text-sm font-bold">{uniqueItems}/32</div>
+                  <div className="text-[10px] opacity-50">{locale === 'ko' ? '도감' : 'Codex'}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Icon name="groups" size={16} className="opacity-60" />
+                <div className="leading-tight">
+                  <div className="text-sm font-bold">{profile.total_visitors ?? 0}</div>
+                  <div className="text-[10px] opacity-50">{locale === 'ko' ? '누적 방문자' : 'Visitors'}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Icon name="water_drop" size={16} className="opacity-60 text-blue-400" filled />
+                <div className="leading-tight">
+                  <div className="text-sm font-bold">{profile.total_water_received ?? 0}</div>
+                  <div className="text-[10px] opacity-50">{locale === 'ko' ? '누적 물' : 'Watered'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Today 카드 (자기 농장만, 활동 있을 때만) */}
+        {isOwn && ((profile.today_input_chars ?? 0) > 0 || (profile.today_harvests ?? 0) > 0 || (profile.today_water_given ?? 0) > 0) && (
+          <div className="px-4 pt-3">
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3 border-l-4" style={{ borderLeftColor: 'var(--accent)' }}>
+              <div className="text-xs font-bold opacity-60 mb-2 flex items-center gap-1.5">
+                <Icon name="today" size={14} />
+                {locale === 'ko' ? '오늘' : 'Today'}
+              </div>
+              <div className="flex items-center justify-around text-xs">
+                <div className="flex items-center gap-1.5">
+                  <Icon name="keyboard" size={14} className="opacity-60" />
+                  <span className="font-bold">{((profile.today_input_chars ?? 0) / 1000).toFixed(1)}k</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Icon name="eco" size={14} className="opacity-60" />
+                  <span className="font-bold">{profile.today_harvests ?? 0}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Icon name="water_drop" size={14} className="opacity-60" />
+                  <span className="font-bold">{profile.today_water_given ?? 0}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Discover Carousel */}
+        <DiscoverCarousel
+          currentUser={currentUser}
+          viewedUsername={username}
+          isOwn={isOwn}
+          onOpenSearch={() => setModal('search')}
+        />
 
         {/* Compact Codex — 카드 */}
         {isOwn && (profile.inventory ?? []).length > 0 && (

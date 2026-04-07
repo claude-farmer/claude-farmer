@@ -44,7 +44,18 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ ...profile, footprints });
+    // 누적 카운터 (방문자, 받은 물)
+    const [totalVisitors, totalWaterReceived] = await Promise.all([
+      redis.get<number>(keys.totalVisitors(id)).catch(() => 0),
+      redis.get<number>(keys.totalWaterReceived(id)).catch(() => 0),
+    ]);
+
+    return NextResponse.json({
+      ...profile,
+      footprints,
+      total_visitors: totalVisitors ?? 0,
+      total_water_received: totalWaterReceived ?? 0,
+    });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

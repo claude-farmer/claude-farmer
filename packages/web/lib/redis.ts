@@ -35,6 +35,7 @@ export const keys = {
   // 방명록 & 물 쿨다운
   guestbook: (id: string) => `farm:${id}:guestbook`,
   totalWaterReceived: (id: string) => `farm:${id}:total_water_received`,
+  totalVisitors: (id: string) => `farm:${id}:total_visitors`,
   waterCooldown: (id: string) => `user:${id}:water_cooldown`,
   // 선물
   gifts: (id: string) => `farm:${id}:gifts`,
