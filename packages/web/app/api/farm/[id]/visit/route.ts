@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
+import { extractUserId } from '@/lib/session';
 import { GUESTBOOK_MAX_ENTRIES } from '@claude-farmer/shared';
 import type { PublicProfile } from '@claude-farmer/shared';
 
@@ -9,16 +10,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = request.cookies.get('cf_session')?.value;
-    if (!session) {
+    const visitorId = extractUserId(request);
+    if (!visitorId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    let visitorId: string;
-    try {
-      visitorId = JSON.parse(session).github_id;
-    } catch {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 
     const { id: farmOwnerId } = await params;

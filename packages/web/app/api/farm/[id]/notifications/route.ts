@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
+import { extractUserId } from '@/lib/session';
 import type { Footprint } from '@claude-farmer/shared';
 
 // 내 농장 알림 조회 (24시간 이내 방문자 + 물 주기 기록)
@@ -8,16 +9,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = request.cookies.get('cf_session')?.value;
-    if (!session) {
+    const sessionUser = extractUserId(request);
+    if (!sessionUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    let sessionUser: string;
-    try {
-      sessionUser = JSON.parse(session).github_id;
-    } catch {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 
     const { id } = await params;

@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
+import { extractUserId } from '@/lib/session';
 import type { PublicProfile } from '@claude-farmer/shared';
 
 // 북마크 목록 조회
 export async function GET(request: NextRequest) {
   try {
-    const session = request.cookies.get('cf_session')?.value;
-    if (!session) {
+    const userId = extractUserId(request);
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    let userId: string;
-    try {
-      userId = JSON.parse(session).github_id;
-    } catch {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 
     const bookmarkIds = await redis.smembers(keys.bookmarks(userId));
@@ -41,16 +35,9 @@ export async function GET(request: NextRequest) {
 // 북마크 추가/삭제
 export async function POST(request: NextRequest) {
   try {
-    const session = request.cookies.get('cf_session')?.value;
-    if (!session) {
+    const userId = extractUserId(request);
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    let userId: string;
-    try {
-      userId = JSON.parse(session).github_id;
-    } catch {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 
     const { target_id, action } = await request.json();
