@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale } from '@/lib/locale-context';
+import Icon from './Icon';
 import { GACHA_ITEMS, getItemCounts } from '@claude-farmer/shared';
 import { RARITY_COLOR } from '@claude-farmer/shared';
 import type { InventoryItem } from '@claude-farmer/shared';
@@ -32,8 +33,13 @@ export default function GiftPicker({ inventory, onGift, onClose }: GiftPickerPro
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">
-          <span className="font-bold text-sm">🎁 {t.giftPickerTitle}</span>
-          <button onClick={onClose} className="text-xs opacity-40 hover:opacity-70">✕</button>
+          <span className="font-bold text-sm flex items-center gap-2">
+            <Icon name="redeem" size={18} />
+            {t.giftPickerTitle}
+          </span>
+          <button onClick={onClose} className="opacity-40 hover:opacity-100">
+            <Icon name="close" size={18} />
+          </button>
         </div>
 
         {giftableItems.length === 0 ? (

@@ -5,6 +5,7 @@ import type { Rarity, InventoryItem } from '@claude-farmer/shared';
 import { GACHA_ITEMS, RARITY_LABEL, RARITY_COLOR, TOTAL_ITEMS, getEvolutionTier, getNextEvolutionThreshold, EVOLUTION_TIERS } from '@claude-farmer/shared';
 import { getItemCounts } from '@claude-farmer/shared';
 import { useLocale } from '@/lib/locale-context';
+import Icon from './Icon';
 
 // 아이템별 이모지 아이콘
 const ITEM_EMOJI: Record<string, string> = {
@@ -45,9 +46,10 @@ export default function BagView({ inventory }: BagViewProps) {
 
   return (
     <div className="flex flex-col gap-3 p-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">📖 {t.bagTitle}</h2>
-        <span className="text-sm opacity-60">{uniqueCount}/{TOTAL_ITEMS}</span>
+      {/* 진행도 카드 */}
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3 flex items-center justify-between">
+        <span className="text-sm opacity-60">{locale === 'ko' ? '전체 진행도' : 'Total Progress'}</span>
+        <span className="text-sm font-bold">{uniqueCount}/{TOTAL_ITEMS}</span>
       </div>
 
       {rarities.map(rarity => {
@@ -56,7 +58,7 @@ export default function BagView({ inventory }: BagViewProps) {
         const pct = pool.length > 0 ? (owned.length / pool.length) * 100 : 0;
 
         return (
-          <div key={rarity}>
+          <div key={rarity} className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-bold" style={{ color: RARITY_COLOR[rarity] }}>
                 {RARITY_LABEL[rarity]}
@@ -103,7 +105,7 @@ export default function BagView({ inventory }: BagViewProps) {
                         )}
                       </>
                     ) : (
-                      <span className="text-lg">?</span>
+                      <Icon name="help" size={18} className="opacity-50" />
                     )}
                   </button>
                 );
@@ -170,8 +172,9 @@ export default function BagView({ inventory }: BagViewProps) {
                 )}
                 <button
                   onClick={() => setSelectedItem(null)}
-                  className="mt-4 px-4 py-2 bg-[var(--border)] rounded-lg text-sm hover:bg-[var(--accent)] hover:text-black transition-colors"
+                  className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--border)] rounded-lg text-sm hover:bg-[var(--accent)] hover:text-black transition-colors"
                 >
+                  <Icon name="close" size={16} />
                   {locale === 'ko' ? '닫기' : 'Close'}
                 </button>
               </div>

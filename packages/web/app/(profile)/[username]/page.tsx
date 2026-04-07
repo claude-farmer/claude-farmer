@@ -323,33 +323,40 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
 
         {/* Empty Farm Card */}
         {isEmpty && (
-          <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--card)]">
-            <div className="text-sm font-bold mb-1">🌱 {locale === 'ko' ? '농장 시작하기' : 'Get started'}</div>
-            <p className="text-xs opacity-60 mb-2">{locale === 'ko' ? 'CLI를 설치하고 Claude Code를 쓰면 자동으로 자라요' : 'Install the CLI and code with Claude — your farm grows automatically'}</p>
-            <code className="text-xs bg-[var(--bg)] rounded px-2 py-1 block">npm i -g claude-farmer && claude-farmer init</code>
+          <div className="px-4 py-3 border-b border-[var(--border)]">
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3">
+              <div className="text-sm font-bold mb-1 flex items-center gap-1.5">
+                <Icon name="rocket_launch" size={16} />
+                {locale === 'ko' ? '농장 시작하기' : 'Get started'}
+              </div>
+              <p className="text-xs opacity-60 mb-2">{locale === 'ko' ? 'CLI를 설치하고 Claude Code를 쓰면 자동으로 자라요' : 'Install the CLI and code with Claude — your farm grows automatically'}</p>
+              <code className="text-xs bg-[var(--bg)] rounded px-2 py-1 block">npm i -g claude-farmer && claude-farmer init</code>
+            </div>
           </div>
         )}
 
-        {/* Status (read-only; edit via menu) */}
-        <div className="px-4 py-2 border-b border-[var(--border)] text-sm">
-          <div
-            className={`flex items-center gap-2 ${isOwn ? 'cursor-pointer hover:opacity-80' : ''}`}
-            onClick={() => { if (isOwn) setModal('edit'); }}
-          >
-            <Icon name="chat_bubble" size={16} className="opacity-50" />
-            {profile.status_message?.text ? (
-              <span className="flex-1">{profile.status_message.text}</span>
-            ) : (
-              <span className="opacity-40 flex-1">{isOwn ? t.setBubble : ''}</span>
-            )}
-            {profile.status_message?.link && /^https?:\/\//i.test(profile.status_message.link) && (
-              <a href={profile.status_message.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[var(--accent)]">
-                <Icon name="link" size={14} />
-              </a>
-            )}
-            {isOwn && <Icon name="edit" size={14} className="opacity-30" />}
+        {/* Status — 카드 형태 */}
+        {(profile.status_message?.text || isOwn) && (
+          <div className="px-4 pt-3">
+            <div
+              className={`bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 flex items-center gap-2 text-sm ${isOwn ? 'cursor-pointer hover:border-[var(--accent)] transition-colors' : ''}`}
+              onClick={() => { if (isOwn) setModal('edit'); }}
+            >
+              <Icon name="chat_bubble" size={16} className="opacity-50" />
+              {profile.status_message?.text ? (
+                <span className="flex-1">{profile.status_message.text}</span>
+              ) : (
+                <span className="opacity-40 flex-1">{isOwn ? t.setBubble : ''}</span>
+              )}
+              {profile.status_message?.link && /^https?:\/\//i.test(profile.status_message.link) && (
+                <a href={profile.status_message.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[var(--accent)]">
+                  <Icon name="link" size={14} />
+                </a>
+              )}
+              {isOwn && <Icon name="edit" size={14} className="opacity-30" />}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Action Bar */}
         <div className="flex gap-2 px-4 py-3 border-b border-[var(--border)]">
@@ -435,28 +442,34 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
           </div>
         </div>
 
-        {/* Compact Codex */}
+        {/* Compact Codex — 카드 */}
         {isOwn && (profile.inventory ?? []).length > 0 && (
-          <div className="px-4 py-2 border-t border-[var(--border)]">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold opacity-50">📖 {locale === 'ko' ? '수집' : 'Collected'}</span>
-              <button onClick={() => setModal('codex')} className="text-xs text-[var(--accent)]">
-                {locale === 'ko' ? '전체보기 →' : 'View all →'}
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {GACHA_ITEMS.filter(item => itemCounts.has(item.id)).slice(0, 16).map(item => (
-                <span key={item.id} className="text-sm" title={item.name}>
-                  {ITEM_EMOJI[item.id] ?? '?'}
+          <div className="px-4 pb-3">
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold opacity-60 flex items-center gap-1.5">
+                  <Icon name="inventory_2" size={14} />
+                  {locale === 'ko' ? '수집' : 'Collected'}
                 </span>
-              ))}
-              {uniqueItems > 16 && <span className="text-xs opacity-40">+{uniqueItems - 16}</span>}
+                <button onClick={() => setModal('codex')} className="text-xs text-[var(--accent)] flex items-center gap-0.5">
+                  {locale === 'ko' ? '전체보기' : 'View all'}
+                  <Icon name="chevron_right" size={14} />
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {GACHA_ITEMS.filter(item => itemCounts.has(item.id)).slice(0, 16).map(item => (
+                  <span key={item.id} className="text-base" title={item.name}>
+                    {ITEM_EMOJI[item.id] ?? '?'}
+                  </span>
+                ))}
+                {uniqueItems > 16 && <span className="text-xs opacity-40 self-center">+{uniqueItems - 16}</span>}
+              </div>
             </div>
           </div>
         )}
 
         {/* Guestbook */}
-        <div className="px-4 py-3">
+        <div className="px-4 pb-3">
           <GuestbookPanel
             farmId={username}
             refreshKey={guestbookKey}
@@ -468,10 +481,18 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
       {/* Modals */}
       {modal === 'codex' && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={() => setModal('none')}>
-          <div className="bg-[var(--bg)] w-full max-w-md rounded-t-xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-[var(--bg)] w-full max-w-md rounded-t-xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            <div className="flex justify-center pt-2 pb-1">
+              <div className="w-10 h-1 rounded-full bg-[var(--border)]" />
+            </div>
             <div className="sticky top-0 bg-[var(--bg)] border-b border-[var(--border)] px-4 py-2 flex justify-between items-center">
-              <span className="font-bold text-sm">📖 {locale === 'ko' ? '도감' : 'Codex'}</span>
-              <button onClick={() => setModal('none')} className="text-xs opacity-40">✕</button>
+              <span className="font-bold text-sm flex items-center gap-2">
+                <Icon name="menu_book" size={18} />
+                {locale === 'ko' ? '도감' : 'Codex'}
+              </span>
+              <button onClick={() => setModal('none')} className="opacity-40 hover:opacity-100">
+                <Icon name="close" size={18} />
+              </button>
             </div>
             <BagView inventory={profile.inventory ?? []} />
           </div>

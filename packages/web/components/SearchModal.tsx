@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { fetchExplore, searchUser, fetchBookmarks } from '@/lib/api';
 import FarmThumbnail from '@/components/FarmThumbnail';
 import { useLocale } from '@/lib/locale-context';
+import Icon from './Icon';
 import type { PublicProfile } from '@claude-farmer/shared';
 
 interface SearchModalProps {
@@ -67,8 +68,13 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
         {/* Header */}
         <header className="sticky top-0 z-10 bg-[var(--bg)] border-b border-[var(--border)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="flex items-center justify-between px-4 py-2">
-            <span className="text-sm font-bold">🌍 {t.exploreTitle}</span>
-            <button onClick={onClose} className="text-xs opacity-40 hover:opacity-100 px-2 py-1">✕</button>
+            <span className="text-sm font-bold flex items-center gap-2">
+              <Icon name="explore" size={18} />
+              {t.exploreTitle}
+            </span>
+            <button onClick={onClose} className="opacity-40 hover:opacity-100 p-1">
+              <Icon name="close" size={18} />
+            </button>
           </div>
         </header>
 
@@ -88,9 +94,9 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
               <button
                 onClick={handleSearch}
                 disabled={searchLoading || searchQuery.trim().length < 2}
-                className="bg-[var(--accent)] text-black font-bold rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+                className="bg-[var(--accent)] text-black font-bold rounded-lg px-4 py-2 text-sm disabled:opacity-50 flex items-center"
               >
-                🔍
+                <Icon name="search" size={18} />
               </button>
             </div>
           </div>
@@ -117,7 +123,10 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
           {/* Neighbors (horizontal) */}
           {bookmarks.length > 0 && searchResults === null && (
             <div className="px-4 py-3 border-b border-[var(--border)]">
-              <h3 className="text-xs font-bold opacity-50 mb-2">🏡 {locale === 'ko' ? '이웃' : 'Neighbors'}</h3>
+              <h3 className="text-xs font-bold opacity-50 mb-2 flex items-center gap-1.5">
+                <Icon name="groups" size={14} />
+                {locale === 'ko' ? '이웃' : 'Neighbors'}
+              </h3>
               <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
                 {bookmarks.map(farm => (
                   <button key={farm.github_id} onClick={() => handleVisit(farm.github_id)} className="flex flex-col items-center shrink-0">
@@ -133,9 +142,13 @@ export default function SearchModal({ currentUser, onClose }: SearchModalProps) 
           {searchResults === null && (
             <div className="px-4 py-3">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold opacity-50">🎲 {locale === 'ko' ? '추천 농장' : 'Discover'}</h3>
-                <button onClick={handleRefresh} className="text-xs opacity-40 hover:opacity-100 transition-opacity">
-                  ↻ {locale === 'ko' ? '새로고침' : 'Refresh'}
+                <h3 className="text-xs font-bold opacity-50 flex items-center gap-1.5">
+                  <Icon name="casino" size={14} />
+                  {locale === 'ko' ? '추천 농장' : 'Discover'}
+                </h3>
+                <button onClick={handleRefresh} className="text-xs opacity-40 hover:opacity-100 transition-opacity flex items-center gap-1">
+                  <Icon name="refresh" size={14} />
+                  {locale === 'ko' ? '새로고침' : 'Refresh'}
                 </button>
               </div>
               <div className="grid grid-cols-3 gap-2">

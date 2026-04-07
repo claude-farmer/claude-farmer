@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { fetchGuestbook } from '@/lib/api';
 import { useLocale } from '@/lib/locale-context';
+import Icon from './Icon';
 import type { GuestbookEntry } from '@claude-farmer/shared';
 
 interface GuestbookPanelProps {
@@ -37,19 +38,25 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: Gues
     return `${days}${t.guestbookDayAgo}`;
   }
 
-  function typeIcon(type: string) {
-    if (type === 'water') return '💧';
-    if (type === 'gift') return '🎁';
-    return '👣';
+  function typeIconName(type: string): string {
+    if (type === 'water') return 'water_drop';
+    if (type === 'gift') return 'redeem';
+    return 'footprint';
   }
 
   return (
     <div className="bg-[var(--card)] rounded-lg border border-[var(--border)] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)]">
-        <span className="text-sm font-bold">📝 {t.guestbookTitle}</span>
+        <span className="text-sm font-bold flex items-center gap-1.5">
+          <Icon name="edit_note" size={16} />
+          {t.guestbookTitle}
+        </span>
         {totalWater > 0 && (
-          <span className="text-xs opacity-60">💧 {t.guestbookTotalWater}: {totalWater}</span>
+          <span className="text-xs opacity-60 flex items-center gap-1">
+            <Icon name="water_drop" size={12} />
+            {t.guestbookTotalWater}: {totalWater}
+          </span>
         )}
       </div>
 
@@ -75,7 +82,7 @@ export default function GuestbookPanel({ farmId, refreshKey, onVisitUser }: Gues
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs">{typeIcon(entry.type)}</span>
+                    <Icon name={typeIconName(entry.type)} size={12} className="opacity-60" />
                     <button onClick={() => onVisitUser?.(entry.from_id)} className="text-sm font-bold truncate hover:text-[var(--accent)] transition-colors">{entry.from_nickname}</button>
                     <span className="text-xs opacity-40 flex-shrink-0">{timeAgo(entry.at)}</span>
                   </div>
