@@ -385,7 +385,7 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ from: this.state.user.github_id, to: msg.targetId }),
             });
-            const data = res.ok ? await res.json() : { ok: false };
+            const data = (res.ok ? await res.json() : { ok: false }) as Record<string, unknown>;
             this.postMessage({ type: 'waterResult', ...data });
           } catch { this.postMessage({ type: 'waterResult', ok: false }); }
         }
@@ -403,7 +403,7 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
               try {
                 const r = await fetch(`https://claudefarmer.com/api/farm/${id}`);
                 if (r.ok) {
-                  const p = await r.json();
+                  const p = await r.json() as Record<string, unknown>;
                   profiles.push({ ...p, github_id: id });
                 }
               } catch { /* skip */ }
@@ -479,7 +479,7 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
       try {
         const res = await fetch(`https://claudefarmer.com/api/farm/${this.state.user.github_id}`);
         if (res.ok) {
-          const data = await res.json();
+          const data = await res.json() as { footprints?: typeof visitors };
           visitors = data.footprints || [];
         }
       } catch { /* 네트워크 에러 시 빈 배열 유지 */ }
