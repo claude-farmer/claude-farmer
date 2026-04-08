@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { t } from '@claude-farmer/shared';
 import { stateExists, withState, loadState } from '../core/state.js';
 import { getLocale } from '../core/config.js';
+import { syncToServer } from '../sync/remote.js';
 
 export async function statusCommand(message?: string, opts?: { link?: string; clear?: boolean }): Promise<void> {
   const locale = getLocale();
@@ -12,10 +13,11 @@ export async function statusCommand(message?: string, opts?: { link?: string; cl
   }
 
   if (opts?.clear) {
-    await withState(state => {
+    const state = await withState(state => {
       state.status_message = null;
       return state;
     });
+    await syncToServer(state).catch(() => {});
     console.log(chalk.dim('\n💬 Status cleared.\n'));
     return;
   }
@@ -34,16 +36,27 @@ export async function statusCommand(message?: string, opts?: { link?: string; cl
     return;
   }
 
-  await withState(state => {
+  // 서버 한계: text 200자, link 500자
+  const trimmedText = message.length > 200 ? message.slice(0, 200) : message;
+  const trimmedLink = opts?.link?.trim().slice(0, 500) || undefined;
+  if (message.length > 200) {
+    console.log(chalk.yellow(`⚠️  Status text truncated to 200 chars (was ${message.length}).`));
+  }
+  if ((opts?.link?.trim().length ?? 0) > 500) {
+    console.log(chalk.yellow(`⚠️  Link truncated to 500 chars.`));
+  }
+
+  const state = await withState(state => {
     state.status_message = {
-      text: message,
-      link: opts?.link?.trim() || undefined,
+      text: trimmedText,
+      link: trimmedLink,
       updated_at: new Date().toISOString(),
     };
     return state;
   });
+  await syncToServer(state).catch(() => {});
 
-  console.log(`\n💬 ${t(locale, 'statusSet')} "${chalk.yellow(message)}"`);
-  if (opts?.link) console.log(`🔗 ${opts.link}`);
+  console.log(`\n💬 ${t(locale, 'statusSet')} "${chalk.yellow(trimmedText)}"`);
+  if (trimmedLink) console.log(`🔗 ${trimmedLink}`);
   console.log('');
 }

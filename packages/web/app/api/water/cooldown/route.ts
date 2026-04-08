@@ -4,7 +4,9 @@ import { extractUserId } from '@/lib/session';
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = extractUserId(request);
+    // session cookie 우선, ?from= query param fallback (CLI/VSCode 용)
+    const fromQuery = request.nextUrl.searchParams.get('from') ?? undefined;
+    const userId = extractUserId(request, fromQuery);
     if (!userId) return NextResponse.json({ remaining: 0 });
 
     const cooldownKey = keys.waterCooldown(userId);

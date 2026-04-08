@@ -9,7 +9,7 @@ import { rollGacha, TOTAL_ITEMS } from '@claude-farmer/shared';
 import { type Locale, detectLocale, getDict } from '@claude-farmer/shared';
 
 // ── Server sync ──
-const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5분 간격
+const SYNC_INTERVAL_MS = 30 * 1000; // 30초 간격 (web visitors가 빠르게 최신 데이터 받음)
 let lastSyncTime = 0;
 
 async function syncToServer(state: LocalState): Promise<void> {
@@ -360,11 +360,23 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
           this.postMessage({ type: 'searchResult', profiles });
         } catch { this.postMessage({ type: 'searchResult', profiles: [] }); }
       } else if (msg.type === 'fetchFarm') {
-        // 다른 유저 농장 조회
+        // 다른 유저 농장 조회 + 물주기 쿨다운 사전 체크
         try {
           const res = await fetch(`https://claudefarmer.com/api/farm/${msg.targetId}`);
           const profile = res.ok ? await res.json() : null;
           this.postMessage({ type: 'farmResult', profile });
+          // cooldown 사전 fetch (실패해도 무시)
+          if (this.state) {
+            try {
+              const cdRes = await fetch(`https://claudefarmer.com/api/water/cooldown?from=${encodeURIComponent(this.state.user.github_id)}`);
+              if (cdRes.ok) {
+                const cd = await cdRes.json() as { remaining?: number };
+                if (cd.remaining && cd.remaining > 0) {
+                  this.postMessage({ type: 'cooldownInit', remaining: cd.remaining });
+                }
+              }
+            } catch { /* silent */ }
+          }
         } catch { this.postMessage({ type: 'farmResult', profile: null }); }
       } else if (msg.type === 'visitFarm') {
         // 농장 방문 기록
@@ -498,6 +510,9 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
           totalItems: TOTAL_ITEMS,
           waterReceived: this.state.activity.today_water_received,
           streakDays: this.state.activity.streak_days,
+          todayInputChars: this.state.activity.today_input_chars,
+          todayHarvests: this.state.activity.today_harvests,
+          todayWaterGiven: this.state.activity.today_water_given,
           statusMessage: this.state.status_message?.text || null,
           statusLink: this.state.status_message?.link || null,
           character: this.state.user.character || null,
@@ -678,10 +693,11 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
     </div>
     <div class="stats">
       <div class="stat"><div class="stat-label">🌾 ${d.vscodeHarvest}</div><div class="stat-value" id="harvests">0</div></div>
-      <div class="stat"><div class="stat-label">📦 ${d.vscodeCollection}</div><div class="stat-value" id="collection">0/24</div></div>
+      <div class="stat"><div class="stat-label">📦 ${d.vscodeCollection}</div><div class="stat-value" id="collection">0/${TOTAL_ITEMS}</div></div>
       <div class="stat"><div class="stat-label">💧 ${d.vscodeWater}</div><div class="stat-value" id="water">0</div></div>
       <div class="stat"><div class="stat-label">🔥 ${d.vscodeStreak}</div><div class="stat-value" id="streak">0${dl}</div></div>
     </div>
+    <div id="todayRow" style="display:none;font-size:10px;opacity:.55;margin:4px 6px 6px;">📅 ${locale === 'ko' ? '오늘' : 'Today'} · ⌨ <span id="todayChars">0</span> · 🌱 <span id="todayHarvests">0</span> · 💧 <span id="todayWater">0</span></div>
     <div class="status-section">
       <div class="status-display" id="statusDisplay" onclick="toggleStatusEdit()"></div>
       <div class="status-edit" id="statusEdit" style="display:none">
@@ -1643,6 +1659,14 @@ function updateUI(data) {
   document.getElementById('collection').textContent=data.uniqueItems+'/'+data.totalItems;
   document.getElementById('water').textContent=data.waterReceived;
   document.getElementById('streak').textContent=data.streakDays+dl;
+  // Today row
+  const tic = data.todayInputChars||0, th = data.todayHarvests||0, twg = data.todayWaterGiven||0;
+  if (tic > 0 || th > 0 || twg > 0) {
+    document.getElementById('todayChars').textContent = (tic/1000).toFixed(1) + 'k';
+    document.getElementById('todayHarvests').textContent = th;
+    document.getElementById('todayWater').textContent = twg;
+    document.getElementById('todayRow').style.display = 'block';
+  }
   farmState=data.grid;
   statusMsg=data.statusMessage;
   statusLink=data.statusLink;
@@ -1814,8 +1838,19 @@ window.addEventListener('message',(e)=>{
       updateWaterBtn();
     }
   } else if(msg.type==='bookmarkToggled'){
+    const wasBookmarked = bookmarkIds.includes(visitingId);
     bookmarkIds = msg.bookmarkIds || [];
     updateBookmarkBtn();
+    // 카운터 optimistic update (visitingId 기준)
+    const el = document.getElementById('visitBookmarks');
+    if (el && visitingId) {
+      const cur = parseInt(el.textContent || '0', 10) || 0;
+      const isNow = bookmarkIds.includes(visitingId);
+      const delta = (isNow ? 1 : 0) - (wasBookmarked ? 1 : 0);
+      el.textContent = String(Math.max(0, cur + delta));
+    }
+  } else if(msg.type==='cooldownInit'){
+    if (msg.remaining > 0) startCooldown(msg.remaining);
   }
 });
 

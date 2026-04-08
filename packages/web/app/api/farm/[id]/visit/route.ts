@@ -10,7 +10,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const visitorId = extractUserId(request);
+    let body: { from?: string } = {};
+    try { body = await request.json(); } catch { /* GET-like POST without body OK */ }
+    const visitorId = extractUserId(request, body.from);
     if (!visitorId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

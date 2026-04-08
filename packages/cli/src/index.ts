@@ -11,6 +11,9 @@ import { guestbookCommand } from './commands/guestbook.js';
 import { rankingsCommand } from './commands/rankings.js';
 import { giftCommand } from './commands/gift.js';
 import { characterCommand } from './commands/character.js';
+import { bookmarkCommand } from './commands/bookmark.js';
+import { searchCommand } from './commands/search.js';
+import { visitCommand } from './commands/visit.js';
 import { stateExists, loadState } from './core/state.js';
 import { getLocale } from './core/config.js';
 import { startWatcher } from './detect/watcher.js';
@@ -112,6 +115,30 @@ program
   .option('--clothesColor <color>', 'Clothes color')
   .action(async (opts) => {
     await characterCommand(opts);
+  });
+
+program
+  .command('visit <user>')
+  .description('Visit another developer\'s farm')
+  .action(async (user: string) => {
+    await visitCommand(user);
+  });
+
+program
+  .command('search <query>')
+  .description('Search farms by GitHub ID or nickname')
+  .action(async (query: string) => {
+    await searchCommand(query);
+  });
+
+program
+  .command('bookmark')
+  .description('Manage your bookmarks (--add @user, --remove @user, --list)')
+  .option('--add <user>', 'Bookmark a user')
+  .option('--remove <user>', 'Remove a bookmark')
+  .option('--list', 'List all bookmarks')
+  .action(async (opts) => {
+    await bookmarkCommand(opts);
   });
 
 program

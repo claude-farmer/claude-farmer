@@ -6,7 +6,8 @@ import type { PublicProfile } from '@claude-farmer/shared';
 // 북마크 목록 조회
 export async function GET(request: NextRequest) {
   try {
-    const userId = extractUserId(request);
+    const fromQuery = request.nextUrl.searchParams.get('from') ?? undefined;
+    const userId = extractUserId(request, fromQuery);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -35,12 +36,13 @@ export async function GET(request: NextRequest) {
 // 북마크 추가/삭제
 export async function POST(request: NextRequest) {
   try {
-    const userId = extractUserId(request);
+    const body = await request.json();
+    const userId = extractUserId(request, body.from);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { target_id, action } = await request.json();
+    const { target_id, action } = body;
     if (!target_id || !['add', 'remove'].includes(action)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
