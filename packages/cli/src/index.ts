@@ -7,6 +7,10 @@ import { bagCommand } from './commands/bag.js';
 import { openCommand } from './commands/open.js';
 import { waterCommand } from './commands/water.js';
 import { configCommand } from './commands/config.js';
+import { guestbookCommand } from './commands/guestbook.js';
+import { rankingsCommand } from './commands/rankings.js';
+import { giftCommand } from './commands/gift.js';
+import { characterCommand } from './commands/character.js';
 import { stateExists, loadState } from './core/state.js';
 import { getLocale } from './core/config.js';
 import { startWatcher } from './detect/watcher.js';
@@ -18,7 +22,7 @@ const program = new Command();
 program
   .name('claude-farmer')
   .description('🌱 Your code grows a farm.')
-  .version('0.2.0')
+  .version('0.3.3')
   .action(async () => {
     await showFarm();
     backgroundSync();
@@ -69,6 +73,43 @@ program
     }
     console.log(`🌱 ${t(locale, 'watchDetecting')}`);
     startWatcher();
+  });
+
+program
+  .command('guestbook [user]')
+  .description('Show a farm guestbook (default: yours)')
+  .action(async (user?: string) => {
+    await guestbookCommand(user);
+  });
+
+program
+  .command('rankings [user]')
+  .description('Show top water/gift contributors for a farm (default: yours)')
+  .action(async (user?: string) => {
+    await rankingsCommand(user);
+  });
+
+program
+  .command('gift <user> <itemId>')
+  .description('Gift a gacha item from your inventory to another farm')
+  .action(async (user: string, itemId: string) => {
+    await giftCommand(user, itemId);
+  });
+
+program
+  .command('character')
+  .description('View or update your character (use --show or pass flags)')
+  .option('--show', 'Show current character')
+  .option('--random', 'Randomize character')
+  .option('--type <type>', 'Character type (human, bear, rabbit, ...)')
+  .option('--hairStyle <style>', 'Hair style (human only)')
+  .option('--hairColor <color>', 'Hair color')
+  .option('--skinTone <tone>', 'Skin tone (human only)')
+  .option('--eyeStyle <style>', 'Eye style (dot, round, line, star, closed)')
+  .option('--accessory <acc>', 'Accessory (none, glasses, sunglasses, eyepatch, bandaid)')
+  .option('--clothesColor <color>', 'Clothes color')
+  .action(async (opts) => {
+    await characterCommand(opts);
   });
 
 program

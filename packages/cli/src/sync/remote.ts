@@ -62,3 +62,49 @@ export async function fetchNotifications(githubId: string): Promise<FarmNotifica
     return null;
   }
 }
+
+export async function fetchGuestbook(githubId: string) {
+  try {
+    const res = await fetch(`${BASE_URL}/api/farm/${githubId}/guestbook`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchRankings(githubId: string) {
+  try {
+    const res = await fetch(`${BASE_URL}/api/farm/${githubId}/rankings`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function sendGift(toId: string, itemId: string, fromId: string) {
+  try {
+    const res = await fetch(`${BASE_URL}/api/gift`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: toId, item_id: itemId, from: fromId }),
+    });
+    return await res.json();
+  } catch {
+    return { ok: false, error: 'Network error' };
+  }
+}
+
+export async function updateCharacterRemote(characterAppearance: unknown, fromId: string) {
+  try {
+    const res = await fetch(`${BASE_URL}/api/farm/character`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ character: characterAppearance, github_id: fromId }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

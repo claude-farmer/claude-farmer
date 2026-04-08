@@ -746,7 +746,7 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
     <div class="visit-info">
       <div><span class="visit-nickname" id="visitNickname"></span> <span class="visit-level" id="visitLevel"></span></div>
       <div class="visit-status" id="visitStatus"></div>
-      <div style="font-size:10px;opacity:.4;margin-top:2px;">🌾 <span id="visitHarvests">0</span></div>
+      <div style="font-size:10px;opacity:.4;margin-top:2px;">🌾 <span id="visitHarvests">0</span> · 👥 <span id="visitVisitors">0</span> · 💧 <span id="visitWatered">0</span> · 🔖 <span id="visitBookmarks">0</span></div>
     </div>
     <div class="visit-actions">
       <button class="btn btn-primary" id="waterBtn" onclick="doWater()">💧 ${d.vscodeVisitWater}</button>
@@ -1008,6 +1008,9 @@ function openVisit(targetId) {
   document.getElementById('visitLevel').textContent = '';
   document.getElementById('visitStatus').textContent = '';
   document.getElementById('visitHarvests').textContent = '0';
+  document.getElementById('visitVisitors').textContent = '0';
+  document.getElementById('visitWatered').textContent = '0';
+  document.getElementById('visitBookmarks').textContent = '0';
   updateWaterBtn();
   updateBookmarkBtn();
   vscode.postMessage({ type: 'visitFarm', targetId });
@@ -1789,6 +1792,9 @@ window.addEventListener('message',(e)=>{
       document.getElementById('visitNickname').textContent = msg.profile.nickname;
       document.getElementById('visitLevel').textContent = '${d.vscodeVisitLevel}' + (msg.profile.level||1);
       document.getElementById('visitHarvests').textContent = msg.profile.total_harvests||0;
+      document.getElementById('visitVisitors').textContent = msg.profile.total_visitors||0;
+      document.getElementById('visitWatered').textContent = msg.profile.total_water_received||0;
+      document.getElementById('visitBookmarks').textContent = msg.profile.total_bookmarks||0;
       const st = msg.profile.status_message && msg.profile.status_message.text;
       document.getElementById('visitStatus').textContent = st ? '💬 "'+st+'"' : '';
       updateWaterBtn();

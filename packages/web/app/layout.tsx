@@ -55,27 +55,53 @@ export const metadata: Metadata = {
   category: 'technology',
 };
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: 'Claude Farmer',
-  description: 'An idle pixel-art farming game powered by Claude Code. Your coding automatically plants, grows, and harvests crops.',
-  url: 'https://claudefarmer.com',
-  applicationCategory: 'GameApplication',
-  operatingSystem: 'Any',
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'USD',
-  },
-  author: {
-    '@type': 'Organization',
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
     name: 'Claude Farmer',
-    url: 'https://github.com/claude-farmer',
+    description: 'An idle pixel-art farming game powered by Claude Code. Your coding automatically plants, grows, and harvests crops.',
+    url: 'https://claudefarmer.com',
+    applicationCategory: 'GameApplication',
+    applicationSubCategory: 'IdleGame',
+    operatingSystem: 'Any',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    author: {
+      '@type': 'Organization',
+      name: 'Claude Farmer',
+      url: 'https://github.com/claude-farmer',
+    },
+    softwareVersion: '0.3.2',
+    downloadUrl: 'https://www.npmjs.com/package/claude-farmer',
   },
-  softwareVersion: '0.1.0',
-  downloadUrl: 'https://www.npmjs.com/package/claude-farmer',
-};
+  {
+    '@context': 'https://schema.org',
+    '@type': 'VideoGame',
+    name: 'Claude Farmer',
+    url: 'https://claudefarmer.com',
+    description: 'An idle pixel-art farming game powered by Claude Code. Code with Claude, watch your pixel-art farm grow automatically, collect 32 gacha items, and visit other developers\' farms.',
+    image: 'https://claudefarmer.com/og',
+    genre: ['Idle game', 'Farming simulation', 'Pixel art'],
+    gamePlatform: ['Web', 'CLI', 'VSCode Extension'],
+    playMode: 'SinglePlayer',
+    applicationCategory: 'GameApplication',
+    operatingSystem: 'Any',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Claude Farmer',
+      url: 'https://github.com/claude-farmer',
+    },
+  },
+];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

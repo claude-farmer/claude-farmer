@@ -1,6 +1,6 @@
 {
   "name": "claude-farmer",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "🌱 Your code grows a farm. An idle pixel-art farming game powered by Claude Code usage.",
   "keywords": ["claude", "claude-code", "farming", "idle-game", "pixel-art", "cli"],
   "license": "MIT",
