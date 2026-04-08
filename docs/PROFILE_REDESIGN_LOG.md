@@ -325,3 +325,34 @@
 | `packages/web/app/api/farm/[id]/rankings/route.ts` | 누적 랭킹 엔드포인트 (신규) |
 | `packages/web/app/api/water/cooldown/route.ts` | 물주기 쿨다운 fetch (신규) |
 | `shared/src/types.ts` | `total_bookmarks`, `GuestbookEntry.link` 추가 |
+
+---
+
+## 12. v0.3.3 릴리즈
+
+### 배포된 채널
+- ✅ **Web** (Vercel) — `main` push 자동 deploy
+- ✅ **CLI** (npm) — `claude-farmer@0.3.3` published
+- ✅ **VSCode** (Marketplace) — `doribear.claude-farmer-vscode@0.3.3` published
+
+### Release 명령
+```bash
+npx turbo run build
+(cd packages/cli && npm publish --access public)
+(cd packages/vscode && vsce publish --no-dependencies)
+```
+
+### `--no-dependencies` 함정
+처음 vsce publish 시도 시 vsce가 monorepo `.git` 루트까지 climbing해서 sibling `packages/cli` + `packages/web` (300MB+) 까지 .vsix에 포함하려 함. `--no-dependencies` 플래그가 vsce의 npm dependency traversal을 막아서 해결.
+
+`.vscodeignore`도 `packages/**`, `shared/**`, `docs/**`, `**/.turbo/**` 등 monorepo sibling 차단 패턴 추가 (safety net). 결과: vsix 34.54 KB, 10 files만 패키징.
+
+### 8개 version 정렬 위치
+1. `shared/package.json`
+2. `packages/web/package.json`
+3. `packages/cli/package.json`
+4. `packages/cli/src/index.ts` `program.version()`
+5. `packages/vscode/package.json`
+6. `packages/vscode/src/extension.ts` 하드코딩 footer "v0.x.y" (×2)
+7. `packages/web/app/layout.tsx` JSON-LD `softwareVersion`
+8. `CLAUDE.md` Deployment 섹션

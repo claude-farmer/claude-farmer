@@ -425,7 +425,33 @@ docs/
 
 ## Deployment
 
-- **Web**: Vercel → claudefarmer.com
+- **Web**: Vercel → claudefarmer.com (auto on `main` push)
 - **CLI**: npm → `npm install -g claude-farmer` (v0.3.3)
 - **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.3.3)
 - **CI/CD**: GitHub Actions (push to main → build + lint)
+
+### Release Commands
+
+```bash
+# Bump versions in shared/cli/vscode/web package.json + cli/src/index.ts + vscode hardcoded v0.x.y + web layout.tsx softwareVersion + CLAUDE.md (keep all aligned)
+
+# Build everything
+npx turbo run build
+
+# Publish CLI to npm
+(cd packages/cli && npm publish --access public)
+
+# Publish VSCode to Marketplace
+# IMPORTANT: --no-dependencies prevents vsce from climbing the monorepo .git
+# and pulling sibling packages/cli + packages/web (300MB+) into the .vsix.
+(cd packages/vscode && vsce publish --no-dependencies)
+
+# Web deploys automatically via Vercel on `main` push
+```
+
+**Pre-release checklist:**
+- All 8 version locations aligned (shared, web, cli pkg+index.ts, vscode pkg+extension.ts hardcoded, web layout.tsx softwareVersion, CLAUDE.md)
+- `npx turbo run build` green
+- `git status` clean, pushed to main
+- Vercel build passing (check dashboard)
+- VSCode publisher PAT not expired (90-day default)
