@@ -140,17 +140,6 @@ export async function updateCharacter(character: CharacterAppearance): Promise<b
   }
 }
 
-export async function waveSurf(fromId: string, excludeId: string): Promise<string | null> {
-  try {
-    const res = await fetch(`${BASE}/api/explore/wave?from=${fromId}&exclude=${excludeId}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.target ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export async function sendGift(to: string, itemId: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const res = await fetch(`${BASE}/api/gift`, {

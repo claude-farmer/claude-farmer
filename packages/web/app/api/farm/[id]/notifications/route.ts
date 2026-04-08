@@ -9,7 +9,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionUser = extractUserId(request);
+    const fromQuery = request.nextUrl.searchParams.get('from') ?? undefined;
+    const sessionUser = extractUserId(request, fromQuery);
     if (!sessionUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

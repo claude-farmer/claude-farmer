@@ -58,12 +58,17 @@ export async function visitCommand(target: string): Promise<void> {
     const state = await loadState();
     if (state.user.github_id !== targetId) {
       try {
-        await fetch(`${BASE_URL}/api/farm/${targetId}/visit`, {
+        const r = await fetch(`${BASE_URL}/api/farm/${targetId}/visit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ from: state.user.github_id }),
         });
-      } catch { /* silent */ }
+        if (!r.ok) {
+          console.log(chalk.dim(`(visit not recorded: HTTP ${r.status})`));
+        }
+      } catch {
+        console.log(chalk.dim('(visit not recorded: network error)'));
+      }
     }
   }
   console.log('');

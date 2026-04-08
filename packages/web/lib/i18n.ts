@@ -139,10 +139,6 @@ const dict = {
     giftPickerEmpty: 'No items to gift. Harvest more!',
     giftSent: 'Gift sent!',
 
-    // Wave surf
-    waveSurfBtn: 'Wave Surf — visit their neighbor!',
-    waveSurfEmpty: 'This farmer has no neighbors yet.',
-
     // Visitor counter
     todayVisitors: 'Today',
     todayVisitorUnit: '',
@@ -278,10 +274,6 @@ const dict = {
     giftPickerTitle: '선물 보내기',
     giftPickerEmpty: '선물할 아이템이 없어요. 더 수확해보세요!',
     giftSent: '선물 완료!',
-
-    // Wave surf
-    waveSurfBtn: '파도타기 — 이웃 농장으로!',
-    waveSurfEmpty: '이 농부는 아직 이웃이 없어요.',
 
     // Visitor counter
     todayVisitors: '오늘',

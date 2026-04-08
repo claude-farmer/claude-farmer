@@ -55,7 +55,7 @@ export async function fetchProfile(githubId: string) {
 
 export async function fetchNotifications(githubId: string): Promise<FarmNotifications | null> {
   try {
-    const res = await fetch(`${BASE_URL}/api/farm/${githubId}/notifications`);
+    const res = await fetch(`${BASE_URL}/api/farm/${githubId}/notifications?from=${encodeURIComponent(githubId)}`);
     if (!res.ok) return null;
     return await res.json();
   } catch {

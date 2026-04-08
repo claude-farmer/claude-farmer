@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { GACHA_ITEMS } from '@claude-farmer/shared';
 import { stateExists, loadState, saveState } from '../core/state.js';
-import { sendGift, syncToServer } from '../sync/remote.js';
+import { sendGift, fetchProfile } from '../sync/remote.js';
 
 export async function giftCommand(targetUser: string, itemId: string): Promise<void> {
   if (!stateExists()) {
@@ -33,11 +33,15 @@ export async function giftCommand(targetUser: string, itemId: string): Promise<v
   const result = await sendGift(toId, itemId, fromId);
 
   if (result.ok) {
-    // 로컬 인벤토리에서도 1개 제거 (서버와 동기화)
-    state.inventory.splice(ownedIdx, 1);
+    // 서버는 이미 inventory를 감산했음. 로컬을 서버 상태로 refetch (full state push 방지)
+    const remote = await fetchProfile(fromId).catch(() => null);
+    if (remote?.inventory) {
+      state.inventory = remote.inventory;
+    } else {
+      // refetch 실패 시 로컬 splice fallback
+      state.inventory.splice(ownedIdx, 1);
+    }
     await saveState(state);
-    // 서버로 즉시 동기화 → race condition 방지
-    await syncToServer(state).catch(() => {});
     console.log(chalk.green(`✅ Gift sent! @${toId} received your ${itemName}.`));
   } else {
     const err = String(result.error ?? '');
