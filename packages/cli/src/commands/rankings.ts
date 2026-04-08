@@ -15,12 +15,12 @@ function trophy(rank: number): string {
   return `${rank + 1}.`;
 }
 
-function renderList(title: string, list: RankingEntry[], icon: string) {
+function renderList(title: string, list: RankingEntry[], icon: string, emptyHint: string) {
   console.log('');
   console.log(chalk.bold(`${icon} ${title}`));
   console.log(chalk.dim('━'.repeat(40)));
   if (list.length === 0) {
-    console.log(chalk.dim('  no records yet'));
+    console.log(chalk.dim(`  ${emptyHint}`));
     return;
   }
   list.forEach((e, i) => {
@@ -50,7 +50,7 @@ export async function rankingsCommand(target?: string): Promise<void> {
 
   console.log(chalk.green.bold(`\n🏆 @${targetId}'s thank-you wall`));
 
-  renderList('Water', data.water ?? [], '💧');
-  renderList('Gifts', data.gifts ?? [], '🎁');
+  renderList('Water', data.water ?? [], '💧', 'No one has watered this farm yet — be the first!');
+  renderList('Gifts', data.gifts ?? [], '🎁', 'No gifts received yet — send one with `claude-farmer gift @user <itemId>`');
   console.log('');
 }

@@ -30,7 +30,7 @@ const dict = {
 
     // Landing - Gacha
     gachaTitle: 'Harvest for Gacha!',
-    gachaDesc: 'Collect all 24 items',
+    gachaDesc: 'Collect all 32 items',
 
     // Landing - Subscribe
     subscribeTitle: 'Stay Updated',
@@ -177,7 +177,7 @@ const dict = {
     step3: 'Claude Code를 쓰면 자동으로 농장이 자라요!',
 
     gachaTitle: '수확하면 가챠!',
-    gachaDesc: '24종 아이템을 수집해보세요',
+    gachaDesc: '32종 아이템을 수집해보세요',
 
     subscribeTitle: '업데이트 소식 받기',
     subscribeDesc: '새 기능, 시즌 이벤트 소식을 보내드려요',
