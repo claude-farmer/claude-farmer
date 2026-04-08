@@ -34,7 +34,7 @@ claude-farmer/
 │   ├── cli/             → claude-farmer (npm package, global install)
 │   │   └── src/
 │   │       ├── index.ts       → CLI entry (Commander routing)
-│   │       ├── commands/      → init, status, bag, open, water, farm, config
+│   │       ├── commands/      → init, status, bag, open, water, farm, config, guestbook, rankings, gift, character
 │   │       ├── core/state.ts  → Local state CRUD (~/.claude-farmer/)
 │   │       ├── core/config.ts → Language config (~/.claude-farmer/config.json)
 │   │       ├── core/farm.ts   → Plant/grow/harvest/gacha core loop
@@ -434,6 +434,6 @@ docs/
 ## Deployment
 
 - **Web**: Vercel → claudefarmer.com
-- **CLI**: npm → `npm install -g claude-farmer` (v0.3.2)
-- **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.3.2)
+- **CLI**: npm → `npm install -g claude-farmer` (v0.3.3)
+- **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.3.3)
 - **CI/CD**: GitHub Actions (push to main → build + lint)

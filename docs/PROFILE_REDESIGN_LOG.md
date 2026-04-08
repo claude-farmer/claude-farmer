@@ -223,6 +223,62 @@
 
 ---
 
+## 10. SEO 보강 P1 + P3
+
+### P1 (배포)
+- **`/farm/layout.tsx` 신규** — `metadata.robots: { index: false, follow: true }` 추가, redirect 페이지지만 크롤러가 빈 페이지로 인식 안 하게
+- **Root layout `alternates.languages`** — `en-US`/`ko-KR`/`x-default` hreflang 추가
+- **`<html lang>` ko → en + og locale ko_KR → en_US** + `alternateLocale: ['ko_KR']` (일관성)
+- **Profile layout `alternates.canonical = profileUrl`** — middleware rewrite 양쪽 다 인덱싱 방지
+- **Profile JSON-LD를 배열로 변경** — `ProfilePage` + `BreadcrumbList` (Home → @username) 두 schema 동시 배포
+
+### P3 (배포)
+- **VideoGame schema 추가** — root JSON-LD에 두 번째 schema (genre/playMode/gamePlatform). `applicationSubCategory: 'IdleGame'`
+- **softwareVersion** 0.1.0 (stale) → 0.3.2
+
+### 사용자가 직접 해야 함
+- Google Search Console에 등록 → sitemap 제출 → URL Inspection → Request Indexing
+- KakaoTalk/Slack 공유 시 캐시 갱신은 메신저 자체 디버거 사용
+
+---
+
+## 11. CLI / VSCode 동기화
+
+웹의 새 기능을 CLI와 VSCode 익스텐션에서 노출.
+
+### CLI 새 명령
+- **`claude-farmer guestbook [user]`** — `/api/farm/[id]/guestbook` fetch, 채팅 스타일 ASCII 렌더 (avatar emoji + name + action label + 시간 + 인용 메시지 + 링크)
+- **`claude-farmer rankings [user]`** — `/api/farm/[id]/rankings` fetch, 1·2·3위 트로피 색상 (yellow/gray/bronze), water + gifts 두 카테고리
+- **`claude-farmer gift <user> <itemId>`** — 로컬 인벤토리 검증 후 `/api/gift` POST
+- **`claude-farmer character`** — flag 기반 (`--type bear --clothesColor red`), `--show`로 현재 캐릭터 확인, `--random`으로 랜덤 생성. 로컬 state 저장 + `/api/farm/character` POST
+- **`farm` 명령에 누적 카운터 라인 추가** — `👥 visitors  💧 watered  🔖 bookmarks` (이미 fetchProfile 응답에 있던 데이터)
+- **버전 0.2.0 → 0.3.3**, README "3/day" → "5-min cooldown" + Social 섹션 확장
+
+### CLI 신규 파일
+- `packages/cli/src/commands/guestbook.ts`
+- `packages/cli/src/commands/rankings.ts`
+- `packages/cli/src/commands/gift.ts`
+- `packages/cli/src/commands/character.ts`
+- `packages/cli/src/sync/remote.ts` — fetchGuestbook / fetchRankings / sendGift / updateCharacterRemote 헬퍼 추가
+
+### VSCode (소규모 동기화)
+- visit info row에 `total_visitors` / `total_water_received` / `total_bookmarks` 카운터 표시 (이미 fetch되던 데이터)
+- visit clear 시 reset
+- 버전 0.3.2 → 0.3.3
+
+### VSCode 미루어진 작업 (별도 큰 PR)
+- 4-탭 → 단일 카드 페이지 webview 재작성 (web과 동일 구조)
+- 방명록/랭킹/선물/캐릭터 인라인 UI
+- ShareCanvas 로직 webview 포팅 (또는 og 이미지 fetch 표시)
+- 1964 line의 단일 파일 [extension.ts](packages/vscode/src/extension.ts) 분리
+
+### 검증
+- `npm run build` (turbo) — web + cli + shared 모두 성공
+- VSCode TS 에러는 모두 사전 존재 (ResponseUnknown 타입), 내 변경과 무관
+- CLI 새 명령 4개 등록 + version flag 0.3.3 표시 확인
+
+---
+
 ## 핵심 교훈
 
 ### Satori (next/og)
