@@ -1,4 +1,5 @@
 .vscode/**
+.vscode-test/**
 src/**
 tsconfig.json
 node_modules/**
@@ -13,3 +14,18 @@ node_modules/**
 .vercel/**
 .private/**
 .env*
+**/.env*
+docs/**
+shared/**
+packages/**
+.next/**
+.turbo
+**/.turbo/**
+**/node_modules/**
+**/dist/!(extension.js)
+**/*.map
+**/*.tsbuildinfo
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+turbo.json
