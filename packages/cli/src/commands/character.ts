@@ -1,8 +1,11 @@
 import chalk from 'chalk';
-import { CHARACTER_TYPES, generateDefaultAppearance } from '@claude-farmer/shared';
+import { CHARACTER_TYPES, CHARACTER_HAIR_COLORS, CHARACTER_CLOTHES_COLORS, generateDefaultAppearance } from '@claude-farmer/shared';
 import type { CharacterAppearance, CharacterType } from '@claude-farmer/shared';
 import { stateExists, loadState, saveState } from '../core/state.js';
 import { updateCharacterRemote } from '../sync/remote.js';
+
+const HAIR_COLOR_KEYS = Object.keys(CHARACTER_HAIR_COLORS);
+const CLOTHES_COLOR_KEYS = Object.keys(CHARACTER_CLOTHES_COLORS);
 
 const HAIR_STYLES = ['short', 'long', 'curly', 'ponytail', 'bun', 'spiky', 'bob', 'buzz'] as const;
 const SKIN_TONES = ['light', 'medium', 'dark', 'pale'] as const;
@@ -89,8 +92,20 @@ export async function characterCommand(opts: CharacterOptions): Promise<void> {
     if (opts.accessory && ac === null) return;
     if (ac) next.accessory = ac;
 
-    if (opts.hairColor) next.hairColor = opts.hairColor;
-    if (opts.clothesColor) next.clothesColor = opts.clothesColor;
+    if (opts.hairColor) {
+      if (!HAIR_COLOR_KEYS.includes(opts.hairColor)) {
+        console.log(chalk.red(`❌ Invalid hairColor: "${opts.hairColor}". Allowed: ${HAIR_COLOR_KEYS.join(', ')}`));
+        return;
+      }
+      next.hairColor = opts.hairColor;
+    }
+    if (opts.clothesColor) {
+      if (!CLOTHES_COLOR_KEYS.includes(opts.clothesColor)) {
+        console.log(chalk.red(`❌ Invalid clothesColor: "${opts.clothesColor}". Allowed: ${CLOTHES_COLOR_KEYS.join(', ')}`));
+        return;
+      }
+      next.clothesColor = opts.clothesColor;
+    }
   }
 
   state.user.character = next;

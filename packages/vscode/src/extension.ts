@@ -448,7 +448,7 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
               }),
             });
           } catch { /* silent */ }
-          this.postMessage({ type: 'bookmarkToggled', bookmarkIds: this.state.bookmarks });
+          this.postMessage({ type: 'bookmarkToggled', bookmarkIds: this.state.bookmarks, targetId: msg.targetId });
         }
       }
     });
@@ -1840,17 +1840,11 @@ window.addEventListener('message',(e)=>{
       updateWaterBtn();
     }
   } else if(msg.type==='bookmarkToggled'){
-    // Server returned authoritative bookmarkIds. Recompute counter from baseline:
-    // baseline = visitProfile.total_bookmarks at fetch time (stored on visitProfile),
-    // delta = (isCurrentlyBookmarked ? +1 : 0) compared to (wasInOriginalServerState ? +1 : 0)
     bookmarkIds = msg.bookmarkIds || [];
     updateBookmarkBtn();
-    if (visitingId && visitProfile) {
+    // Race-safe: only update counter if the toggled target matches the currently visited profile
+    if (visitingId && visitProfile && msg.targetId === visitingId) {
       const baseline = visitProfile.total_bookmarks || 0;
-      // visitProfile.bookmarkedByMe captured at fetch (not stored — assume false unless we tracked).
-      // Simpler: server count + (isNow ? 0 : 0) — but baseline is *server* count,
-      // so just show server-tracked count. Since we don't yet refetch profile, use baseline + diff
-      // from snapshot of bookmarkIds at last farmResult (stored as visitProfile._initialBookmarked).
       const wasInitiallyBookmarked = !!visitProfile._initialBookmarked;
       const isNow = bookmarkIds.includes(visitingId);
       const delta = (isNow ? 1 : 0) - (wasInitiallyBookmarked ? 1 : 0);

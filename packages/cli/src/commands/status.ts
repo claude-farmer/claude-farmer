@@ -38,7 +38,12 @@ export async function statusCommand(message?: string, opts?: { link?: string; cl
 
   // 서버 한계: text 200자, link 500자
   const trimmedText = message.length > 200 ? message.slice(0, 200) : message;
-  const trimmedLink = opts?.link?.trim().slice(0, 500) || undefined;
+  // Link normalization: 웹과 일관 — 사용자가 scheme 없이 입력하면 https:// 자동 prefix
+  const rawLink = opts?.link?.trim();
+  const normalizedLink = rawLink
+    ? (/^https?:\/\//i.test(rawLink) ? rawLink : `https://${rawLink}`)
+    : undefined;
+  const trimmedLink = normalizedLink ? normalizedLink.slice(0, 500) : undefined;
   if (message.length > 200) {
     console.log(chalk.yellow(`⚠️  Status text truncated to 200 chars (was ${message.length}).`));
   }

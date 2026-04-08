@@ -19,8 +19,7 @@ export async function giftCommand(targetUser: string, itemId: string): Promise<v
   }
 
   // 인벤토리 검증
-  const ownedIdx = state.inventory.findIndex(i => i.id === itemId);
-  if (ownedIdx === -1) {
+  if (!state.inventory.some(i => i.id === itemId)) {
     console.log(chalk.red(`❌ You don't own item "${itemId}".`));
     console.log(chalk.dim('   Run `claude-farmer bag` to see your collection.'));
     return;
@@ -38,8 +37,9 @@ export async function giftCommand(targetUser: string, itemId: string): Promise<v
     if (remote?.inventory) {
       state.inventory = remote.inventory;
     } else {
-      // refetch 실패 시 로컬 splice fallback
-      state.inventory.splice(ownedIdx, 1);
+      // refetch 실패 시 로컬에서 itemId로 첫 매칭 항목 1개 제거 (stale index 방지)
+      const freshIdx = state.inventory.findIndex(i => i.id === itemId);
+      if (freshIdx >= 0) state.inventory.splice(freshIdx, 1);
     }
     await saveState(state);
     console.log(chalk.green(`✅ Gift sent! @${toId} received your ${itemName}.`));
