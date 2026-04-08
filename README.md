@@ -99,7 +99,6 @@ Lightweight, low-pressure social — built around generosity, not competition.
 - **✍️ Guestbook** — chat-style log of every visit, water, and gift
 - **🏆 Thank-you wall** — per-farm ranking of who watered/gifted you the most (not a global leaderboard)
 - **👣 Ghost visits** — visitors leave fading footprints on your farm (24h)
-- **🌊 Wave surf** — jump to a random bookmark from any farm you visit
 
 Visit other developers' farms at [claudefarmer.com](https://claudefarmer.com)
 

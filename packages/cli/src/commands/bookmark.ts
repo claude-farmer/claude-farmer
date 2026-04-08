@@ -44,15 +44,21 @@ export async function bookmarkCommand(opts: BookmarkOptions): Promise<void> {
     }
     state.bookmarks.push(target);
     await saveState(state);
+    let serverOk = false;
     try {
-      await fetch(`${BASE_URL}/api/bookmarks`, {
+      const r = await fetch(`${BASE_URL}/api/bookmarks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target_id: target, action: 'add', from: state.user.github_id }),
       });
-    } catch { /* silent */ }
+      serverOk = r.ok;
+    } catch { /* network error */ }
     await syncToServer(state).catch(() => {});
-    console.log(chalk.green(`✅ Bookmarked @${target}.`));
+    if (serverOk) {
+      console.log(chalk.green(`✅ Bookmarked @${target}.`));
+    } else {
+      console.log(chalk.yellow(`⚠️  Bookmarked @${target} locally; server sync failed (will retry on next sync).`));
+    }
     return;
   }
 
@@ -60,14 +66,20 @@ export async function bookmarkCommand(opts: BookmarkOptions): Promise<void> {
     const target = opts.remove.replace(/^@/, '');
     state.bookmarks = state.bookmarks.filter(id => id !== target);
     await saveState(state);
+    let serverOk = false;
     try {
-      await fetch(`${BASE_URL}/api/bookmarks`, {
+      const r = await fetch(`${BASE_URL}/api/bookmarks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target_id: target, action: 'remove', from: state.user.github_id }),
       });
-    } catch { /* silent */ }
+      serverOk = r.ok;
+    } catch { /* network error */ }
     await syncToServer(state).catch(() => {});
-    console.log(chalk.green(`✅ Removed @${target}.`));
+    if (serverOk) {
+      console.log(chalk.green(`✅ Removed @${target}.`));
+    } else {
+      console.log(chalk.yellow(`⚠️  Removed @${target} locally; server sync failed.`));
+    }
   }
 }

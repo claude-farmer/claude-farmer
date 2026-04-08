@@ -59,7 +59,7 @@ claude-farmer/
 │   │   │       ├── water/     → Watering (5-min cooldown), water/cooldown (GET remaining)
 │   │   │       ├── gift/      → Gift gacha items to other farms
 │   │   │       ├── bookmarks/ → List/toggle bookmarks
-│   │   │       ├── explore/   → Random + recent user discovery + wave surf + search
+│   │   │       ├── explore/   → Random + recent user discovery + search
 │   │   │       └── subscribe/ → Email subscription (Resend)
 │   │   ├── middleware.ts      → Rewrites /@username → /[username]
 │   │   ├── components/        → Card primitive, FarmCanvas, FarmThumbnail, GuestbookPanel, GuestbookModal, RankingsModal, ShareCanvas, ShareModal, SearchModal, AboutModal, StatusEditModal, MenuDropdown, GiftPicker, BagView, DiscoverCarousel, CharacterEditor, Icon
@@ -222,7 +222,6 @@ The web app is built around a single profile page at `/@username` (rewritten via
 | `/api/bookmarks` | POST | Add/remove bookmark + total_bookmarks counter |
 | `/api/explore` | GET | User discovery (`?sort=random` or `?sort=recent`, default random) |
 | `/api/explore/search` | GET | Search users by GitHub ID or nickname |
-| `/api/explore/wave` | GET | Wave surf: random bookmark from target user |
 | `/api/subscribe` | POST | Email subscription + welcome email |
 | `/[username]/og` | GET | Per-user OG card (Satori, edge runtime, ASCII-safe text + pixel art via CanvasRecorder shim) |
 | `/api/og/random` | GET | Stream a random active user's OG card (used by README embed; cache 10 min so GitHub Camo rotates over time) |
@@ -329,13 +328,6 @@ Web reads from server on login and polls every 30s. VSCode reads local state dir
 - Gift counts affect farm decoration visuals (3→glow, 7→sparkle, 15→gold border)
 - Recorded in guestbook as type "gift"
 
-## Wave Surf (파도타기)
-
-- Jump to a random farm from the visited farm's bookmark list
-- `SRANDMEMBER user:{id}:bookmarks` — one API call
-- Button on FarmVisitView: "🌊 파도타기 — 이웃 농장으로!"
-- Enables organic discovery through friend-of-friend chains
-
 ## Neighbors (이웃)
 
 - Mutual bookmarks automatically detected as "neighbors" (이웃)
@@ -414,7 +406,7 @@ FarmCanvas exposes these via `forwardRef`/`useImperativeHandle` so parent compon
 
 - Zero user effort required. Install and forget — your farm grows on its own.
 - Cute, cozy pixel art. Warm color palette.
-- Rich social = guestbook + watering + gifting + neighbors + wave surf + ghost visits. Warm but low-pressure.
+- Rich social = guestbook + watering + gifting + neighbors + ghost visits. Warm but low-pressure.
 
 ## Documentation
 
