@@ -45,11 +45,13 @@ export async function bagCommand(): Promise<void> {
         const tier = getEvolutionTier(count);
         const starStr = tier.label ? ` ${tier.label}` : '';
         const countStr = count > 1 ? ` ×${count}` : '';
-        return colorFn(`[${item.name}${starStr}${countStr}]`);
+        return colorFn(`[${chalk.dim(item.id)} ${item.name}${starStr}${countStr}]`);
       }
       return chalk.dim('[??]');
     });
     console.log(items.join(' '));
   }
+  console.log('');
+  console.log(chalk.dim('💡 Use the dim id (e.g. c01) for `claude-farmer gift @user <id>`'));
   console.log('');
 }

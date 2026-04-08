@@ -266,8 +266,9 @@ export function activate(context: vscode.ExtensionContext) {
       const charCount = e.contentChanges.reduce((sum, c) => sum + c.text.length, 0);
       activityCounter += charCount;
       if (activityCounter > 50) {
+        const flushed = activityCounter;
         activityCounter = 0;
-        provider.onCodingActivity();
+        provider.onCodingActivity(flushed);
       }
     })
   );
@@ -275,14 +276,14 @@ export function activate(context: vscode.ExtensionContext) {
   // Terminal activity
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTerminal(() => {
-      provider.onCodingActivity();
+      provider.onCodingActivity(0);
     })
   );
 
   // File save = activity
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(() => {
-      provider.onCodingActivity();
+      provider.onCodingActivity(0);
     })
   );
 }
@@ -509,7 +510,7 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  async onCodingActivity() {
+  async onCodingActivity(charCount = 0) {
     if (!this.state) {
       this.state = await loadState();
       if (!this.state) {
@@ -519,6 +520,9 @@ class FarmViewProvider implements vscode.WebviewViewProvider {
     }
 
     resetDailyIfNeeded(this.state);
+    if (charCount > 0) {
+      this.state.activity.today_input_chars += charCount;
+    }
     const planted = plantCrop(this.state);
     growCrops(this.state);
     const harvested = autoHarvest(this.state);

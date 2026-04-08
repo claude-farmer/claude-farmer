@@ -53,11 +53,20 @@ export async function showFarm(): Promise<void> {
 
   if (status_message?.text) {
     console.log(`💬 "${status_message.text}"`);
+    if (status_message.link) {
+      console.log(chalk.blue(`🔗 ${status_message.link}`));
+    }
   }
 
   console.log('');
   console.log(`📦 ${t(locale, 'collection')} ${uniqueItems}/${TOTAL_ITEMS} (${Math.round(uniqueItems / TOTAL_ITEMS * 100)}%)  🪙 ${farm.total_harvests}${t(locale, 'harvests')}`);
   console.log(`💧 ${t(locale, 'waterReceived')} ${activity.today_water_received}  🔥 ${t(locale, 'streak')} ${activity.streak_days}${t(locale, 'days')}`);
+
+  // Today: 활동 있을 때만
+  if (activity.today_input_chars > 0 || activity.today_harvests > 0 || activity.today_water_given > 0) {
+    const k = (activity.today_input_chars / 1000).toFixed(1);
+    console.log(chalk.dim(`📅 today  ⌨ ${k}k  🌱 ${activity.today_harvests}  💧 ${activity.today_water_given}`));
+  }
 
   // 서버 누적 카운터 (실패해도 무시)
   const remote = await fetchProfile(user.github_id).catch(() => null);

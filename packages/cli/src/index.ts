@@ -38,8 +38,10 @@ program
 program
   .command('status [message]')
   .description(t(locale, 'descStatus'))
-  .action(async (message?: string) => {
-    await statusCommand(message);
+  .option('--link <url>', 'Optional link attached to your status')
+  .option('--clear', 'Clear your current status')
+  .action(async (message: string | undefined, opts: { link?: string; clear?: boolean }) => {
+    await statusCommand(message, opts);
   });
 
 program

@@ -3,11 +3,20 @@ import { t } from '@claude-farmer/shared';
 import { stateExists, withState, loadState } from '../core/state.js';
 import { getLocale } from '../core/config.js';
 
-export async function statusCommand(message?: string): Promise<void> {
+export async function statusCommand(message?: string, opts?: { link?: string; clear?: boolean }): Promise<void> {
   const locale = getLocale();
 
   if (!stateExists()) {
     console.log(chalk.yellow(`\n🌱 ${t(locale, 'initFirst')}\n`));
+    return;
+  }
+
+  if (opts?.clear) {
+    await withState(state => {
+      state.status_message = null;
+      return state;
+    });
+    console.log(chalk.dim('\n💬 Status cleared.\n'));
     return;
   }
 
@@ -28,10 +37,13 @@ export async function statusCommand(message?: string): Promise<void> {
   await withState(state => {
     state.status_message = {
       text: message,
+      link: opts?.link?.trim() || undefined,
       updated_at: new Date().toISOString(),
     };
     return state;
   });
 
-  console.log(`\n💬 ${t(locale, 'statusSet')} "${chalk.yellow(message)}"\n`);
+  console.log(`\n💬 ${t(locale, 'statusSet')} "${chalk.yellow(message)}"`);
+  if (opts?.link) console.log(`🔗 ${opts.link}`);
+  console.log('');
 }
