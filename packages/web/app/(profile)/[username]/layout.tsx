@@ -92,7 +92,6 @@ export default async function ProfileLayout({
         '@context': 'https://schema.org',
         '@type': 'ProfilePage',
         url: profileUrl,
-        dateCreated: profile.last_active,
         dateModified: profile.last_active,
         mainEntity: {
           '@type': 'Person',

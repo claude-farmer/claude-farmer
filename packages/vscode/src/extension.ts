@@ -694,7 +694,7 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
       </div>
     </div>
     <div class="footer">
-      <span>v0.3.1</span>
+      <span>v0.3.3</span>
       <div class="lang-toggle">
         <button onclick="setLang('en')" class="${locale === 'en' ? 'active' : ''}">EN</button>
         <span>|</span>
@@ -784,7 +784,7 @@ canvas { width:100%; image-rendering:pixelated; image-rendering:crisp-edges; bor
     <button class="btn" onclick="openWeb()">🌐 ${d.vscodeVisitWeb}</button>
   </div>
   <div class="footer" style="margin-top:10px">
-    <span>v0.3.1</span>
+    <span>v0.3.3</span>
     <div class="lang-toggle">
       <button onclick="setLang('en')" class="${locale === 'en' ? 'active' : ''}">EN</button>
       <span>|</span>

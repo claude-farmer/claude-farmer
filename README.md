@@ -42,6 +42,10 @@ claude-farmer status "msg" # Set a status bubble ("looking for collab!")
 claude-farmer bag          # See your collection
 claude-farmer open         # Open the web UI
 claude-farmer water @user  # Water a friend's farm (5-min cooldown)
+claude-farmer gift @user c01      # Send a gacha item
+claude-farmer guestbook @user     # View their visit/water/gift log
+claude-farmer rankings @user      # See who supported them most
+claude-farmer character --random  # Customize your character
 claude-farmer watch        # Background mode — detects Claude Code activity
 claude-farmer config       # Settings (language, etc.)
 ```
@@ -71,7 +75,7 @@ claude-farmer config --lang en   # Back to English
 └────┴────┴────┴────┘
 💬 "Looking for side project buddies?"
 
-📦 Collection: 8/24 (33%)  🪙 12 harvests
+📦 Collection: 11/32 (34%)  🪙 12 harvests
 💧 Water received today: 2
 ```
 

@@ -13,8 +13,18 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocale] = useState<Locale>('en');
 
   useEffect(() => {
-    setLocale(detectLocale());
+    const detected = detectLocale();
+    setLocale(detected);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = detected === 'ko' ? 'ko-KR' : 'en-US';
+    }
   }, []);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = locale === 'ko' ? 'ko-KR' : 'en-US';
+    }
+  }, [locale]);
 
   const t = getDict(locale);
 

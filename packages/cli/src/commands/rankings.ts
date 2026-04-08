@@ -26,7 +26,8 @@ function renderList(title: string, list: RankingEntry[], icon: string) {
   list.forEach((e, i) => {
     const t = trophy(i);
     const colorFn = i === 0 ? chalk.yellow : i === 1 ? chalk.gray : i === 2 ? chalk.hex('#cd7f32') : chalk.dim;
-    console.log(`  ${t} ${colorFn(e.nickname.padEnd(20))} ${chalk.dim(`× ${e.count}`)}`);
+    const name = e.nickname.length > 20 ? e.nickname.slice(0, 19) + '…' : e.nickname.padEnd(20);
+    console.log(`  ${t} ${colorFn(name)} ${chalk.dim(`× ${e.count}`)}`);
   });
 }
 

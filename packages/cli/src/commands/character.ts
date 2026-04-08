@@ -4,6 +4,18 @@ import type { CharacterAppearance, CharacterType } from '@claude-farmer/shared';
 import { stateExists, loadState, saveState } from '../core/state.js';
 import { updateCharacterRemote } from '../sync/remote.js';
 
+const HAIR_STYLES = ['short', 'long', 'curly', 'ponytail', 'bun', 'spiky', 'bob', 'buzz'] as const;
+const SKIN_TONES = ['light', 'medium', 'dark', 'pale'] as const;
+const EYE_STYLES = ['dot', 'round', 'line', 'star', 'closed'] as const;
+const ACCESSORIES = ['none', 'glasses', 'sunglasses', 'eyepatch', 'bandaid'] as const;
+
+function validate<T extends readonly string[]>(value: string | undefined, allowed: T, label: string): T[number] | null {
+  if (!value) return null;
+  if ((allowed as readonly string[]).includes(value)) return value as T[number];
+  console.log(chalk.red(`❌ Invalid ${label}: "${value}". Allowed: ${allowed.join(', ')}`));
+  return null;
+}
+
 interface CharacterOptions {
   type?: string;
   hairStyle?: string;
@@ -53,14 +65,31 @@ export async function characterCommand(opts: CharacterOptions): Promise<void> {
   } else {
     const current = state.user.character ?? generateDefaultAppearance(state.user.github_id);
     next = { ...current };
-    if (opts.type && CHARACTER_TYPES.includes(opts.type as CharacterType)) {
+
+    if (opts.type) {
+      if (!CHARACTER_TYPES.includes(opts.type as CharacterType)) {
+        console.log(chalk.red(`❌ Invalid type: "${opts.type}". Allowed: ${CHARACTER_TYPES.join(', ')}`));
+        return;
+      }
       next.type = opts.type as CharacterType;
     }
-    if (opts.hairStyle) next.hairStyle = opts.hairStyle as CharacterAppearance['hairStyle'];
+    const hs = validate(opts.hairStyle, HAIR_STYLES, 'hairStyle');
+    if (opts.hairStyle && hs === null) return;
+    if (hs) next.hairStyle = hs;
+
+    const st = validate(opts.skinTone, SKIN_TONES, 'skinTone');
+    if (opts.skinTone && st === null) return;
+    if (st) next.skinTone = st;
+
+    const es = validate(opts.eyeStyle, EYE_STYLES, 'eyeStyle');
+    if (opts.eyeStyle && es === null) return;
+    if (es) next.eyeStyle = es;
+
+    const ac = validate(opts.accessory, ACCESSORIES, 'accessory');
+    if (opts.accessory && ac === null) return;
+    if (ac) next.accessory = ac;
+
     if (opts.hairColor) next.hairColor = opts.hairColor;
-    if (opts.skinTone) next.skinTone = opts.skinTone as CharacterAppearance['skinTone'];
-    if (opts.eyeStyle) next.eyeStyle = opts.eyeStyle as CharacterAppearance['eyeStyle'];
-    if (opts.accessory) next.accessory = opts.accessory as CharacterAppearance['accessory'];
     if (opts.clothesColor) next.clothesColor = opts.clothesColor;
   }
 

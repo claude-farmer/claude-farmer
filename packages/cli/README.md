@@ -29,6 +29,10 @@ Then just use Claude Code. Your farm grows on its own!
 | `claude-farmer bag` | Collection (item codex) |
 | `claude-farmer open` | Open web UI (claudefarmer.com) |
 | `claude-farmer water @user` | Water another user's farm (5-min cooldown) |
+| `claude-farmer gift @user <itemId>` | Send a gacha item from your inventory |
+| `claude-farmer guestbook [user]` | View a farm's chat-style visit log |
+| `claude-farmer rankings [user]` | Top water/gift contributors per farm |
+| `claude-farmer character` | View/edit your character (`--show`, `--random`, flags) |
 | `claude-farmer watch` | Background detection mode |
 | `claude-farmer config` | View/change settings |
 | `claude-farmer config --lang ko` | Set language to Korean |
@@ -51,7 +55,7 @@ Code with Claude → Plant seeds → Grow crops → Auto-harvest → Gacha!
 - **4×4 farm** (16 slots) — seeds planted automatically
 - **4 growth stages** — Seed 🌰 → Sprout 🌱 → Growing 🌿 → Harvest 🥕
 - **Gacha drops** — Common(60%), Rare(28%), Epic(10%), Legendary(2%)
-- **24 collectible items**
+- **32 collectible items**
 
 ## Social
 
@@ -77,7 +81,7 @@ Code with Claude → Plant seeds → Grow crops → Auto-harvest → Gacha!
 │    │    │    │    │
 └────┴────┴────┴────┘
 💬 "Looking for side project buddies?"
-📦 Collection: 8/24 (33%)  🪙 12 harvests
+📦 Collection: 11/32 (34%)  🪙 12 harvests
 ```
 
 ## Links
