@@ -15,13 +15,19 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://claudefarmer.com'),
   alternates: {
     canonical: '/',
+    languages: {
+      'en-US': 'https://claudefarmer.com/',
+      'ko-KR': 'https://claudefarmer.com/',
+      'x-default': 'https://claudefarmer.com/',
+    },
   },
   openGraph: {
     title: 'Claude Farmer — Your Code Grows a Farm',
     description: 'An idle pixel-art farming game powered by Claude Code. Plant, grow, harvest, collect 32 gacha items, and visit other developers\' farms — all by just coding.',
     url: 'https://claudefarmer.com',
     siteName: 'Claude Farmer',
-    locale: 'ko_KR',
+    locale: 'en_US',
+    alternateLocale: ['ko_KR'],
     type: 'website',
     images: [{ url: '/og', width: 1200, height: 630, alt: 'Claude Farmer — Your Code Grows a Farm' }],
   },
@@ -73,7 +79,7 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko">
+    <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link

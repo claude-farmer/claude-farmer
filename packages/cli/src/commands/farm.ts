@@ -7,6 +7,7 @@ import type { CropSlot } from '@claude-farmer/shared';
 import { stateExists, loadState } from '../core/state.js';
 import { getLocale } from '../core/config.js';
 import { showNotifications } from './notifications.js';
+import { fetchProfile } from '../sync/remote.js';
 
 function cropCell(slot: CropSlot | null): string {
   if (!slot) return '    ';
@@ -57,6 +58,17 @@ export async function showFarm(): Promise<void> {
   console.log('');
   console.log(`📦 ${t(locale, 'collection')} ${uniqueItems}/${TOTAL_ITEMS} (${Math.round(uniqueItems / TOTAL_ITEMS * 100)}%)  🪙 ${farm.total_harvests}${t(locale, 'harvests')}`);
   console.log(`💧 ${t(locale, 'waterReceived')} ${activity.today_water_received}  🔥 ${t(locale, 'streak')} ${activity.streak_days}${t(locale, 'days')}`);
+
+  // 서버 누적 카운터 (실패해도 무시)
+  const remote = await fetchProfile(user.github_id).catch(() => null);
+  if (remote) {
+    const visitors = remote.total_visitors ?? 0;
+    const totalWater = remote.total_water_received ?? 0;
+    const bookmarks = remote.total_bookmarks ?? 0;
+    if (visitors > 0 || totalWater > 0 || bookmarks > 0) {
+      console.log(chalk.dim(`👥 ${visitors}  💧 ${totalWater}  🔖 ${bookmarks}`));
+    }
+  }
   console.log('');
 
   // 서버에서 소셜 알림 조회 (실패해도 무시)

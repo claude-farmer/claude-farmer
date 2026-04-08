@@ -28,7 +28,7 @@ Then just use Claude Code. Your farm grows on its own!
 | `claude-farmer status "msg"` | Set status message bubble |
 | `claude-farmer bag` | Collection (item codex) |
 | `claude-farmer open` | Open web UI (claudefarmer.com) |
-| `claude-farmer water @user` | Water another user's farm (3/day) |
+| `claude-farmer water @user` | Water another user's farm (5-min cooldown) |
 | `claude-farmer watch` | Background detection mode |
 | `claude-farmer config` | View/change settings |
 | `claude-farmer config --lang ko` | Set language to Korean |
@@ -56,8 +56,11 @@ Code with Claude → Plant seeds → Grow crops → Auto-harvest → Gacha!
 ## Social
 
 - 💬 **Status bubble** — a one-line message visible to other developers
-- 💧 **Watering** — 3 times per day, boosts their crop growth
-- 🔖 **Bookmarks** — save farms you like
+- 💧 **Watering** — 5-minute cooldown, boosts a friend's crops
+- 🎁 **Gifting** — send gacha items from your inventory
+- 🔖 **Bookmarks** — save farms you like; mutual = neighbors
+- ✍️ **Guestbook** — chat-style log of every visit/water/gift
+- 🏆 **Thank-you wall** — per-farm ranking of who supported you most
 
 ## Preview
 
