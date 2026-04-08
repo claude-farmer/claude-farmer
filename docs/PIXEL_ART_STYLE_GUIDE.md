@@ -350,7 +350,7 @@ When changing character visuals:
 | `packages/web/canvas/palette.ts` | New color entries for character parts |
 | `packages/web/canvas/renderer.ts` | `drawCharacter()`, `drawGhostSprite()`, `drawMiniPortrait()` |
 | `packages/web/components/FarmCanvas.tsx` | Pass character data to renderer |
-| `packages/web/components/FarmView.tsx` | Character customization UI |
+| `packages/web/components/CharacterEditor.tsx` | Character customization UI |
 | `packages/vscode/src/extension.ts` | `drawCharPixels()`, `drawGhostPixels()`, `drawMiniPortraitVS()` |
 | `packages/web/lib/api.ts` | Sync character appearance |
 | `packages/web/app/api/farm/sync/route.ts` | Store character in Redis profile |

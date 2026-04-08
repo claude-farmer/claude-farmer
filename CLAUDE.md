@@ -266,7 +266,7 @@ Daily coding activity (input chars) determines a fun title displayed on the farm
 | 10,000+ | ⚡ | Legendary Farmer | 전설의 농부 |
 
 - Helper: `getFarmerTitle()` in `shared/src/constants.ts`
-- Shown on own farm (FarmView) and when visiting others (FarmVisitView)
+- Shown on the unified profile page (own farm and visited farms)
 - Resets daily with activity stats
 
 ## Data Sync (CLI → Server → Web)
@@ -400,7 +400,7 @@ The FarmRenderer exposes trigger methods for rich visual feedback:
 - **LevelUpBanner**: Centered banner on level-up events
 - **WaterAnim**: Blue droplet animation on watered slots
 
-FarmCanvas exposes these via `forwardRef`/`useImperativeHandle` so parent components (FarmView, FarmVisitView) can trigger them on game events.
+FarmCanvas exposes these via `forwardRef`/`useImperativeHandle` so the profile page can trigger them on game events.
 
 ## Design Principles
 
