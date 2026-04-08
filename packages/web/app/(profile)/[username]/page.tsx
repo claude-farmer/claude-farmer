@@ -180,7 +180,11 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
 
   const handleStatusSave = async (text: string, link?: string) => {
     if (!isOwn) return;
-    const cleanLink = link && link.trim() ? link.trim() : undefined;
+    // Normalize link: auto-prefix https:// when scheme missing (matches CLI behavior)
+    const trimmedLink = link?.trim();
+    const cleanLink = trimmedLink
+      ? (/^https?:\/\//i.test(trimmedLink) ? trimmedLink : `https://${trimmedLink}`).slice(0, 500)
+      : undefined;
     const newStatus = text.trim()
       ? { text: text.trim().slice(0, 200), link: cleanLink, updated_at: new Date().toISOString() }
       : null;

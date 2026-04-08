@@ -62,13 +62,13 @@ export async function characterCommand(opts: CharacterOptions): Promise<void> {
     return;
   }
 
-  let next: CharacterAppearance;
-  if (opts.random) {
-    next = generateDefaultAppearance(`${state.user.github_id}-${Date.now()}`);
-  } else {
-    const current = state.user.character ?? generateDefaultAppearance(state.user.github_id);
-    next = { ...current };
+  // --random: 랜덤 베이스, 그 위에 명시 플래그가 덮어씀 (--random + --type bear OK)
+  const base = opts.random
+    ? generateDefaultAppearance(`${state.user.github_id}-${Date.now()}`)
+    : (state.user.character ?? generateDefaultAppearance(state.user.github_id));
+  const next: CharacterAppearance = { ...base };
 
+  {
     if (opts.type) {
       if (!CHARACTER_TYPES.includes(opts.type as CharacterType)) {
         console.log(chalk.red(`❌ Invalid type: "${opts.type}". Allowed: ${CHARACTER_TYPES.join(', ')}`));

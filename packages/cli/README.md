@@ -33,6 +33,9 @@ Then just use Claude Code. Your farm grows on its own!
 | `claude-farmer guestbook [user]` | View a farm's chat-style visit log |
 | `claude-farmer rankings [user]` | Top water/gift contributors per farm |
 | `claude-farmer character` | View/edit your character (`--show`, `--random`, flags) |
+| `claude-farmer visit @user` | View another developer's farm |
+| `claude-farmer search <query>` | Search farms by GitHub ID or nickname |
+| `claude-farmer bookmark` | Manage bookmarks (`--add`, `--remove`, `--list`) |
 | `claude-farmer watch` | Background detection mode |
 | `claude-farmer config` | View/change settings |
 | `claude-farmer config --lang ko` | Set language to Korean |

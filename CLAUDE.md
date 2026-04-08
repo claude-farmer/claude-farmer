@@ -34,7 +34,7 @@ claude-farmer/
 │   ├── cli/             → claude-farmer (npm package, global install)
 │   │   └── src/
 │   │       ├── index.ts       → CLI entry (Commander routing)
-│   │       ├── commands/      → init, status, bag, open, water, farm, config, guestbook, rankings, gift, character
+│   │       ├── commands/      → init, status, bag, open, water, farm, config, guestbook, rankings, gift, character, visit, search, bookmark
 │   │       ├── core/state.ts  → Local state CRUD (~/.claude-farmer/)
 │   │       ├── core/config.ts → Language config (~/.claude-farmer/config.json)
 │   │       ├── core/farm.ts   → Plant/grow/harvest/gacha core loop

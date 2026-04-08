@@ -46,6 +46,9 @@ claude-farmer gift @user c01      # Send a gacha item
 claude-farmer guestbook @user     # View their visit/water/gift log
 claude-farmer rankings @user      # See who supported them most
 claude-farmer character --random  # Customize your character
+claude-farmer visit @user         # View someone else's farm
+claude-farmer search seongjae     # Search by GitHub ID or nickname
+claude-farmer bookmark --add @user # Save a farm as a bookmark
 claude-farmer watch        # Background mode — detects Claude Code activity
 claude-farmer config       # Settings (language, etc.)
 ```
