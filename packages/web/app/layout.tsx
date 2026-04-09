@@ -75,7 +75,7 @@ const jsonLd = [
       name: 'Claude Farmer',
       url: 'https://github.com/claude-farmer',
     },
-    softwareVersion: '0.4.0',
+    softwareVersion: '0.4.3',
     downloadUrl: 'https://www.npmjs.com/package/claude-farmer',
   },
   {

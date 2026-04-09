@@ -25,7 +25,7 @@ const program = new Command();
 program
   .name('claude-farmer')
   .description('🌱 Your code grows a farm.')
-  .version('0.4.0')
+  .version('0.4.3')
   .action(async () => {
     await showFarm();
     backgroundSync();
