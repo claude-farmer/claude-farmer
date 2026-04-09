@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { LocalState, CropType, GrowthStage, InventoryItem } from '@claude-farmer/shared';
-import { CROPS, MAX_GROWTH_STAGE, CROP_EMOJI, GRID_SIZE, calculateLevel, isBoostTime } from '@claude-farmer/shared';
+import { CROPS, MAX_GROWTH_STAGE, GRID_SIZE, calculateLevel, isBoostTime } from '@claude-farmer/shared';
 import { rollGacha } from '@claude-farmer/shared';
 import { type Locale, detectLocale, getDict } from '@claude-farmer/shared';
 
@@ -134,9 +134,10 @@ function growCrops(state: LocalState): void {
 function plantCrop(state: LocalState): { slotIndex: number; crop: CropType } | null {
   const boost = isBoostTime();
   const turnThreshold = boost ? 2 : 3;
-  if (!state.farm._plant_turn) state.farm._plant_turn = 0;
-  state.farm._plant_turn = (state.farm._plant_turn + 1) % turnThreshold;
-  if (state.farm._plant_turn !== 0) return null;
+  const farm = state.farm as typeof state.farm & { _plant_turn?: number };
+  if (!farm._plant_turn) farm._plant_turn = 0;
+  farm._plant_turn = (farm._plant_turn + 1) % turnThreshold;
+  if (farm._plant_turn !== 0) return null;
 
   const empty = state.farm.grid.findIndex(s => s === null);
   let slotIndex = empty;
@@ -165,11 +166,15 @@ function getExtensionLocale(): Locale {
 // ── One-time session URL ──
 async function getVscodeSessionUrl(githubId: string): Promise<string | null> {
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000); // 5s timeout
     const res = await fetch(`${BASE_URL}/api/auth/vscode-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ github_id: githubId }),
+      signal: controller.signal,
     });
+    clearTimeout(timer);
     if (!res.ok) return null;
     const data = await res.json() as { url?: string };
     return data.url ? `${BASE_URL}${data.url}` : null;
@@ -193,21 +198,24 @@ class FarmPanel {
       { enableScripts: true, retainContextWhenHidden: true }
     );
     FarmPanel.current = new FarmPanel(panel);
-    await FarmPanel.current.init();
     return FarmPanel.current;
   }
 
   private constructor(panel: vscode.WebviewPanel) {
     this.panel = panel;
+    // Show loading immediately so the panel is never blank
+    panel.webview.html = this.loadingHtml();
     panel.onDidDispose(() => { FarmPanel.current = undefined; });
     panel.webview.onDidReceiveMessage(async (msg) => {
       if (msg.type === 'login') {
         vscode.env.openExternal(vscode.Uri.parse(`${BASE_URL}/api/auth/login?from=vscode`));
       }
     });
+    // Kick off async init after showing loading state
+    this.init();
   }
 
-  async init() {
+  private async init() {
     const state = await loadState();
     if (state) {
       await this.navigateToFarm(state.user.github_id);
@@ -230,7 +238,7 @@ class FarmPanel {
 <html style="margin:0;padding:0;width:100%;height:100%">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src ${BASE_URL}; script-src 'unsafe-inline'; style-src 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src *; script-src 'unsafe-inline'; style-src 'unsafe-inline';">
   <style>
     html,body{margin:0;padding:0;width:100%;height:100vh;overflow:hidden;background:#0d1117}
     iframe{width:100%;height:100%;border:none;display:block}
@@ -239,7 +247,7 @@ class FarmPanel {
 <body>
   <iframe
     src="${src}"
-    sandbox="allow-scripts allow-forms allow-same-origin allow-pointer-lock allow-downloads allow-popups allow-modals"
+    sandbox="allow-scripts allow-forms allow-same-origin allow-pointer-lock allow-downloads allow-popups allow-modals allow-top-navigation"
   ></iframe>
   <script>
     const vscode = acquireVsCodeApi();
@@ -247,6 +255,30 @@ class FarmPanel {
       if (e.data?.type === 'cf-login') vscode.postMessage({ type: 'login' });
     });
   </script>
+</body>
+</html>`;
+  }
+
+  private loadingHtml(): string {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+  <style>
+    body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;
+         background:#0d1117;color:#6b7280;font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+         flex-direction:column;gap:12px}
+    .spinner{width:24px;height:24px;border:2px solid #374151;border-top-color:#fbbf24;
+             border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    p{font-size:13px;margin:0;opacity:.5}
+  </style>
+</head>
+<body>
+  <div style="font-size:36px">🌱</div>
+  <div class="spinner"></div>
+  <p>Loading your farm…</p>
 </body>
 </html>`;
   }
