@@ -5,18 +5,8 @@ import type { Rarity, InventoryItem } from '@claude-farmer/shared';
 import { GACHA_ITEMS, RARITY_LABEL, RARITY_COLOR, TOTAL_ITEMS, getEvolutionTier, getNextEvolutionThreshold, EVOLUTION_TIERS } from '@claude-farmer/shared';
 import { getItemCounts } from '@claude-farmer/shared';
 import { useLocale } from '@/lib/locale-context';
+import { ITEM_EMOJI } from '@/lib/items';
 import Icon from './Icon';
-
-// 아이템별 이모지 아이콘
-const ITEM_EMOJI: Record<string, string> = {
-  c01: '🪨', c02: '🌿', c03: '🌾', c04: '🪱', c05: '🚿', c06: '🏗️', c07: '🧱', c08: '🌱', c09: '🍄',
-  c10: '🐤', c11: '💥', c12: '📝',
-  r01: '🐱', r02: '🐶', r03: '🌸', r04: '💧', r05: '🪑', r06: '📮', r07: '🔦',
-  r08: '🤖', r09: '☕',
-  e01: '⛲', e02: '🌀', e03: '🍎', e04: '🐰', e05: '🌈',
-  e06: '📚', e07: '🌳',
-  l01: '🌻', l02: '🦄', l03: '🌌', l04: '✨',
-};
 
 interface BagViewProps {
   inventory: InventoryItem[];
