@@ -79,7 +79,7 @@ claude-farmer/
 │   │       ├── i18n.ts        → Web-specific translation dict + detectLocale()
 │   │       └── locale-context.tsx → React context provider + useLocale() hook
 │   └── vscode/          → claude-farmer-vscode (VSCode Marketplace)
-│       ├── src/extension.ts   → Thin wrapper (~420 lines): activity detection, sync, OAuth URI handler, FarmPanel (claudefarmer.com webview)
+│       ├── src/extension.ts   → Thin wrapper (~380 lines): activity detection, sync, OAuth URI handler, FarmSidebarProvider (claudefarmer.com webview in sidebar)
 │       ├── icon.png           → Marketplace icon (128×128)
 │       └── media/             → Activity bar icon
 ```
@@ -150,12 +150,13 @@ Collecting duplicates of the same item triggers automatic evolution tiers:
 2. OAuth complete → redirect to `localhost:19274/callback`
 3. Receive user info → create `~/.claude-farmer/state.json`
 
-### VSCode (URI Handler + Webview Panel)
+### VSCode (URI Handler + Sidebar WebviewView)
 
-1. `claudeFarmer.openFarm` / sidebar "Open Farm" button → opens `FarmPanel` webview
-2. If logged in: extension calls `POST /api/auth/vscode-session` → receives one-time token URL (60s TTL, HMAC-signed) → navigates webview iframe to that URL → server sets `cf_session` cookie in webview context → redirects to `/@github_id`
-3. If not logged in: webview shows login page → user clicks "Login with GitHub" → extension opens external browser for OAuth → OAuth complete → `vscode://doribear.claude-farmer-vscode/callback?...` → extension creates local state + calls `navigateToFarm()` on the open panel
-4. After auth, claudefarmer.com runs fully inside the VSCode webview panel (iframe)
+1. Sidebar (`claudeFarmer.farmView`) auto-loads when visible — no button click needed
+2. If logged in: extension calls `POST /api/auth/vscode-session` → receives one-time token URL (60s TTL, HMAC-signed) → navigates sidebar iframe to that URL → server sets `cf_session` cookie in webview context → redirects to `/@github_id`
+3. If not logged in: webview shows login page → user clicks "Login with GitHub" → extension opens external browser for OAuth → OAuth complete → `vscode://doribear.claude-farmer-vscode/callback?...` → extension creates local state + calls `navigateToFarm()` on the sidebar
+4. After auth, claudefarmer.com runs fully inside the VSCode sidebar (iframe)
+5. `claudeFarmer.openFarm` command focuses the sidebar (`claudeFarmer.farmView.focus`)
 
 ### API Auth Model
 
@@ -198,12 +199,12 @@ The web app is built around a single profile page at `/@username` (rewritten via
 
 ## VSCode Extension
 
-The extension is a **thin wrapper** (~420 lines) around claudefarmer.com. It no longer maintains its own UI — instead it embeds the full web app in a VSCode webview panel.
+The extension is a **thin wrapper** (~380 lines) around claudefarmer.com. It no longer maintains its own UI — instead it embeds the full web app in the VSCode sidebar as a `WebviewView`.
 
 **What the extension does:**
 - Detects editor activity (text changes, file saves, terminal switches) → runs game loop → syncs to server
 - Handles GitHub OAuth via `vscode://` URI handler → creates `~/.claude-farmer/state.json`
-- Opens `FarmPanel` (webview panel, `ViewColumn.Beside`) showing claudefarmer.com in an iframe
+- Renders claudefarmer.com in the sidebar (`FarmSidebarProvider`, `WebviewView`) — auto-loads on open, no button needed
 - Authenticates the webview via one-time HMAC token (`POST /api/auth/vscode-session`)
 
 **Why this approach (v0.4.0 rewrite rationale):**
@@ -211,7 +212,9 @@ The extension is a **thin wrapper** (~420 lines) around claudefarmer.com. It no 
 - Problem: every new web feature had to be re-implemented in the extension; bugs like `status_message` being reset by sync were caused by the split state
 - Solution: extension only handles what requires native VSCode APIs; all UI lives in the web
 
-**Sidebar:** minimal "Open Farm" button that triggers `claudeFarmer.openFarm` command.
+**Sidebar:** claudefarmer.com loads directly in the sidebar panel as soon as it becomes visible.
+
+**Known fix (v0.4.1):** sidebar button was named `open()` — colliding with `window.open()` — causing VSCode to freeze on click. Renamed to `openFarm()`. Also removed `allow-top-navigation` and `allow-modals` from iframe sandbox to prevent renderer hangs.
 
 **`next.config.ts`:** sets `Content-Security-Policy: frame-ancestors 'self' vscode-webview: vscode-file:` to allow claudefarmer.com pages to be framed by VSCode webviews.
 

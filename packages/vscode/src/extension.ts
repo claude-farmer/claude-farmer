@@ -10,6 +10,10 @@ import { type Locale, detectLocale, getDict } from '@claude-farmer/shared';
 
 const BASE_URL = 'https://claudefarmer.com';
 
+// ── Output channel (debug) ──
+let out: vscode.OutputChannel | undefined;
+function log(msg: string) { out?.appendLine(`[${new Date().toISOString()}] ${msg}`); }
+
 // ── Server sync ──
 const SYNC_INTERVAL_MS = 30_000;
 let lastSyncTime = 0;
@@ -165,9 +169,10 @@ function getExtensionLocale(): Locale {
 
 // ── One-time session URL ──
 async function getVscodeSessionUrl(githubId: string): Promise<string | null> {
+  log(`getVscodeSessionUrl: start for ${githubId}`);
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000); // 5s timeout
+    const timer = setTimeout(() => { log('getVscodeSessionUrl: timeout — aborting'); controller.abort(); }, 5000);
     const res = await fetch(`${BASE_URL}/api/auth/vscode-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -175,66 +180,20 @@ async function getVscodeSessionUrl(githubId: string): Promise<string | null> {
       signal: controller.signal,
     });
     clearTimeout(timer);
+    log(`getVscodeSessionUrl: response ${res.status}`);
     if (!res.ok) return null;
     const data = await res.json() as { url?: string };
+    log(`getVscodeSessionUrl: got url=${data.url}`);
     return data.url ? `${BASE_URL}${data.url}` : null;
-  } catch { return null; }
+  } catch (e) {
+    log(`getVscodeSessionUrl: error — ${e}`);
+    return null;
+  }
 }
 
-// ── Farm Panel (webview with claudefarmer.com) ──
-class FarmPanel {
-  static current: FarmPanel | undefined;
-  private readonly panel: vscode.WebviewPanel;
-
-  static async createOrShow(context: vscode.ExtensionContext): Promise<FarmPanel> {
-    if (FarmPanel.current) {
-      FarmPanel.current.panel.reveal(vscode.ViewColumn.Beside, true);
-      return FarmPanel.current;
-    }
-    const panel = vscode.window.createWebviewPanel(
-      'claudeFarmer.farm',
-      '🌱 Claude Farmer',
-      { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
-      { enableScripts: true, retainContextWhenHidden: true }
-    );
-    FarmPanel.current = new FarmPanel(panel);
-    return FarmPanel.current;
-  }
-
-  private constructor(panel: vscode.WebviewPanel) {
-    this.panel = panel;
-    // Show loading immediately so the panel is never blank
-    panel.webview.html = this.loadingHtml();
-    panel.onDidDispose(() => { FarmPanel.current = undefined; });
-    panel.webview.onDidReceiveMessage(async (msg) => {
-      if (msg.type === 'login') {
-        vscode.env.openExternal(vscode.Uri.parse(`${BASE_URL}/api/auth/login?from=vscode`));
-      }
-    });
-    // Kick off async init after showing loading state
-    this.init();
-  }
-
-  private async init() {
-    const state = await loadState();
-    if (state) {
-      await this.navigateToFarm(state.user.github_id);
-    } else {
-      this.panel.webview.html = this.loginHtml();
-    }
-  }
-
-  async navigateToFarm(githubId: string) {
-    const url = await getVscodeSessionUrl(githubId);
-    this.panel.webview.html = this.iframeHtml(url ?? `${BASE_URL}/@${githubId}`);
-  }
-
-  onLoginComplete(state: LocalState) {
-    this.navigateToFarm(state.user.github_id);
-  }
-
-  private iframeHtml(src: string): string {
-    return `<!DOCTYPE html>
+// ── Shared HTML generators ──
+function iframeHtml(src: string): string {
+  return `<!DOCTYPE html>
 <html style="margin:0;padding:0;width:100%;height:100%">
 <head>
   <meta charset="UTF-8">
@@ -247,7 +206,7 @@ class FarmPanel {
 <body>
   <iframe
     src="${src}"
-    sandbox="allow-scripts allow-forms allow-same-origin allow-pointer-lock allow-downloads allow-popups allow-modals allow-top-navigation"
+    sandbox="allow-scripts allow-forms allow-same-origin allow-pointer-lock allow-popups"
   ></iframe>
   <script>
     const vscode = acquireVsCodeApi();
@@ -257,10 +216,10 @@ class FarmPanel {
   </script>
 </body>
 </html>`;
-  }
+}
 
-  private loadingHtml(): string {
-    return `<!DOCTYPE html>
+function loadingHtml(): string {
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -281,10 +240,10 @@ class FarmPanel {
   <p>Loading your farm…</p>
 </body>
 </html>`;
-  }
+}
 
-  private loginHtml(): string {
-    return `<!DOCTYPE html>
+function loginHtml(): string {
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -314,43 +273,46 @@ class FarmPanel {
   </script>
 </body>
 </html>`;
-  }
 }
 
-// ── Sidebar provider (minimal, open panel on click) ──
+// ── Sidebar provider (shows farm directly) ──
 class FarmSidebarProvider implements vscode.WebviewViewProvider {
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  static current: FarmSidebarProvider | undefined;
+  private view?: vscode.WebviewView;
 
-  resolveWebviewView(view: vscode.WebviewView) {
+  constructor(private readonly _context: vscode.ExtensionContext) {
+    FarmSidebarProvider.current = this;
+  }
+
+  resolveWebviewView(view: vscode.WebviewView): void {
+    this.view = view;
     view.webview.options = { enableScripts: true };
-    view.webview.html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline';">
-  <style>
-    body{margin:12px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:12px;
-         color:var(--vscode-sideBar-foreground,#e5e7eb)}
-    button{width:100%;padding:10px;background:#fbbf24;color:#000;border:none;border-radius:6px;
-           cursor:pointer;font-weight:700;font-size:13px;transition:background .15s}
-    button:hover{background:#f59e0b}
-    p{opacity:.45;font-size:11px;text-align:center;margin:10px 0 0;line-height:1.5}
-  </style>
-</head>
-<body>
-  <button onclick="open()">🌱 Open Farm</button>
-  <p>Watch your farm grow<br>while you code</p>
-  <script>
-    const vscode = acquireVsCodeApi();
-    function open() { vscode.postMessage({ type: 'openFarm' }); }
-  </script>
-</body>
-</html>`;
-    view.webview.onDidReceiveMessage(msg => {
-      if (msg.type === 'openFarm') {
-        vscode.commands.executeCommand('claudeFarmer.openFarm');
+    view.webview.html = loadingHtml();
+    view.webview.onDidReceiveMessage(async (msg) => {
+      if (msg.type === 'login') {
+        vscode.env.openExternal(vscode.Uri.parse(`${BASE_URL}/api/auth/login?from=vscode`));
       }
     });
+    this.initView();
+  }
+
+  private async initView(): Promise<void> {
+    const state = await loadState();
+    if (state) {
+      await this.navigateToFarm(state.user.github_id);
+    } else {
+      if (this.view) this.view.webview.html = loginHtml();
+    }
+  }
+
+  async navigateToFarm(githubId: string): Promise<void> {
+    if (!this.view) return;
+    const url = await getVscodeSessionUrl(githubId);
+    this.view.webview.html = iframeHtml(url ?? `${BASE_URL}/@${githubId}`);
+  }
+
+  onLoginComplete(state: LocalState): void {
+    this.navigateToFarm(state.user.github_id);
   }
 }
 
@@ -369,6 +331,10 @@ async function handleCodingActivity(charCount = 0): Promise<void> {
 
 // ── Extension entry point ──
 export function activate(context: vscode.ExtensionContext): void {
+  out = vscode.window.createOutputChannel('Claude Farmer');
+  context.subscriptions.push(out);
+  log('activate: extension activated');
+
   // 1. OAuth URI handler
   context.subscriptions.push(
     vscode.window.registerUriHandler({
@@ -384,7 +350,7 @@ export function activate(context: vscode.ExtensionContext): void {
         await saveState(state);
         lastSyncTime = 0;
         syncToServer(state);
-        FarmPanel.current?.onLoginComplete(state);
+        FarmSidebarProvider.current?.onLoginComplete(state);
 
         const d = getDict(getExtensionLocale());
         vscode.window.showInformationMessage(`🌱 ${nickname}, ${d.vscodeWelcome}!`);
@@ -395,7 +361,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // 2. Commands
   context.subscriptions.push(
     vscode.commands.registerCommand('claudeFarmer.openFarm', () =>
-      FarmPanel.createOrShow(context)
+      vscode.commands.executeCommand('claudeFarmer.farmView.focus')
     )
   );
   context.subscriptions.push(
@@ -442,11 +408,11 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.onDidChangeActiveTerminal(() => handleCodingActivity(0))
   );
 
-  // 5. Auto-open panel on first install
+  // 5. Auto-focus sidebar on first install
   const key = 'claudeFarmer.hasShownPanel';
   if (!context.globalState.get(key)) {
     context.globalState.update(key, true);
-    setTimeout(() => FarmPanel.createOrShow(context), 1500);
+    setTimeout(() => vscode.commands.executeCommand('claudeFarmer.farmView.focus'), 1500);
   }
 }
 
