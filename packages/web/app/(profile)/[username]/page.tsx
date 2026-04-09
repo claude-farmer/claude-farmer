@@ -557,6 +557,7 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
         <div className="px-4 pt-3 pb-3">
           <GuestbookPanel
             farmId={username}
+            isOwner={isOwn}
             refreshKey={guestbookKey}
             onVisitUser={(id) => router.push(`/@${id}`)}
             onOpenRankings={(tab) => { setRankingsTab(tab); setModal('rankings'); }}
@@ -683,7 +684,7 @@ export default function FarmProfilePage({ params }: { params: Promise<{ username
       )}
 
       {modal === 'guestbook' && (
-        <GuestbookModal farmId={username} refreshKey={guestbookKey} onClose={() => setModal('none')} />
+        <GuestbookModal farmId={username} isOwner={isOwn} refreshKey={guestbookKey} onClose={() => setModal('none')} />
       )}
 
       {modal === 'edit' && isOwn && (

@@ -65,11 +65,12 @@ export async function POST(request: NextRequest) {
         rarity: (['common', 'rare', 'epic', 'legendary'] as const).includes(item.rarity as 'common') ? item.rarity as 'common' | 'rare' | 'epic' | 'legendary' : 'common' as const,
         obtained_at: String(item.obtained_at || ''),
       })) : undefined,
+      // status_message가 null로 오면 서버 기존 값 유지 (웹/VSCode 편집 덮어쓰기 방지)
       status_message: status_message ? {
         ...status_message,
         text: (status_message.text || '').slice(0, 200),
         link: status_message.link ? (status_message.link as string).slice(0, 500) : undefined,
-      } : null,
+      } : (existing?.status_message ?? null),
       farm_snapshot: farm || { level: 1, grid: new Array(GRID_SIZE).fill(null), total_harvests: 0 },
       last_active: new Date().toISOString(),
       character: validateCharacter(character),

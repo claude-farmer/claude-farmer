@@ -73,6 +73,47 @@ export async function fetchGuestbook(githubId: string) {
   }
 }
 
+export async function clearGuestbook(githubId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/farm/${githubId}/guestbook`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ github_id: githubId }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteGuestbookEntry(githubId: string, at: string, fromId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/farm/${githubId}/guestbook`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ github_id: githubId, at, from_id: fromId }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function toggleGuestbookLike(githubId: string, at: string): Promise<boolean | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/farm/${githubId}/guestbook/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ github_id: githubId, at }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.liked as boolean;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchRankings(githubId: string) {
   try {
     const res = await fetch(`${BASE_URL}/api/farm/${githubId}/rankings`);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { fetchGuestbook } from '@/lib/api';
+import { fetchGuestbook, deleteGuestbookEntry, toggleGuestbookLike } from '@/lib/api';
 import { useLocale } from '@/lib/locale-context';
 import Icon from './Icon';
 import Card from './Card';
@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
 
 interface GuestbookPanelProps {
   farmId: string;
+  isOwner?: boolean;
   refreshKey?: number;
   onVisitUser?: (userId: string) => void;
   onOpenRankings?: (tab: 'water' | 'gifts') => void;
@@ -57,23 +58,24 @@ export function guestbookTypeLabel(entry: GuestbookEntry, locale: 'ko' | 'en'): 
 }
 
 export function GuestbookEntryItem({
-  entry, breakdown, onVisitUser,
+  entry, breakdown, onVisitUser, isOwner, onDelete, onLike,
 }: {
   entry: GuestbookEntry;
-  breakdown?: Record<string, number>; // type -> count, when group spans multiple actions
+  breakdown?: Record<string, number>;
   onVisitUser?: (userId: string) => void;
+  isOwner?: boolean;
+  onDelete?: (entry: GuestbookEntry) => void;
+  onLike?: (entry: GuestbookEntry) => void;
 }) {
   const { locale } = useLocale();
   const timeAgo = useTimeAgo();
 
-  // breakdown 없으면 단일 항목 (기존 라벨)
   const types = breakdown ? Object.keys(breakdown).filter(k => breakdown[k] > 0) : [entry.type];
   const totalCount = breakdown ? Object.values(breakdown).reduce((a, b) => a + b, 0) : 1;
-  // 단일 type 단일 count → 기존 라벨 그대로
   const singleAction = types.length === 1 && totalCount === 1;
 
   return (
-    <div className="flex gap-2.5 items-start">
+    <div className="group flex gap-2.5 items-start">
       <button
         onClick={() => onVisitUser?.(entry.from_id)}
         className="w-9 h-9 rounded-full bg-[var(--border)] flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-[var(--accent)] transition-all cursor-pointer"
@@ -108,6 +110,28 @@ export function GuestbookEntryItem({
           )}
           <span className="opacity-40">·</span>
           <span className="opacity-40">{timeAgo(entry.at)}</span>
+
+          {/* 주인 전용 액션 */}
+          {isOwner && (
+            <span className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                type="button"
+                onClick={() => onLike?.(entry)}
+                title="Like"
+                className={`h-5 w-5 flex items-center justify-center rounded hover:bg-[var(--card)] transition-colors ${entry.liked ? 'text-rose-400' : 'opacity-50 hover:opacity-100'}`}
+              >
+                <Icon name="favorite" size={13} filled={!!entry.liked} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete?.(entry)}
+                title="Delete"
+                className="h-5 w-5 flex items-center justify-center rounded opacity-50 hover:opacity-100 hover:text-rose-400 hover:bg-[var(--card)] transition-colors"
+              >
+                <Icon name="delete" size={13} />
+              </button>
+            </span>
+          )}
         </div>
         {(entry.message || entry.link) && (
           <div className="mt-1.5 inline-block max-w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm overflow-hidden">
@@ -135,7 +159,7 @@ export function GuestbookEntryItem({
 }
 
 export default function GuestbookPanel({
-  farmId, refreshKey, onVisitUser, onOpenRankings, onOpenAll, limit = 5, footer, hint,
+  farmId, isOwner, refreshKey, onVisitUser, onOpenRankings, onOpenAll, limit = 5, footer, hint,
 }: GuestbookPanelProps) {
   const { t } = useLocale();
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
@@ -153,7 +177,21 @@ export default function GuestbookPanel({
     });
   }, [farmId, refreshKey]);
 
-  // 연속된 동일 사용자 + 동일 메시지/링크 그룹핑 (water/gift 액션은 합쳐짐)
+  const handleDelete = async (entry: GuestbookEntry) => {
+    const ok = await deleteGuestbookEntry(farmId, entry.at, entry.from_id);
+    if (ok) setEntries(prev => prev.filter(e => e.at !== entry.at || e.from_id !== entry.from_id));
+  };
+
+  const handleLike = async (entry: GuestbookEntry) => {
+    const liked = await toggleGuestbookLike(farmId, entry.at);
+    if (liked !== null) {
+      setEntries(prev => prev.map(e =>
+        e.at === entry.at && e.from_id === entry.from_id ? { ...e, liked } : e
+      ));
+    }
+  };
+
+  // 연속된 동일 사용자 + 동일 메시지/링크 그룹핑
   const grouped: { entry: GuestbookEntry; counts: Record<string, number> }[] = [];
   for (const e of entries) {
     const last = grouped[grouped.length - 1];
@@ -218,7 +256,15 @@ export default function GuestbookPanel({
         ) : (
           <div className="space-y-4">
             {visible.map((g, i) => (
-              <GuestbookEntryItem key={i} entry={g.entry} breakdown={g.counts} onVisitUser={onVisitUser} />
+              <GuestbookEntryItem
+                key={i}
+                entry={g.entry}
+                breakdown={g.counts}
+                onVisitUser={onVisitUser}
+                isOwner={isOwner}
+                onDelete={handleDelete}
+                onLike={handleLike}
+              />
             ))}
           </div>
         )}

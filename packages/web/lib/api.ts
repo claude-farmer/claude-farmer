@@ -186,6 +186,43 @@ export async function fetchGuestbook(farmId: string): Promise<{ entries: Guestbo
   }
 }
 
+export async function clearGuestbook(farmId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/${farmId}/guestbook`, { method: 'DELETE' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteGuestbookEntry(farmId: string, at: string, fromId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/${farmId}/guestbook`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ at, from_id: fromId }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function toggleGuestbookLike(farmId: string, at: string): Promise<boolean | null> {
+  try {
+    const res = await fetch(`${BASE}/api/farm/${farmId}/guestbook/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ at }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.liked as boolean;
+  } catch {
+    return null;
+  }
+}
+
 export async function subscribe(email: string): Promise<boolean> {
   try {
     const res = await fetch(`${BASE}/api/subscribe`, {

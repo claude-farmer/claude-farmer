@@ -128,6 +128,7 @@ export interface GuestbookEntry {
   link?: string;           // visitor's status_message link snapshot
   item_id?: string;        // for gift type
   at: string;              // ISO timestamp
+  liked?: boolean;         // owner liked this entry (annotated server-side)
 }
 
 // ── 소셜: 알림 ──

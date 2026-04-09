@@ -2,7 +2,7 @@
   "name": "claude-farmer-vscode",
   "displayName": "Claude Farmer",
   "description": "🌱 Your code grows a farm. An idle pixel-art farming game in your sidebar.",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "publisher": "doribear",
   "license": "MIT",
   "icon": "icon.png",

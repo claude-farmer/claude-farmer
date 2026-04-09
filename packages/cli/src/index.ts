@@ -25,7 +25,7 @@ const program = new Command();
 program
   .name('claude-farmer')
   .description('🌱 Your code grows a farm.')
-  .version('0.3.3')
+  .version('0.4.0')
   .action(async () => {
     await showFarm();
     backgroundSync();
@@ -83,8 +83,11 @@ program
 program
   .command('guestbook [user]')
   .description('Show a farm guestbook (default: yours)')
-  .action(async (user?: string) => {
-    await guestbookCommand(user);
+  .option('--clear', 'Clear your own guestbook (all entries)')
+  .option('--delete', 'Delete a specific entry from your guestbook')
+  .option('--like', 'Like/unlike a specific entry on your guestbook')
+  .action(async (user?: string, options?: { clear?: boolean; delete?: boolean; like?: boolean }) => {
+    await guestbookCommand(user, options ?? {});
   });
 
 program

@@ -45,6 +45,8 @@ export const keys = {
   // 누적 랭킹 (sorted set: member=user_id, score=누적 카운트)
   waterByUser: (id: string) => `farm:${id}:water_by_user`,
   giftsByUser: (id: string) => `farm:${id}:gifts_by_user`,
+  // 방명록 좋아요 (set: member=entry.at ISO string)
+  guestbookLiked: (id: string) => `farm:${id}:guestbook_liked`,
 };
 
 function todayKey(): string {

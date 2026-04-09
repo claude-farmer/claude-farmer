@@ -426,8 +426,8 @@ docs/
 ## Deployment
 
 - **Web**: Vercel → claudefarmer.com (auto on `main` push)
-- **CLI**: npm → `npm install -g claude-farmer` (v0.3.3)
-- **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.3.3)
+- **CLI**: npm → `npm install -g claude-farmer` (v0.4.0)
+- **VSCode**: Marketplace → `doribear.claude-farmer-vscode` (v0.4.0)
 - **CI/CD**: GitHub Actions (push to main → build + lint)
 
 ### Release Commands
