@@ -12,7 +12,7 @@ An **idle pixel-art farming game** where your farm grows automatically as you us
 - **Language**: TypeScript (all packages)
 - **CLI**: Node.js, Commander, Chalk, esbuild (single CJS bundle)
 - **Web**: Next.js 15 (App Router), React 19, Tailwind CSS v4, Canvas 2D
-- **VSCode**: Extension API, esbuild, Webview-based sidebar
+- **VSCode**: Extension API, esbuild, Webview panel embedding claudefarmer.com (iframe)
 - **Deployment**: Vercel (claudefarmer.com), npm (claude-farmer), VSCode Marketplace
 - **Auth**: GitHub OAuth (Web session cookie + CLI local callback server + VSCode URI handler)
 - **Data**: Local `~/.claude-farmer/state.json` + Upstash Redis (profiles, social)
@@ -79,7 +79,7 @@ claude-farmer/
 │   │       ├── i18n.ts        → Web-specific translation dict + detectLocale()
 │   │       └── locale-context.tsx → React context provider + useLocale() hook
 │   └── vscode/          → claude-farmer-vscode (VSCode Marketplace)
-│       ├── src/extension.ts   → FarmViewProvider (Webview), editor activity detection, OAuth URI handler
+│       ├── src/extension.ts   → Thin wrapper (~420 lines): activity detection, sync, OAuth URI handler, FarmPanel (claudefarmer.com webview)
 │       ├── icon.png           → Marketplace icon (128×128)
 │       └── media/             → Activity bar icon
 ```
@@ -150,11 +150,12 @@ Collecting duplicates of the same item triggers automatic evolution tiers:
 2. OAuth complete → redirect to `localhost:19274/callback`
 3. Receive user info → create `~/.claude-farmer/state.json`
 
-### VSCode (URI Handler)
+### VSCode (URI Handler + Webview Panel)
 
-1. `claudeFarmer.login` command → open `claudefarmer.com/api/auth/login?from=vscode`
-2. OAuth complete → redirect to `vscode://doribear.claude-farmer-vscode/callback?...`
-3. Extension receives URI → create local state → show farm view
+1. `claudeFarmer.openFarm` / sidebar "Open Farm" button → opens `FarmPanel` webview
+2. If logged in: extension calls `POST /api/auth/vscode-session` → receives one-time token URL (60s TTL, HMAC-signed) → navigates webview iframe to that URL → server sets `cf_session` cookie in webview context → redirects to `/@github_id`
+3. If not logged in: webview shows login page → user clicks "Login with GitHub" → extension opens external browser for OAuth → OAuth complete → `vscode://doribear.claude-farmer-vscode/callback?...` → extension creates local state + calls `navigateToFarm()` on the open panel
+4. After auth, claudefarmer.com runs fully inside the VSCode webview panel (iframe)
 
 ### API Auth Model
 
@@ -195,10 +196,24 @@ The web app is built around a single profile page at `/@username` (rewritten via
 - Left: hamburger (app menu: About, Language) + visited profile (avatar + nickname + Lv)
 - Right: search · share · my-account avatar (account menu: Edit, Character, Logout) or Login button
 
-## VSCode Extension Screens (2 tabs)
+## VSCode Extension
 
-1. **Farm** — Canvas 2D pixel art sidebar, stats (harvest/codex/water/streak), status bubble, character animation
-2. **Explore** — Bookmarks (top), user search (GitHub ID or nickname), random farm visit, farm visit view with water/bookmark
+The extension is a **thin wrapper** (~420 lines) around claudefarmer.com. It no longer maintains its own UI — instead it embeds the full web app in a VSCode webview panel.
+
+**What the extension does:**
+- Detects editor activity (text changes, file saves, terminal switches) → runs game loop → syncs to server
+- Handles GitHub OAuth via `vscode://` URI handler → creates `~/.claude-farmer/state.json`
+- Opens `FarmPanel` (webview panel, `ViewColumn.Beside`) showing claudefarmer.com in an iframe
+- Authenticates the webview via one-time HMAC token (`POST /api/auth/vscode-session`)
+
+**Why this approach (v0.4.0 rewrite rationale):**
+- Previous: 2011-line file with inline HTML/CSS/JS, duplicating all web features
+- Problem: every new web feature had to be re-implemented in the extension; bugs like `status_message` being reset by sync were caused by the split state
+- Solution: extension only handles what requires native VSCode APIs; all UI lives in the web
+
+**Sidebar:** minimal "Open Farm" button that triggers `claudeFarmer.openFarm` command.
+
+**`next.config.ts`:** sets `Content-Security-Policy: frame-ancestors 'self' vscode-webview: vscode-file:` to allow claudefarmer.com pages to be framed by VSCode webviews.
 
 ## API Routes
 
@@ -208,12 +223,16 @@ The web app is built around a single profile page at `/@username` (rewritten via
 | `/api/auth/callback` | GET | OAuth callback (cookie, CLI redirect, or VSCode URI) |
 | `/api/auth/session` | GET | Get current session user |
 | `/api/auth/logout` | POST | Delete session cookie |
+| `/api/auth/vscode-session` | POST | VSCode webview auth: validate github_id → return one-time HMAC token URL (60s TTL) |
+| `/api/auth/vscode-session` | GET `?token&gid&ts` | Verify token → set `cf_session` cookie in webview context → redirect to `/@gid` |
 | `/api/farm/sync` | POST | CLI → server full profile sync (inventory, activity, stats) |
 | `/api/farm/status` | POST | Update own status message (session/body auth) |
 | `/api/farm/[id]` | GET | Public profile lookup (incl. footprints, total_visitors/bookmarks/water) |
 | `/api/farm/[id]/notifications` | GET | Farm notifications (visitors, water received) |
 | `/api/farm/[id]/visit` | POST | Record farm visit (always increments visit count) |
-| `/api/farm/[id]/guestbook` | GET | Guestbook entries + total_water + total_gifts received |
+| `/api/farm/[id]/guestbook` | GET | Guestbook entries (annotated with `liked` for owner) + total_water + total_gifts |
+| `/api/farm/[id]/guestbook` | DELETE | Owner only: bulk delete (no body) or individual delete (`body.at` + `body.from_id`) |
+| `/api/farm/[id]/guestbook/like` | POST | Owner only: toggle ♥ on an entry (`body.at`) → stored in `farm:{id}:guestbook_liked` |
 | `/api/farm/[id]/rankings` | GET | Per-user water/gift cumulative ranking (top 20) |
 | `/api/water` | POST | Water a user's farm (5-min cooldown, sender link snapshot) |
 | `/api/water/cooldown` | GET | Current user's water cooldown remaining seconds |
@@ -248,6 +267,7 @@ All API routes (web/CLI/VSCode) use `extractUserId(request, bodyFrom?)` from `li
   - `farm:{id}:water_by_user` (sorted set, member=user_id score=count, ranking)
   - `farm:{id}:gifts_by_user` (sorted set, member=user_id score=count, ranking)
   - `farm:{id}:gifts` (hash, item_id → count)
+  - `farm:{id}:guestbook_liked` (set, member=entry.at ISO string — entries owner has ♥'d)
   - `user:{id}:bookmarks` (set)
   - `user:{id}:water_cooldown` (string, 5min TTL)
   - `global:recent_active` (sorted set, score=last_active timestamp, used by sitemap & explore)
@@ -286,6 +306,8 @@ CLI syncs full state to server via `/api/farm/sync`:
 
 Web reads from server on login and polls every 30s. VSCode reads local state directly.
 
+**`status_message` sync safety (v0.4.0 fix):** `/api/farm/sync` previously overwrote server `status_message` with `null` whenever CLI/VSCode synced without a local status set. Fixed: if incoming `status_message` is null, the existing server value is preserved (`existing?.status_message ?? null`). This prevents web/VSCode edits from being silently reset on the next activity sync.
+
 ## Boost Time (21:00–06:00)
 
 - **2× growth**: Crops advance 2 stages per turn during boost hours
@@ -311,6 +333,16 @@ Web reads from server on login and polls every 30s. VSCode reads local state dir
 - Body bottom hint encouraging visit/water/gift interaction
 - Redis: `farm:{id}:guestbook` (sorted set, max 100 entries, newest first)
 - API: `GET /api/farm/[id]/guestbook` returns entries + `total_water_received` + `total_gifts_received`
+
+### Guestbook Owner Actions (v0.4.0)
+
+Farm owner (and only the owner) can manage their own guestbook:
+
+- **전체 삭제 (Clear all)**: Web modal header button · CLI `claude-farmer guestbook --clear`
+- **개별 삭제 (Delete entry)**: Web hover 🗑️ per entry · CLI `claude-farmer guestbook --delete` (interactive numbered list)
+- **개별 좋아요 (Like entry)**: Web hover ♥ toggle (red when liked) · CLI `claude-farmer guestbook --like` (interactive)
+
+Liked state stored in `farm:{id}:guestbook_liked` (Redis SET of `entry.at` ISO strings). `GET /api/farm/[id]/guestbook` annotates each entry with `liked: boolean` when the caller is the owner (session cookie or `github_id` body matches `id`). Liking does not affect other users' views — it is a private owner-side marker.
 
 ## Per-User Rankings
 

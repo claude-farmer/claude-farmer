@@ -43,7 +43,11 @@ claude-farmer bag          # See your collection
 claude-farmer open         # Open the web UI
 claude-farmer water @user  # Water a friend's farm (5-min cooldown)
 claude-farmer gift @user c01      # Send a gacha item
-claude-farmer guestbook @user     # View their visit/water/gift log
+claude-farmer guestbook            # View your guestbook
+claude-farmer guestbook @user     # View their guestbook
+claude-farmer guestbook --clear   # Delete all your guestbook entries
+claude-farmer guestbook --delete  # Delete a specific entry (interactive)
+claude-farmer guestbook --like    # Like/unlike a specific entry (interactive)
 claude-farmer rankings @user      # See who supported them most
 claude-farmer character --random  # Customize your character
 claude-farmer visit @user         # View someone else's farm
@@ -113,8 +117,11 @@ Why leave your editor? Search **Claude Farmer** in the marketplace, or:
 ext install doribear.claude-farmer-vscode
 ```
 
-Your farm lives right in the sidebar. Code → watch it grow. It's dangerously satisfying.
+Opens **claudefarmer.com inside VSCode** as a panel beside your editor. Watch your farm grow, browse other developers' farms, check your guestbook — all without leaving the IDE.
 
+- Activity is detected automatically while you code (text changes, saves, terminal)
+- First launch opens the farm panel automatically after login
+- Login once via GitHub OAuth → stays logged in inside the panel
 - Language: Settings → `claudeFarmer.language` (auto / en / ko)
 
 ## Development
