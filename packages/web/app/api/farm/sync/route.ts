@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { redis, keys } from '@/lib/redis';
 import { extractUserId } from '@/lib/session';
 import { GRID_SIZE, CHARACTER_TYPES } from '@claude-farmer/shared';
-import type { PublicProfile, Farm, CharacterAppearance } from '@claude-farmer/shared';
+import type { PublicProfile, CharacterAppearance } from '@claude-farmer/shared';
 
 const VALID_HAIR_STYLES = ['short', 'long', 'curly', 'ponytail', 'bun', 'spiky', 'bob', 'buzz'] as const;
 const VALID_SKIN_TONES = ['light', 'medium', 'dark', 'pale'] as const;
@@ -33,7 +33,7 @@ function validateCharacter(raw: unknown): CharacterAppearance | undefined {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { github_id, nickname, avatar_url, level, total_harvests, unique_items, streak_days, today_input_chars, today_harvests, today_water_given, inventory, status_message, farm, character } = body;
+    const { github_id, nickname, avatar_url, level, total_harvests, unique_items, streak_days, today_input_chars, today_harvests, today_water_given, inventory, farm, character } = body;
 
     const userId = extractUserId(request, github_id);
     if (!userId) {
@@ -65,12 +65,8 @@ export async function POST(request: NextRequest) {
         rarity: (['common', 'rare', 'epic', 'legendary'] as const).includes(item.rarity as 'common') ? item.rarity as 'common' | 'rare' | 'epic' | 'legendary' : 'common' as const,
         obtained_at: String(item.obtained_at || ''),
       })) : undefined,
-      // status_message가 null로 오면 서버 기존 값 유지 (웹/VSCode 편집 덮어쓰기 방지)
-      status_message: status_message ? {
-        ...status_message,
-        text: (status_message.text || '').slice(0, 200),
-        link: status_message.link ? (status_message.link as string).slice(0, 500) : undefined,
-      } : (existing?.status_message ?? null),
+      // status_message는 /api/farm/status 전용 — sync로 절대 덮어쓰지 않음
+      status_message: existing?.status_message ?? null,
       farm_snapshot: farm || { level: 1, grid: new Array(GRID_SIZE).fill(null), total_harvests: 0 },
       last_active: new Date().toISOString(),
       character: validateCharacter(character),

@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { t } from '@claude-farmer/shared';
 import { stateExists, withState, loadState } from '../core/state.js';
 import { getLocale } from '../core/config.js';
-import { syncToServer } from '../sync/remote.js';
+import { updateStatusRemote } from '../sync/remote.js';
 
 export async function statusCommand(message?: string, opts?: { link?: string; clear?: boolean }): Promise<void> {
   const locale = getLocale();
@@ -17,7 +17,7 @@ export async function statusCommand(message?: string, opts?: { link?: string; cl
       state.status_message = null;
       return state;
     });
-    await syncToServer(state).catch(() => {});
+    await updateStatusRemote(state.user.github_id, null).catch(() => {});
     console.log(chalk.dim('\n💬 Status cleared.\n'));
     return;
   }
@@ -59,7 +59,7 @@ export async function statusCommand(message?: string, opts?: { link?: string; cl
     };
     return state;
   });
-  await syncToServer(state).catch(() => {});
+  await updateStatusRemote(state.user.github_id, state.status_message).catch(() => {});
 
   console.log(`\n💬 ${t(locale, 'statusSet')} "${chalk.yellow(trimmedText)}"`);
   if (trimmedLink) console.log(`🔗 ${trimmedLink}`);

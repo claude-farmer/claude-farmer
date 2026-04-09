@@ -137,6 +137,19 @@ export async function sendGift(toId: string, itemId: string, fromId: string) {
   }
 }
 
+export async function updateStatusRemote(githubId: string, statusMessage: LocalState['status_message']): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/farm/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ github_id: githubId, status_message: statusMessage }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function updateCharacterRemote(characterAppearance: unknown, fromId: string) {
   try {
     const res = await fetch(`${BASE_URL}/api/farm/character`, {
